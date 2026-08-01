@@ -8,7 +8,6 @@ import type {
   HouseMap,
   PointId,
   PointMap,
-  Sign,
   SignMap,
   Zodiac,
 } from "../types/astro.js";
@@ -20,7 +19,7 @@ import type {
   Section,
   SystemInterpretation,
 } from "../types/chart.js";
-import type { AstralCalculation, InterpretationUnit } from "../types/file.js";
+import type { AstralCalculation } from "../types/file.js";
 import { signs } from "../zodiac/position.js";
 import {
   compatibilityDomain,
@@ -100,7 +99,7 @@ const resultMapValid = (calculation: AstralCalculation, run: InterpretationRun):
   const unexpected = actual.filter((id) => !expectedSet.has(id));
   if (missing.length > 0) throw new Error(`Interpretation run is missing units: ${missing.join(", ")}`);
   if (unexpected.length > 0) throw new Error(`Interpretation run contains unexpected units: ${unexpected.join(", ")}`);
-}
+};
 
 const sourceRefs = (value: object, id: string): JsonRef[] => {
   if (!("sourceRefs" in value) || !Array.isArray(value.sourceRefs)) {
@@ -130,8 +129,8 @@ const reader = (calculation: AstralCalculation, run: InterpretationRun): Reader 
       const unit = plan.get(id);
       if (!unit) throw new Error(`Interpretation unit ${id} is not in the plan`);
       const parsed = parse(result(id).value);
-      const refs = sourceRefs(parsed, id);
-      if (!refsValid(root, refs, new Set(unit.allowedSourceRefs))) {
+      const references = sourceRefs(parsed, id);
+      if (!refsValid(root, references, new Set(unit.allowedSourceRefs))) {
         throw new Error(`Interpretation unit ${id} contains unresolved, unavailable or unpermitted source references`);
       }
       return parsed;
@@ -143,6 +142,7 @@ const section = (values: Reader, id: string): Section => values.value(id, parseS
 
 const life = (values: Reader, zodiac: Zodiac): LifeInterpretation => {
   const output = {} as LifeInterpretation;
+  const ordinary = output as unknown as Record<string, Section>;
   for (const key of lifeSections) {
     const id = `${zodiac}.life.${key}`;
     switch (key) {
@@ -159,7 +159,7 @@ const life = (values: Reader, zodiac: Zodiac): LifeInterpretation => {
         output.moneyAndMaterialSecurity = values.value(id, parseMoneyInterpretation);
         break;
       default:
-        output[key] = section(values, id);
+        ordinary[key] = section(values, id);
     }
   }
   return output;
@@ -269,18 +269,18 @@ const subject = (calculation: AstralCalculation, generatedName: string | undefin
   };
 };
 
-const planUnit = (calculation: AstralCalculation, id: string): InterpretationUnit => {
-  const unit = calculation.interpretationPlan.units.find((value) => value.id === id);
-  if (!unit) throw new Error(`Interpretation plan is missing ${id}`);
-  return unit;
-};
-
 export const assembleChart = (
   calculation: AstralCalculation,
   run: InterpretationRun,
   options: ChartAssemblyOptions,
 ): AstralChart => {
   const values = reader(calculation, run);
+  if (!calculation.interpretationPlan.units.some(({ id }) => id === "cross-system")) {
+    throw new Error("Interpretation plan is missing cross-system");
+  }
+  if (!calculation.interpretationPlan.units.some(({ id }) => id === "final-synthesis")) {
+    throw new Error("Interpretation plan is missing final-synthesis");
+  }
   const phases = calculation.interpretationPlan.units.map((unit) => {
     const result = values.result(unit.id);
     return {
@@ -290,8 +290,6 @@ export const assembleChart = (
       attempts: result.attempts,
     };
   });
-  planUnit(calculation, "cross-system");
-  planUnit(calculation, "final-synthesis");
   return {
     schema: "astral-chart/1.0.0",
     subject: subject(calculation, options.generatedName),
