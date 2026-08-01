@@ -1,6 +1,6 @@
 {
   "name": "astral-charts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Deterministic natal astrology calculation and strictly structured interpretation",
   "type": "module",
   "license": "MIT",
@@ -11,8 +11,18 @@
   "scripts": {
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js",
-    "ci": "npm run check && npm run test && npm run build"
+    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js",
+    "ci": "npm run check && npm run test && npm run build",
+    "vendor:astronomia": "npm --prefix vendor/astronomia install && npm --prefix vendor/astronomia run build",
+    "vendor:places": "corepack pnpm --dir vendor/places install --frozen-lockfile && corepack pnpm --dir vendor/places --filter @countrystatecity/countries build",
+    "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time exec -- lerna run build-dist --scope @js-joda/core --scope @js-joda/timezone",
+    "vendor:build": "npm run vendor:astronomia && npm run vendor:places && npm run vendor:time"
+  },
+  "dependencies": {
+    "@countrystatecity/countries": "file:vendor/places/packages/countries",
+    "@js-joda/core": "file:vendor/time/packages/core",
+    "@js-joda/timezone": "file:vendor/time/packages/timezone",
+    "astronomia": "file:vendor/astronomia"
   },
   "devDependencies": {
     "typescript": "^5.8.3"
