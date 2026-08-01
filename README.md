@@ -18,14 +18,17 @@ The implementation branch currently establishes:
 - historical civil-time resolution with explicit gap and overlap handling
 - hierarchical place selection with stable city IDs and IANA zones
 - apparent geocentric Sun, Moon and planetary positions through Pluto
-- Ascendant, Descendant, Midheaven and Imum Coeli geometry
+- Ascendant, Descendant, Midheaven, Imum Coeli, Vertex, Antivertex and East Point
 - Placidus, Whole Sign, Equal and Porphyry houses with explicit polar fallback
 - tropical and traditional sidereal house conversion
+- mean and osculating lunar nodes and lunar apogees
+- day and night sect with sect-correct Lots of Fortune and Spirit
+- a fixed 25-point map with house placements and occupants
 - deterministic zodiac, lunar-phase, aspect and compatibility primitives
 - field-by-field local NLP audit with safe mechanical repair
 - bounded one-conversation interpretation orchestration with narrow retries
 
-The remaining nodes, Lilith, lots, dignity, derived-chart and full compatibility catalogues are implemented in subsequent milestones against these contracts.
+The remaining ayanamsha, dignity, derived-chart, aspect-pattern and full compatibility catalogues are implemented in subsequent milestones against these contracts.
 
 ## Development
 
@@ -44,4 +47,4 @@ Configuration is documented in `.env.example`. Secrets are never written to `.as
 
 The finished project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
 
-See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/houses.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
+See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/houses.md`, `docs/points.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
