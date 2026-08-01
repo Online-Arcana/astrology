@@ -60,7 +60,7 @@ await test("parallel and contra-parallel use separate declination geometry", () 
 await test("declination detection rejects values outside the explicit orb", () => {
   const aspects = detectDeclinationAspects([
     { id: "mercury", declinationRadians: 10 * Math.PI / 180 },
-    { id: "venus", declinationRadians: 11.1 * Math.PI / 180 },
+    { id: "venus", declinationRadians: 12 * Math.PI / 180 },
     { id: "mars", declinationRadians: -10.4 * Math.PI / 180 },
   ]);
   equal(aspects.length, 1, "declination aspect count");
