@@ -43,6 +43,8 @@ export * from "./aspect/detect.js";
 export * from "./aspect/declination.js";
 export * from "./pattern/detect.js";
 export * from "./compat/rank.js";
+export * from "./compat/catalogue.js";
+export * from "./compat/calculate.js";
 export * from "./ref/resolve.js";
 export * from "./llm/audit/index.js";
 export * from "./llm/schema/build.js";
