@@ -43,8 +43,11 @@ The implementation branch currently establishes:
 - localhost-by-default JSON API over the same service
 - field-by-field local NLP audit with safe mechanical repair
 - bounded one-conversation interpretation orchestration with narrow retries
+- strict interpreted-chart assembly from the fixed plan
+- canonical `.astral` encoding with optional Ed25519 authority
+- independent structure, integrity and trust validation
 
-The deterministic calculation service, CLI and JSON API are complete. Subsequent milestones assemble the final interpreted chart and write, sign and validate `.astral` files.
+The deterministic calculation, interpretation assembly and `.astral` file boundaries are complete. Subsequent milestones connect the plan to concrete OpenAI structured-output calls and expose final chart-file generation through the CLI and JSON API.
 
 ## Development
 
@@ -63,4 +66,4 @@ Configuration is documented in `.env.example`. Secrets are never written to `.as
 
 The project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
 
-See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/service.md`, `docs/interfaces.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/eclipses.md`, `docs/compatibility.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
+See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/service.md`, `docs/interfaces.md`, `docs/chart-files.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/eclipses.md`, `docs/compatibility.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
