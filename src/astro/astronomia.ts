@@ -35,6 +35,10 @@ interface NutationApi {
   meanObliquity(jde: number): number;
 }
 
+interface SiderealApi {
+  apparent(julianDay: number): number;
+}
+
 interface EclipticValue {
   lon: number;
   lat: number;
@@ -88,6 +92,7 @@ interface Modules {
   apparent: ApparentApi;
   planetposition: PlanetPositionApi;
   nutation: NutationApi;
+  sidereal: SiderealApi;
   coord: CoordApi;
   precess: PrecessApi;
   solar: SolarApi;
@@ -188,6 +193,14 @@ class VendorAstronomia implements AstronomyPort {
     };
   }
 
+  geometry(julianDay: number, julianEphemerisDay: number) {
+    const [, nutationObliquity] = this.#modules.nutation.nutation(julianEphemerisDay);
+    return {
+      apparentSiderealDegrees: this.#modules.sidereal.apparent(julianDay) / 240,
+      trueObliquityRadians: this.#modules.nutation.meanObliquity(julianEphemerisDay) + nutationObliquity,
+    };
+  }
+
   sample(id: PlanetId, jde: number): BodySample {
     if (id === "sun") {
       const ecliptic = this.#modules.solar.apparentVSOP87(this.#earth, jde);
@@ -231,6 +244,7 @@ export const loadAstronomia = async (): Promise<AstronomyPort> => {
     apparent,
     planetpositionModule,
     nutation,
+    sidereal,
     coord,
     precess,
     solar,
@@ -251,6 +265,7 @@ export const loadAstronomia = async (): Promise<AstronomyPort> => {
     moduleDefault<ApparentApi>("astronomia/apparent"),
     loadVendor<PlanetPositionModule>("astronomia/planetposition"),
     moduleDefault<NutationApi>("astronomia/nutation"),
+    moduleDefault<SiderealApi>("astronomia/sidereal"),
     moduleDefault<CoordApi>("astronomia/coord"),
     moduleDefault<PrecessApi>("astronomia/precess"),
     moduleDefault<SolarApi>("astronomia/solar"),
@@ -279,7 +294,7 @@ export const loadAstronomia = async (): Promise<AstronomyPort> => {
     neptune: new planetposition.Planet(neptuneData),
   } satisfies Record<Exclude<PlanetId, "sun" | "moon" | "pluto">, PlanetLike>;
   return new VendorAstronomia(
-    { base, apparent, planetposition, nutation, coord, precess, solar, moon, pluto, julian, deltat },
+    { base, apparent, planetposition, nutation, sidereal, coord, precess, solar, moon, pluto, julian, deltat },
     earth,
     planets,
   );
