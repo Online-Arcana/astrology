@@ -1,13 +1,7 @@
-import { generatedChartName } from "../src/name/generate.js";
+import { readConfig } from "../src/config.js";
 import { createOpenAISchemaClientFactory } from "../src/llm/openaiSchema.js";
 import { runInterpretationPlan } from "../src/llm/orchestrate/plan.js";
-import { InterpretationRunner } from "../src/llm/orchestrate/run.js";
-import type {
-  SchemaClient,
-  SchemaClientContext,
-  SchemaClientFactory,
-  StrictShape,
-} from "../src/llm/orchestrate/types.js";
+import type { SchemaCall, SchemaClient, StrictShape } from "../src/llm/orchestrate/types.js";
 import type { JsonRef } from "../src/types/base.js";
 import type { AstralCalculation } from "../src/types/file.js";
 
@@ -25,7 +19,7 @@ const test = async (name: string, run: () => void | Promise<void>): Promise<void
   console.log(`ok ${passed} - ${name}`);
 };
 
-await test("pinned openai-schema client creates one conversation then runs strict output", async () => {
+await test("pinned openai-schema creates one conversation and sends strict schema responses", async () => {
   const requests: { url: string; body: Record<string, unknown> }[] = [];
   const fakeFetch: typeof fetch = async (input, init) => {
     const url = String(input);
@@ -50,14 +44,11 @@ await test("pinned openai-schema client creates one conversation then runs stric
   const factory = createOpenAISchemaClientFactory({
     apiKey: "test-key",
     instructions: "Base developer instruction",
-    metadata: { service: "test" },
-    baseURL: "https://example.invalid/v1",
+    metadata: { service: "test", calculation_fingerprint: "sha256:fixture" },
+    base: "https://example.invalid/v1",
     fetch: fakeFetch,
   });
-  const client = factory({
-    metadata: { calculation_fingerprint: "sha256:fixture" },
-    developerMessage: "Write in English.",
-  });
+  const client = factory();
   const shape: StrictShape<{ value: string }> = {
     name: "fixture",
     schema: {
@@ -68,26 +59,46 @@ await test("pinned openai-schema client creates one conversation then runs stric
     },
     parse: (value) => value as { value: string },
   };
-  const result = await client.run(shape, { field: "fixture" }, { body: { model: "gpt-test" } });
+  const result = await client.run(shape, { field: "fixture" }, {
+    body: { model: "gpt-test", store: false },
+    retries: 0,
+  });
   equal(result.value, "fixed", "structured result");
   equal(client.id, "conv_fixture", "conversation ID");
   equal(requests.length, 2, "OpenAI request count");
   equal(requests[0]?.url.endsWith("/conversations"), true, "conversation endpoint");
   equal(requests[1]?.url.endsWith("/responses"), true, "responses endpoint");
-  equal(requests[1]?.body["conversation"], "conv_fixture", "shared conversation body");
+  equal(
+    (requests[1]?.body["conversation"] as { id?: string }).id,
+    "conv_fixture",
+    "shared conversation body",
+  );
   equal(requests[1]?.body["store"], false, "response storage disabled");
-  const instructions = String(requests[1]?.body["instructions"]);
-  equal(instructions.includes("Base developer instruction"), true, "base developer instruction");
-  equal(instructions.includes("Write in English"), true, "per-chart developer instruction");
+  equal(requests[1]?.body["instructions"], "Base developer instruction", "developer instruction");
+  equal(
+    (requests[1]?.body["metadata"] as { calculation_fingerprint?: string }).calculation_fingerprint,
+    "sha256:fixture",
+    "calculation metadata",
+  );
+  const text = requests[1]?.body["text"] as { format?: { type?: string; strict?: boolean; name?: string } };
+  equal(text.format?.type, "json_schema", "strict response format type");
+  equal(text.format?.strict, true, "strict response format");
+  equal(text.format?.name, "fixture", "response schema name");
 });
 
 const exactRef = "#/astral-calculation/source" as JsonRef;
 const unavailableRef = "#/astral-calculation/unavailable" as JsonRef;
+const fingerprintRef = "#/astral-calculation/provenance/calculationFingerprint" as JsonRef;
 const calculation = {
   schema: "astral-calculation/1.0.0",
-  subject: { providedName: "Fixture", language: "en", adult: true },
+  subject: { providedName: null, language: "en", adult: true },
   source: { status: "exact", value: { sign: "aries", meaning: "solar purpose" }, reason: "none" },
   unavailable: { status: "unavailable", value: null, reason: "birth_time_unknown" },
+  systems: {
+    tropical: { derived: { dominantPlanets: [], dominantSigns: [] } },
+    sidereal: { derived: { dominantPlanets: [], dominantSigns: [] } },
+  },
+  settings: { interpretationMode: "both" },
   interpretationPlan: {
     schema: "astral-interpretation-plan/1.0.0",
     units: [
@@ -118,16 +129,21 @@ const calculation = {
 } as unknown as AstralCalculation;
 
 class FakeClient implements SchemaClient {
-  readonly id = "conv_plan";
-  readonly calls: string[] = [];
+  id: string | undefined;
+  readonly models: string[] = [];
+  readonly inputs: unknown[] = [];
+  #sunAttempts = 0;
 
   async run<T extends object>(
-    _shape: StrictShape<T>,
+    shape: StrictShape<T>,
     input: unknown,
+    options: SchemaCall,
   ): Promise<T> {
-    const field = (input as { field: string }).field;
-    this.calls.push(field);
-    if (field === "final-synthesis") {
+    this.id ??= "conv_plan";
+    this.models.push(options.body.model);
+    this.inputs.push(input);
+    if (shape.name === "generated_chart_name") return { value: "Solar-purpose-pathfinder" } as T;
+    if (shape.name === "final-synthesis") {
       return {
         essence: "The astrological chart centres a clear solar purpose.",
         definingThemes: ["Purposeful planetary self-expression"],
@@ -136,10 +152,23 @@ class FakeClient implements SchemaClient {
         relationshipPattern: "Relationships work best when the chart's directness is transparent.",
         sexualPattern: "Desire follows confidence, trust and explicit communication.",
         friendshipPattern: "Friendship grows through shared purpose and mutual encouragement.",
-        vocationalPattern: "Planetary emphasis favours visible, purposeful work.",
+        vocationalPattern: "Planetary emphasis favours visible and purposeful work.",
         moneyPattern: "Material choices improve when they support the chart's central priorities.",
         developmentalArc: "Growth involves making solar purpose more collaborative and flexible.",
-        closingPortrait: "This is a purposeful astrological portrait with room for relational balance.",
+        closingPortrait: "This astrological portrait combines purposeful expression with relational balance.",
+        sourceRefs: [exactRef],
+      } as T;
+    }
+    this.#sunAttempts += 1;
+    if (this.#sunAttempts === 1) {
+      return {
+        status: "written",
+        title: "Solar purpose",
+        summary: "I will analyse the supplied JSON.",
+        detail: "I will describe the supplied data.",
+        themes: ["I will inspect the JSON."],
+        strengths: ["I will explain the chart."],
+        tensions: ["I will produce an answer."],
         sourceRefs: [exactRef],
       } as T;
     }
@@ -156,41 +185,37 @@ class FakeClient implements SchemaClient {
   }
 }
 
-await test("fixed plan runner uses one conversation and synthesises unavailable generic fields", async () => {
+await test("fixed plan uses one conversation, big substantive calls and a small name utility", async () => {
   const client = new FakeClient();
-  let context: SchemaClientContext | null = null;
-  const factory: SchemaClientFactory = (value) => {
-    context = value;
-    return client;
-  };
-  const runner = new InterpretationRunner(factory, {
-    bigModel: "gpt-big",
-    smallModel: "gpt-small",
-    maxRetries: 1,
-  });
-  const run = await runInterpretationPlan(runner, calculation, {
-    metadata: { chart: "fixture" },
-    developerMessage: "Use English.",
-  });
-  equal(run.conversationId, "conv_plan", "plan conversation ID");
-  equal(client.calls.join(","), "tropical.point.sun,final-synthesis", "only available units called");
-  equal(run.units["tropical.point.ascendant"]?.model, "deterministic", "unavailable unit model");
+  const result = await runInterpretationPlan(
+    calculation,
+    readConfig({ ASTRAL_MAX_RETRIES: "2" }),
+    () => client,
+  );
+  equal(result.run.conversationId, "conv_plan", "plan conversation ID");
+  equal(result.generatedName, "Solar-purpose-pathfinder", "generated chart name");
   equal(
-    (run.units["tropical.point.ascendant"]?.value as { status: string }).status,
+    result.run.units["tropical.point.ascendant"]?.model,
+    "deterministic",
+    "unavailable unit model",
+  );
+  equal(
+    (result.run.units["tropical.point.ascendant"]?.value as { status: string }).status,
     "unavailable",
     "unavailable unit status",
   );
-  equal(context?.metadata["chart"], "fixture", "per-chart metadata");
-  equal(context?.developerMessage, "Use English.", "per-chart instruction");
-});
-
-await test("generated chart names are deterministic and exactly three words", () => {
-  const fingerprint = `sha256:${"1234abcd".repeat(8)}`;
-  const first = generatedChartName(fingerprint);
-  const second = generatedChartName(fingerprint);
-  equal(first, second, "deterministic name");
-  equal(first.split("-").length, 3, "three name words");
-  assert(/^[a-z]+-[a-z]+-[a-z]+$/u.test(first), "generated name format");
+  equal(
+    client.models.join(","),
+    "gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
+    "substantive and utility model routing",
+  );
+  equal(result.run.calls, 4, "OpenAI call count");
+  equal(result.run.retries, 1, "narrow retry count");
+  const retryInput = client.inputs[1] as { correction?: { auditFailures?: string[] } };
+  assert((retryInput.correction?.auditFailures.length ?? 0) > 0, "retry must include audit failures");
+  equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
+  assert(result.run.units["tropical.point.sun"] !== undefined, "Sun unit retained");
+  equal(fingerprintRef.startsWith("#/"), true, "fingerprint reference fixture");
 });
 
 console.log(`1..${passed}`);
