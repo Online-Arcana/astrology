@@ -1,0 +1,20 @@
+{
+  "name": "astral-charts",
+  "version": "0.1.0",
+  "description": "Deterministic natal astrology calculation and strictly structured interpretation",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js",
+    "ci": "npm run check && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
