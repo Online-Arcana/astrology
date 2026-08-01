@@ -18,6 +18,7 @@ The implementation branch currently establishes:
 - historical civil-time resolution with explicit gap and overlap handling
 - hierarchical place selection with stable city IDs and IANA zones
 - apparent geocentric Sun, Moon and planetary positions through Pluto
+- bounded date-only planetary positions without invented timed geometry
 - Ascendant, Descendant, Midheaven, Imum Coeli, Vertex, Antivertex and East Point
 - Placidus, Whole Sign, Equal and Porphyry houses with explicit polar fallback
 - independent tropical and sidereal houses and point maps
@@ -35,10 +36,13 @@ The implementation branch currently establishes:
 - tropical and selected sidereal eclipse positions with true-node attribution
 - twelve-domain natal-to-sign compatibility matrices for both zodiac systems
 - complete twelve-sign ranks with inspectable weighted factors and JSON references
+- one injectable end-to-end deterministic calculation service
+- stable RFC 8785 and SHA-256 calculation fingerprints
+- fixed field-by-field interpretation plans with permitted JSON references
 - field-by-field local NLP audit with safe mechanical repair
 - bounded one-conversation interpretation orchestration with narrow retries
 
-The deterministic calculation catalogue is complete against the fixed contracts. Subsequent milestones assemble the end-to-end calculation service, interpretation plan, CLI, JSON API and final `.astral` workflow.
+The deterministic calculation service and interpretation plan are complete. Subsequent milestones expose the CLI and JSON API, assemble the final interpreted chart and write and validate `.astral` files.
 
 ## Development
 
@@ -57,4 +61,4 @@ Configuration is documented in `.env.example`. Secrets are never written to `.as
 
 The finished project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
 
-See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/eclipses.md`, `docs/compatibility.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
+See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/service.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/eclipses.md`, `docs/compatibility.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
