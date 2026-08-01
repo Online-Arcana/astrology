@@ -5,10 +5,10 @@ import type {
   AstralValidation,
   TrustedAuthority,
 } from "../types/file.js";
-import { generatedNamePattern, compatibilityValid, rootShapeValid } from "./invariants.js";
-import { integrityValid } from "./integrity.js";
 import { signatureValid } from "./authority.js";
 import { canonicalise } from "./canonical.js";
+import { integrityValid } from "./integrity.js";
+import { compatibilityValid, generatedNamePattern, rootShapeValid } from "./invariants.js";
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -38,12 +38,14 @@ const authorityShape = (value: unknown): value is AstralAuthority => {
 
 const crcShape = (value: unknown): boolean => {
   if (!record(value)) return false;
+  const byteLength = value["byteLength"];
   return value["schema"] === "astral-crc/1.0.0"
     && value["canonicalisation"] === "RFC8785"
     && value["encoding"] === "utf-8"
     && exactArray(value["scope"], ["schema", "astral-calculation", "astral-chart"])
-    && Number.isSafeInteger(value["byteLength"])
-    && Number(value["byteLength"]) >= 0
+    && typeof byteLength === "number"
+    && Number.isSafeInteger(byteLength)
+    && byteLength >= 0
     && hex(value["sha256"], 64)
     && hex(value["sha512"], 128)
     && hex(value["crc32c"], 8);
@@ -55,7 +57,7 @@ const compatibilityShape = (file: AstralFile): boolean => {
     if (matrix.zodiac !== zodiac) return false;
     for (const domain of compatibilityDomains) {
       const scores = matrix.domains[domain];
-      if (!scores || scores.domain !== domain || !compatibilityValid(scores)) return false;
+      if (scores.domain !== domain || !compatibilityValid(scores)) return false;
     }
   }
   return true;
@@ -147,14 +149,10 @@ export const validateAstralFile = async (
   }
   const file = value;
   let integrity: AstralValidation["integrity"];
-  if (file.crc.canonicalisation !== "RFC8785" || file.crc.encoding !== "utf-8") {
-    integrity = "unsupported";
-  } else {
-    try {
-      integrity = await integrityValid(file) ? "valid" : "modified";
-    } catch {
-      integrity = "invalid_crc";
-    }
+  try {
+    integrity = await integrityValid(file) ? "valid" : "modified";
+  } catch {
+    integrity = "invalid_crc";
   }
   return {
     structure: "valid",
