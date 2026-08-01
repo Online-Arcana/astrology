@@ -71,7 +71,7 @@ assert(solar.type === "total", `Unexpected July 1991 solar eclipse type: ${solar
 assert(eclipses.utcIso(solar.julianEphemerisDay).startsWith("1991-07-11T"), "Unexpected July 1991 solar eclipse date");
 const lunar = eclipses.sample("lunar", 1991.49);
 assert(lunar !== null, "Pinned eclipse provider missed the June 1991 lunar eclipse");
-assert(lunar.type === "partial", `Unexpected June 1991 lunar eclipse type: ${lunar.type}`);
+assert(lunar.type === "penumbral", `Unexpected June 1991 lunar eclipse type: ${lunar.type}`);
 assert(eclipses.utcIso(lunar.julianEphemerisDay).startsWith("1991-06-27T"), "Unexpected June 1991 lunar eclipse date");
 assert(lunar.activeHalfDurationDays > 0, "Lunar eclipse active duration is unavailable");
 
