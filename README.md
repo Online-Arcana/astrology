@@ -42,25 +42,29 @@ The implementation branch currently establishes:
 - strict CLI calculation and hierarchical place commands
 - localhost-by-default JSON API over the same service
 - field-by-field local NLP audit with safe mechanical repair
-- bounded one-conversation interpretation orchestration with narrow retries
 - strict interpreted-chart assembly from the fixed plan
 - canonical `.astral` encoding with optional Ed25519 authority
 - independent structure, integrity and trust validation
+- `kitty-crow/openai-schema` as the sole OpenAI Conversations and Responses runtime
+- one isolated OpenAI conversation per chart
+- all substantive fields on the big model and only generated-name utilities on the small model
+- recursive audit and narrow correction of each specialised interpretation field
+- complete calculation-to-interpretation-to-`.astral` generation service
 
-The deterministic calculation, interpretation assembly and `.astral` file boundaries are complete. Subsequent milestones connect the plan to concrete OpenAI structured-output calls and expose final chart-file generation through the CLI and JSON API.
+The calculation, interpretation and file-generation boundaries are complete. The remaining interface milestone exposes interpreted `.astral` generation and file validation through the existing CLI and JSON API.
 
 ## Development
 
 ```sh
 git submodule update --init --recursive
-npm install
 npm run vendor:build
+npm install
 npm run ci
 ```
 
-`vendor:build` compiles the pinned submodules used by the concrete runtime adapters. Ordinary calculation and LLM orchestration tests remain injectable and require no network services or OpenAI key.
+`vendor:build` compiles every pinned submodule, including `openai-schema`, before the root package resolves its local file dependencies. Ordinary tests use fake clients or injected `fetch` implementations and make no real OpenAI request.
 
-Configuration is documented in `.env.example`. Secrets are never written to `.astral` files.
+Configuration is documented in `.env.example`. Secrets, conversation IDs and private signing keys are never written to `.astral` files.
 
 ## Interfaces
 
