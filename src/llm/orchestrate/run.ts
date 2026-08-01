@@ -38,7 +38,8 @@ export const runInterpretation = async (
   for (const unit of units) {
     const model = modelFor(config, unit.kind);
     let accepted: UnitResult<object> | null = null;
-    const context = (): UnitContext => ({ calculation, earlier: completed });
+    let correction: readonly string[] = [];
+    const context = (): UnitContext => ({ calculation, earlier: completed, correction });
 
     for (let attempt = 1; attempt <= config.chart.maxRetries; attempt += 1) {
       hooks.onStart?.(unit, attempt, model);
@@ -58,6 +59,7 @@ export const runInterpretation = async (
         accepted = { id: unit.id, value: audited.value, attempts: attempt, model };
         break;
       }
+      correction = audited.errors;
       if (attempt < config.chart.maxRetries) {
         retries += 1;
         hooks.onRetry?.(unit, attempt, audited.errors);
