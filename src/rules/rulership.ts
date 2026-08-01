@@ -17,9 +17,13 @@ export const traditionalRulers: Readonly<Record<Sign, PlanetId>> = {
   pisces: "jupiter",
 };
 
-export const modernRulers: Readonly<Record<Sign, PlanetId>> = {
-  ...traditionalRulers,
+export const modernCoRulers: Readonly<Partial<Record<Sign, PlanetId>>> = {
   scorpio: "pluto",
   aquarius: "uranus",
   pisces: "neptune",
+};
+
+export const modernRulers: Readonly<Record<Sign, PlanetId>> = {
+  ...traditionalRulers,
+  ...modernCoRulers,
 };
