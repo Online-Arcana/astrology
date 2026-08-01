@@ -139,6 +139,7 @@ const index = new Map<PlanetId, number>(planetIds.map((id, at) => [id, at]));
 const astronomy: AstronomyPort = {
   provider: { repository: "test", revision: "1", version: "1" },
   time: clock.time,
+  geometry: () => ({ apparentSiderealDegrees: 0, trueObliquityRadians: 23.4 * Math.PI / 180 }),
   sample: (id, jde) => {
     const at = index.get(id) ?? 0;
     const direction = id === "mercury" ? -1 : 1;

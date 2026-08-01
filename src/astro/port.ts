@@ -1,3 +1,4 @@
+import type { GeometrySample } from "../house/angles.js";
 import type { PlanetId } from "../types/astro.js";
 import type { AstralTimePort } from "../time/calculate.js";
 
@@ -16,4 +17,5 @@ export interface AstronomyPort extends AstralTimePort {
     version: string;
   };
   sample(id: PlanetId, julianEphemerisDay: number): BodySample;
+  geometry(julianDay: number, julianEphemerisDay: number): GeometrySample;
 }
