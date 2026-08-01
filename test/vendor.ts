@@ -1,5 +1,7 @@
 import { calculateAstronomy } from "../src/astro/calculate.js";
 import { loadAstronomia } from "../src/astro/astronomia.js";
+import { loadLunarOrbit } from "../src/astro/lunarOrbit.js";
+import { auxiliaryAngles, coreAngles } from "../src/house/angles.js";
 import { loadCscCatalogue } from "../src/place/csc.js";
 import { resolveBirthTime } from "../src/time/calculate.js";
 import { loadTimeResolver } from "../src/time/vendor.js";
@@ -7,6 +9,9 @@ import type { BirthInput } from "../src/types/base.js";
 
 const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) throw new Error(message);
+};
+const close = (actual: number, expected: number, tolerance: number, message: string): void => {
+  assert(Math.abs(actual - expected) <= tolerance, `${message}: expected ${expected}, got ${actual}`);
 };
 
 const catalogue = await loadCscCatalogue();
@@ -44,4 +49,22 @@ for (const [id, body] of Object.entries(result.bodies)) {
   assert(body.longitudeSpeedDegreesPerDay.value !== null, `${id} speed is unavailable`);
 }
 
-console.log("Pinned place, time and astronomy integrations passed");
+const geometry = astronomy.geometry(time.julianDay, time.julianEphemerisDay);
+const angles = coreAngles(geometry, place.longitude, place.latitude);
+const extra = auxiliaryAngles(angles, place.latitude, geometry.trueObliquityRadians);
+for (const [name, value] of Object.entries({
+  ascendant: angles.ascendant,
+  vertex: extra.vertex,
+  eastPoint: extra.eastPoint,
+})) {
+  assert(Number.isFinite(value) && value >= 0 && value < 360, `${name} is outside 0 through 360`);
+}
+
+const lunarOrbit = await loadLunarOrbit();
+const orbit = lunarOrbit.sample(time.julianEphemerisDay);
+close(orbit.meanNode.longitudeDegrees, 290.37175838276363, 0.02, "mean lunar node");
+close(orbit.trueNode.longitudeDegrees, 289.0795438429075, 0.1, "true lunar node");
+close(orbit.meanApogee.longitudeDegrees, 275.5535836472449, 0.02, "mean lunar apogee");
+close(orbit.trueApogee.longitudeDegrees, 263.88071576723195, 0.2, "osculating lunar apogee");
+
+console.log("Pinned place, time, astronomy and calculated-point integrations passed");

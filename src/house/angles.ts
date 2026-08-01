@@ -16,6 +16,12 @@ export interface CoreAngles {
   imumCoeli: number;
 }
 
+export interface AuxiliaryAngles {
+  vertex: number;
+  antivertex: number;
+  eastPoint: number;
+}
+
 export const forwardArc = (from: number, to: number): number => normaliseDegrees(to - from);
 export const signedArc = (value: number): number => {
   const normal = normaliseDegrees(value);
@@ -65,5 +71,29 @@ export const coreAngles = (
     descendant: normaliseDegrees(ascendant + 180),
     midheaven,
     imumCoeli: normaliseDegrees(midheaven + 180),
+  };
+};
+
+export const auxiliaryAngles = (
+  core: CoreAngles,
+  latitudeDegrees: number,
+  obliquityRadians: number,
+): AuxiliaryAngles => {
+  const theta = core.localSiderealDegrees * radians;
+  const latitude = latitudeDegrees * radians;
+  const vertexEast = normaliseDegrees(Math.atan2(
+    Math.sin(latitude) * Math.cos(theta),
+    -Math.sin(latitude) * Math.sin(theta) * Math.cos(obliquityRadians)
+      + Math.cos(latitude) * Math.sin(obliquityRadians),
+  ) * degrees);
+  const eastPoint = coreAngles(
+    { apparentSiderealDegrees: core.localSiderealDegrees, trueObliquityRadians: obliquityRadians },
+    0,
+    0,
+  ).ascendant;
+  return {
+    vertex: normaliseDegrees(vertexEast + 180),
+    antivertex: vertexEast,
+    eastPoint,
   };
 };
