@@ -19,9 +19,9 @@ assert(Math.abs(place.latitude - 57.5) < 0.2, `Unexpected Peterhead latitude: ${
 
 const resolver = await loadTimeResolver();
 const overlap = resolver.resolve({ date: "2025-10-26", time: "01:30:00", zone: "Europe/London" });
-assert(overlap.kind === "ambiguous", "London autumn overlap was not detected");
+assert(overlap.kind === "ambiguous", `London autumn overlap was not detected: ${JSON.stringify(overlap)}`);
 const gap = resolver.resolve({ date: "2025-03-30", time: "01:30:00", zone: "Europe/London" });
-assert(gap.kind === "nonexistent", "London spring gap was not detected");
+assert(gap.kind === "nonexistent", `London spring gap was not detected: ${JSON.stringify(gap)}`);
 
 const astronomy = await loadAstronomia();
 const input: BirthInput = {
