@@ -4,6 +4,7 @@ const signs: readonly Sign[] = [
   "aries", "taurus", "gemini", "cancer", "leo", "virgo",
   "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
 ];
+const rootKeys = ["schema", "astral-calculation", "astral-chart", "crc", "authority"] as const;
 
 export const generatedNamePattern = /^[\p{L}\p{N}]+-[\p{L}\p{N}]+-[\p{L}\p{N}]+$/u;
 
@@ -17,11 +18,7 @@ export const compatibilityValid = (domain: CompatibilityDomainScores): boolean =
 
 export const rootShapeValid = (file: AstralFile): boolean => {
   const keys = Object.keys(file);
-  return keys.length === 5
-    && keys[0] === "schema"
-    && keys[1] === "astral-calculation"
-    && keys[2] === "astral-chart"
-    && keys[3] === "crc"
-    && keys[4] === "authority"
+  return keys.length === rootKeys.length
+    && rootKeys.every((key) => Object.hasOwn(file, key))
     && file.schema === "astral/1.0.0";
 };
