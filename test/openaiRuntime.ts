@@ -151,11 +151,11 @@ class FakeClient implements SchemaClient {
         recurringTensions: ["Balancing personal purpose with relationship needs"],
         relationshipPattern: "Relationships work best when the chart's directness is transparent.",
         sexualPattern: "Desire follows confidence, trust and explicit communication.",
-        friendshipPattern: "Friendship grows through shared purpose and mutual encouragement.",
+        friendshipPattern: "The chart's friendship pattern grows through shared purpose and mutual encouragement.",
         vocationalPattern: "Planetary emphasis favours visible and purposeful work.",
         moneyPattern: "Material choices improve when they support the chart's central priorities.",
-        developmentalArc: "Growth involves making solar purpose more collaborative and flexible.",
-        closingPortrait: "This astrological portrait combines purposeful expression with relational balance.",
+        developmentalArc: "The chart's developmental pattern makes solar purpose more collaborative and flexible.",
+        closingPortrait: "This astrological chart portrait combines purposeful expression with relational balance.",
         sourceRefs: [exactRef],
       } as T;
     }
