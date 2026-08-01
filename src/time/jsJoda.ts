@@ -23,7 +23,7 @@ export interface JodaTransition {
 export interface JodaRules {
   validOffsets(local: JodaLocalDateTime): JodaOffset[];
   transition(local: JodaLocalDateTime): JodaTransition | null;
-  isDaylightSavings(instant: JodaInstant): boolean;
+  isDaylightSavings?(instant: JodaInstant): boolean;
 }
 
 export interface JodaPort {
@@ -31,13 +31,22 @@ export interface JodaPort {
   rules(zone: string): JodaRules;
 }
 
+const daylightSaving = (rules: JodaRules, instant: JodaInstant): boolean | null => {
+  if (!rules.isDaylightSavings) return null;
+  try {
+    return rules.isDaylightSavings(instant);
+  } catch {
+    return null;
+  }
+};
+
 const candidate = (local: JodaLocalDateTime, offset: JodaOffset, rules: JodaRules, fold: 0 | 1 | null): CivilCandidate => {
   const instant = local.toInstant(offset);
   return {
     fold,
     utcIso: instant.toString(),
     offsetSeconds: offset.totalSeconds(),
-    daylightSaving: rules.isDaylightSavings(instant),
+    daylightSaving: daylightSaving(rules, instant),
   };
 };
 

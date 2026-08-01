@@ -9,7 +9,7 @@ export interface CivilCandidate {
   fold: 0 | 1 | null;
   utcIso: string;
   offsetSeconds: number;
-  daylightSaving: boolean;
+  daylightSaving: boolean | null;
 }
 
 export type CivilResolution =

@@ -4,9 +4,11 @@
 
 ## Decision
 
-The selected API exposes the complete set of valid offsets for a local date-time. A normal time has one offset, an autumn overlap has two, and a spring gap has none. It also exposes the transition and daylight-saving state. This lets astral-charts report ambiguity and nonexistence instead of silently shifting the supplied birth time.
+The selected API exposes the complete set of valid offsets for a local date-time. A normal time has one offset, an autumn overlap has two, and a spring gap has none. It also exposes the applicable transition. This lets astral-charts report ambiguity and nonexistence instead of silently shifting the supplied birth time.
 
 The pinned timezone package contains IANA tzdb 2026a rules rather than delegating historical results to the host runtime. The submodule revision, package versions and tzdb version are recorded in calculation provenance.
+
+The package resolves offsets and transitions exactly but its current zone-rules implementation does not expose a reliable daylight-saving label for an arbitrary instant. In that case `daylightSaving` is `null`; astral-charts does not infer the label from seasonal offset heuristics. UTC resolution and transition detection remain exact.
 
 ## Calendar and range
 
