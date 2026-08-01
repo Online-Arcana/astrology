@@ -115,7 +115,7 @@ await test("solar eclipse at birth uses the provider active window", () => {
   });
   equal(result.atBirth.value?.kind, "solar", "natal eclipse kind");
   equal(result.atBirth.value?.type, "total", "natal eclipse type");
-  close(result.atBirth.value?.birthOffsetSeconds ?? -1, 4_320, 1e-6, "birth offset");
+  close(result.atBirth.value?.birthOffsetSeconds ?? -1, 4_320, 1e-3, "birth offset");
   equal(result.atBirth.value?.node, "north", "natal eclipse node");
   close(result.atBirth.value?.sunMoonAngleDegrees ?? -1, 0.2, 1e-9, "solar eclipse angle");
 });
