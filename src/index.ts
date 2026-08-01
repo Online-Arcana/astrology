@@ -45,6 +45,8 @@ export * from "./pattern/detect.js";
 export * from "./compat/rank.js";
 export * from "./compat/catalogue.js";
 export * from "./compat/calculate.js";
+export * from "./calculate/plan.js";
+export * from "./calculate/service.js";
 export * from "./ref/resolve.js";
 export * from "./llm/audit/index.js";
 export * from "./llm/schema/build.js";

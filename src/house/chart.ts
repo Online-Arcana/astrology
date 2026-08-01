@@ -1,5 +1,5 @@
 import { modernRulers, traditionalRulers } from "../rules/rulership.js";
-import type { Calc, CalcReason } from "../types/base.js";
+import type { Calc, CalcReason, CalcStatus } from "../types/base.js";
 import type {
   House,
   HouseChart,
@@ -23,7 +23,8 @@ import {
 } from "./cusps.js";
 
 const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
-const exact = <T>(value: T): Calc<T> => ({ status: "exact", value, reason: "none" });
+type AvailableStatus = Extract<CalcStatus, "exact" | "approximate" | "bounded">;
+const calculated = <T>(value: T, status: AvailableStatus, reason: CalcReason): Calc<T> => ({ status, value, reason });
 const unavailable = <T>(reason: CalcReason): Calc<T> => ({ status: reason === "outside_supported_range" ? "unsupported" : "unavailable", value: null, reason });
 const key = (number: number): keyof HouseMap<unknown> => String(number) as keyof HouseMap<unknown>;
 
@@ -38,14 +39,20 @@ const intercepted = (cusp: number, end: number): Sign[] => {
   return result;
 };
 
-const house = (number: typeof numbers[number], cusp: number, end: number): House => {
+const house = (
+  number: typeof numbers[number],
+  cusp: number,
+  end: number,
+  status: AvailableStatus,
+  reason: CalcReason,
+): House => {
   const position = signPosition(cusp);
   return {
     number,
-    cusp: exact(position),
-    end: exact(signPosition(end)),
-    rulerTraditional: exact(traditionalRulers[position.sign]),
-    rulerModern: exact(modernRulers[position.sign]),
+    cusp: calculated(position, status, reason),
+    end: calculated(signPosition(end), status, reason),
+    rulerTraditional: calculated(traditionalRulers[position.sign], status, reason),
+    rulerModern: calculated(modernRulers[position.sign], status, reason),
     occupants: [],
     interceptedSigns: intercepted(cusp, end),
   };
@@ -57,11 +64,19 @@ const chart = (
   status: HouseChart["status"] = "calculated",
   fallbackFrom: HouseSystem | null = null,
   reason: CalcReason = "none",
+  calculationStatus: AvailableStatus = "exact",
+  calculationReason: CalcReason = "none",
 ): HouseChart => {
   const houses = {} as HouseMap<House>;
   numbers.forEach((number, index) => {
     const next = numbers[(index + 1) % 12] as typeof numbers[number];
-    houses[key(number) as keyof HouseMap<House>] = house(number, cusps[key(number)], cusps[key(next)]);
+    houses[key(number) as keyof HouseMap<House>] = house(
+      number,
+      cusps[key(number)],
+      cusps[key(next)],
+      calculationStatus,
+      calculationReason,
+    );
   });
   return { system, status, fallbackFrom, reason, houses };
 };
@@ -95,11 +110,15 @@ export interface HouseInput {
   obliquityRadians: number;
   zodiac: Zodiac;
   ayanamshaDegrees?: number;
+  calculationStatus?: Extract<AvailableStatus, "exact" | "approximate">;
+  calculationReason?: CalcReason;
 }
 
 export const calculateHouseCharts = (input: HouseInput): Record<HouseSystem, HouseChart> => {
   const shift = input.zodiac === "sidereal" ? input.ayanamshaDegrees ?? 0 : 0;
   if (!Number.isFinite(shift) || shift < 0 || shift >= 360) throw new Error("Ayanamsha must be between 0 and 360 degrees");
+  const calculationStatus = input.calculationStatus ?? "exact";
+  const calculationReason = input.calculationReason ?? "none";
   const porphyryTropical = porphyryCusps(input.angles);
   const equalTropical = equalCusps(input.angles.ascendant);
   const placidusTropical = placidusCusps(input.angles, input.latitudeDegrees, input.obliquityRadians);
@@ -110,11 +129,11 @@ export const calculateHouseCharts = (input: HouseInput): Record<HouseSystem, Hou
   const placidus = placidusTropical === null ? null : shiftCusps(placidusTropical, shift);
   return {
     placidus: placidus
-      ? chart("placidus", placidus)
-      : chart("porphyry", porphyry, "fallback", "placidus", "polar_house_failure"),
-    whole_sign: chart("whole_sign", wholeSign),
-    equal: chart("equal", equal),
-    porphyry: chart("porphyry", porphyry),
+      ? chart("placidus", placidus, "calculated", null, "none", calculationStatus, calculationReason)
+      : chart("porphyry", porphyry, "fallback", "placidus", "polar_house_failure", calculationStatus, calculationReason),
+    whole_sign: chart("whole_sign", wholeSign, "calculated", null, "none", calculationStatus, calculationReason),
+    equal: chart("equal", equal, "calculated", null, "none", calculationStatus, calculationReason),
+    porphyry: chart("porphyry", porphyry, "calculated", null, "none", calculationStatus, calculationReason),
   };
 };
 
@@ -128,11 +147,11 @@ export const housePlacement = (longitudeDegrees: number, chartValue: HouseChart)
     const span = forwardArc(cusp, current.end.value.longitudeDegrees);
     const distance = forwardArc(cusp, longitude);
     if (distance < span || Math.abs(distance - span) < 1e-10 && number === 12) {
-      return exact({
+      return calculated({
         house: number,
         distanceFromCuspDegrees: distance,
         intercepted: current.interceptedSigns.includes(signPosition(longitude).sign),
-      });
+      }, current.cusp.status as AvailableStatus, current.cusp.reason);
     }
   }
   return unavailable("insufficient_data");

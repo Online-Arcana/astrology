@@ -101,11 +101,27 @@ await test("approximate time remains explicitly approximate", () => {
   equal(result.resolution.reason, "birth_time_approximate", "approximate reason");
 });
 
-await test("unknown time does not invent an instant", () => {
-  const result = resolveBirthTime(birth("unknown", null), "Europe/London", resolver({ kind: "unsupported", localIso: "", reason: "unused" }), clock);
-  equal(result.utcIso, null, "unknown UTC");
-  equal(result.julianDay, null, "unknown Julian day");
+await test("unknown time preserves the complete civil-day interval without inventing an instant", () => {
+  const dateResolver: TimeResolver = {
+    info: { provider: "test", providerVersion: "1", dataVersion: "1", supportedRange: "1900/2100", calendar: "proleptic_gregorian" },
+    resolve: ({ date, time }) => ({
+      kind: "exact",
+      localIso: `${date}T${time}`,
+      candidate: {
+        fold: null,
+        utcIso: date === "1991-06-15" ? "1991-06-14T23:00:00Z" : "1991-06-15T23:00:00Z",
+        offsetSeconds: 3600,
+        daylightSaving: true,
+      },
+    }),
+  };
+  const result = resolveBirthTime(birth("unknown", null), "Europe/London", dateResolver, clock);
+  equal(result.utcIso, null, "unknown UTC instant");
+  equal(result.julianDay, null, "unknown Julian instant");
+  equal(result.resolution.status, "bounded", "unknown status");
   equal(result.resolution.reason, "birth_time_unknown", "unknown reason");
+  equal(result.resolution.value?.utcStartIso, "1991-06-14T23:00:00Z", "civil-day start");
+  equal(result.resolution.value?.utcEndIso, "1991-06-15T23:00:00Z", "civil-day end");
 });
 
 await test("DST overlap is bounded rather than silently selected", () => {
@@ -177,15 +193,45 @@ await test("astronomy calculation fills every required body", () => {
   equal(result.frame.coordinates, "apparent", "reference frame");
 });
 
-await test("astronomy preserves unknown-time unavailability", () => {
+await test("date-only astronomy retains bounded planetary positions", () => {
+  const boundedPort: AstronomyPort = {
+    ...astronomy,
+    time: (utcIso) => {
+      const jde = utcIso.startsWith("1991-06-14") ? 99.5 : 100.5;
+      return { julianDay: jde - 0.0005, julianEphemerisDay: jde, deltaTSeconds: 43.2 };
+    },
+  };
   const unknown: TimeData = {
     localIso: null, utcIso: null, utcOffsetSeconds: null, daylightSaving: null,
     julianDay: null, julianEphemerisDay: null, deltaTSeconds: null,
-    resolution: { status: "unavailable", value: null, reason: "birth_time_unknown" },
+    resolution: {
+      status: "bounded",
+      reason: "birth_time_unknown",
+      value: {
+        fold: null,
+        localStartIso: "1991-06-15T00:00:00",
+        localEndIso: "1991-06-16T00:00:00",
+        utcStartIso: "1991-06-14T23:00:00Z",
+        utcEndIso: "1991-06-15T23:00:00Z",
+      },
+    },
   };
-  const result = calculateAstronomy(unknown, astronomy);
-  equal(result.bodies.sun.eclipticLongitudeDegrees.value, null, "unknown Sun longitude");
-  equal(result.bodies.sun.eclipticLongitudeDegrees.reason, "birth_time_unknown", "unknown reason");
+  const result = calculateAstronomy(unknown, boundedPort);
+  assert(result.bodies.sun.eclipticLongitudeDegrees.value !== null, "bounded Sun longitude");
+  assert(result.bodies.moon.eclipticLongitudeDegrees.value !== null, "bounded Moon longitude");
+  equal(result.bodies.sun.eclipticLongitudeDegrees.status, "bounded", "bounded Sun status");
+  equal(result.bodies.moon.eclipticLongitudeDegrees.reason, "birth_time_unknown", "bounded Moon reason");
+});
+
+await test("astronomy preserves true unavailability when no civil window exists", () => {
+  const unavailableTime: TimeData = {
+    localIso: null, utcIso: null, utcOffsetSeconds: null, daylightSaving: null,
+    julianDay: null, julianEphemerisDay: null, deltaTSeconds: null,
+    resolution: { status: "unavailable", value: null, reason: "nonexistent_local_time" },
+  };
+  const result = calculateAstronomy(unavailableTime, astronomy);
+  equal(result.bodies.sun.eclipticLongitudeDegrees.value, null, "unavailable Sun longitude");
+  equal(result.bodies.sun.eclipticLongitudeDegrees.reason, "nonexistent_local_time", "unavailable reason");
 });
 
 console.log(`1..${passed}`);
