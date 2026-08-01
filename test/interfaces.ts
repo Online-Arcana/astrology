@@ -52,7 +52,14 @@ const runtime: ApiRuntime = {
     continents: async () => ["Europe"],
     countries: async () => [{ code: "GB", name: "United Kingdom", continent: "Europe", subcontinent: "Northern Europe" }],
     regions: async () => [{ code: "TST", name: "Fixture" }],
-    cities: async () => [{ id: place.id, name: "Testville", region: place.region, latitude: 10, longitude: -1, timeZone: place.timeZone }],
+    cities: async () => [{
+      id: place.id,
+      name: "Testville",
+      region: { code: "TST", name: "Fixture" },
+      latitude: 10,
+      longitude: -1,
+      timeZone: place.timeZone,
+    }],
     get: async () => place,
   },
 };
