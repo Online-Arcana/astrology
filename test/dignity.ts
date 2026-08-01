@@ -65,12 +65,13 @@ await test("Chaldean faces begin Mars Sun Venus then continue into Taurus", () =
   equal(faceRuler(signPosition(30)), "mercury", "first Taurus face");
 });
 
-await test("exaltation and face scores combine without false domicile", () => {
+await test("exaltation, day triplicity and face scores combine without false domicile", () => {
   const dignity = calculateDignity("sun", position(15), day).value;
   equal(dignity?.domicile, false, "Sun domicile");
   equal(dignity?.exalted, true, "Sun exaltation");
+  equal(dignity?.triplicityRuler, true, "Sun triplicity");
   equal(dignity?.faceRuler, true, "Sun face");
-  equal(dignity?.score, 5, "Sun dignity score");
+  equal(dignity?.score, 8, "Sun dignity score");
 });
 
 await test("domicile and Egyptian bound scores combine", () => {
