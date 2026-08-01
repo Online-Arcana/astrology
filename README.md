@@ -39,10 +39,12 @@ The implementation branch currently establishes:
 - one injectable end-to-end deterministic calculation service
 - stable RFC 8785 and SHA-256 calculation fingerprints
 - fixed field-by-field interpretation plans with permitted JSON references
+- strict CLI calculation and hierarchical place commands
+- localhost-by-default JSON API over the same service
 - field-by-field local NLP audit with safe mechanical repair
 - bounded one-conversation interpretation orchestration with narrow retries
 
-The deterministic calculation service and interpretation plan are complete. Subsequent milestones expose the CLI and JSON API, assemble the final interpreted chart and write and validate `.astral` files.
+The deterministic calculation service, CLI and JSON API are complete. Subsequent milestones assemble the final interpreted chart and write, sign and validate `.astral` files.
 
 ## Development
 
@@ -59,6 +61,6 @@ Configuration is documented in `.env.example`. Secrets are never written to `.as
 
 ## Interfaces
 
-The finished project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
+The project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
 
-See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/service.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/eclipses.md`, `docs/compatibility.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
+See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/service.md`, `docs/interfaces.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/eclipses.md`, `docs/compatibility.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
