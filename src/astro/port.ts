@@ -10,6 +10,18 @@ export interface BodySample {
   distanceAu: number;
 }
 
+export interface OrbitPointSample {
+  longitudeDegrees: number;
+  speedDegreesPerDay: number;
+}
+
+export interface LunarOrbitSample {
+  meanNode: OrbitPointSample;
+  trueNode: OrbitPointSample;
+  meanApogee: OrbitPointSample;
+  trueApogee: OrbitPointSample;
+}
+
 export interface AstronomyPort extends AstralTimePort {
   readonly provider: {
     repository: string;
@@ -18,4 +30,5 @@ export interface AstronomyPort extends AstralTimePort {
   };
   sample(id: PlanetId, julianEphemerisDay: number): BodySample;
   geometry(julianDay: number, julianEphemerisDay: number): GeometrySample;
+  lunarOrbit(julianEphemerisDay: number): LunarOrbitSample;
 }
