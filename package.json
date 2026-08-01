@@ -1,6 +1,6 @@
 {
   "name": "astral-charts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Deterministic natal astrology calculation and strictly structured interpretation",
   "type": "module",
   "license": "MIT",
@@ -12,10 +12,11 @@
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js",
+    "test:vendor": "tsc -p tsconfig.test.json && node .test/test/vendor.js",
     "ci": "npm run check && npm run test && npm run build",
     "vendor:astronomia": "npm --prefix vendor/astronomia install && npm --prefix vendor/astronomia run build",
-    "vendor:places": "corepack pnpm --dir vendor/places install --frozen-lockfile && corepack pnpm --dir vendor/places --filter @countrystatecity/countries build",
-    "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time exec -- lerna run build-dist --scope @js-joda/core --scope @js-joda/timezone",
+    "vendor:places": "npx --yes pnpm@9.0.0 --dir vendor/places install --frozen-lockfile && npx --yes pnpm@9.0.0 --dir vendor/places --filter @countrystatecity/countries build",
+    "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time/packages/core run build-dist && npm --prefix vendor/time/packages/timezone run build-dist",
     "vendor:build": "npm run vendor:astronomia && npm run vendor:places && npm run vendor:time"
   },
   "dependencies": {
