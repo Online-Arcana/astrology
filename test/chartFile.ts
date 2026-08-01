@@ -309,13 +309,15 @@ await test("chart assembler consumes every fixed unit into the final shape", () 
 await test("chart assembler rejects missing and unexpected interpretation units", () => {
   const calculation = calculationFixture();
   const missing = runFixture(calculation);
-  delete missing.units[calculation.interpretationPlan.units[0]?.id as string];
+  const missingUnits = missing.units as Record<string, UnitResult<object>>;
+  delete missingUnits[calculation.interpretationPlan.units[0]?.id as string];
   let missingFailed = false;
   try { assembleChart(calculation, missing, assemblyOptions); } catch { missingFailed = true; }
   equal(missingFailed, true, "missing unit rejection");
 
   const unexpected = runFixture(calculation);
-  unexpected.units["unexpected"] = { id: "unexpected", value: {}, attempts: 1, model: "gpt-small" };
+  const unexpectedUnits = unexpected.units as Record<string, UnitResult<object>>;
+  unexpectedUnits["unexpected"] = { id: "unexpected", value: {}, attempts: 1, model: "gpt-small" };
   let unexpectedFailed = false;
   try { assembleChart(calculation, unexpected, assemblyOptions); } catch { unexpectedFailed = true; }
   equal(unexpectedFailed, true, "unexpected unit rejection");
