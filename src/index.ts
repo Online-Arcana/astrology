@@ -32,6 +32,8 @@ export * from "./house/chart.js";
 export * from "./rules/rulership.js";
 export * from "./dignity/catalogue.js";
 export * from "./dignity/calculate.js";
+export * from "./derived/catalogue.js";
+export * from "./derived/calculate.js";
 export * from "./astro/lunar.js";
 export * from "./aspect/catalogue.js";
 export * from "./aspect/detect.js";
