@@ -16,7 +16,7 @@
     "ci": "npm run check && npm run test && npm run build",
     "vendor:astronomia": "npm --prefix vendor/astronomia install && npm --prefix vendor/astronomia run build",
     "vendor:places": "npx --yes pnpm@9.0.0 --dir vendor/places install --frozen-lockfile && npx --yes pnpm@9.0.0 --dir vendor/places --filter @countrystatecity/countries build",
-    "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time exec -- lerna run build-dist --scope @js-joda/core --scope @js-joda/timezone",
+    "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time/packages/core run build-dist && npm --prefix vendor/time/packages/timezone run build-dist",
     "vendor:build": "npm run vendor:astronomia && npm run vendor:places && npm run vendor:time"
   },
   "dependencies": {
