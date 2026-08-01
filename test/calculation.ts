@@ -1,0 +1,190 @@
+import { calculateAstronomy } from "../src/astro/calculate.js";
+import type { AstronomyPort } from "../src/astro/port.js";
+import { CscCatalogue } from "../src/place/csc.js";
+import type { CscApi, CscCity, CscCountryMeta, CscRegion } from "../src/place/model.js";
+import { placeId } from "../src/place/normalise.js";
+import { resolveBirthTime } from "../src/time/calculate.js";
+import type { CivilResolution, TimeResolver } from "../src/time/model.js";
+import type { BirthInput, TimeData } from "../src/types/base.js";
+import type { PlanetId } from "../src/types/astro.js";
+
+const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
+  if (!condition) throw new Error(message);
+};
+
+const equal = <T>(actual: T, expected: T, message: string): void => {
+  if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);
+};
+
+let passed = 0;
+const test = async (name: string, run: () => void | Promise<void>): Promise<void> => {
+  await run();
+  passed += 1;
+  console.log(`ok ${passed} - ${name}`);
+};
+
+const countries: CscCountryMeta[] = [
+  { id: 1, name: "United Kingdom", iso2: "GB", region: "Europe", subregion: "Northern Europe", timezones: [{ zoneName: "Europe/London" }] },
+  { id: 2, name: "United States", iso2: "US", region: "Americas", subregion: "Northern America", timezones: [] },
+];
+const regions: CscRegion[] = [
+  { id: 10, name: "Scotland", country_code: "GB", iso2: "SCT", timezone: "Europe/London" },
+  { id: 20, name: "South Dakota", country_code: "US", iso2: "SD", timezone: "America/Chicago" },
+];
+const cities: CscCity[] = [
+  { id: 100, name: "Peterhead", state_id: 10, state_code: "SCT", country_code: "GB", latitude: "57.505", longitude: "-1.784", timezone: "Europe/London" },
+  { id: 101, name: "Aberdeen", state_id: 10, state_code: "SCT", country_code: "GB", latitude: "57.149", longitude: "-2.094", timezone: "Europe/London" },
+  { id: 200, name: "Aberdeen", state_id: 20, state_code: "SD", country_code: "US", latitude: "45.464", longitude: "-98.486", timezone: "America/Chicago" },
+];
+
+const api: CscApi = {
+  getCountries: async () => countries,
+  getCountryByCode: async (code) => countries.find((country) => country.iso2 === code) ?? null,
+  getStatesOfCountry: async (countryCode) => regions.filter((region) => region.country_code === countryCode),
+  getStateByCode: async (countryCode, regionCode) => regions.find((region) => region.country_code === countryCode && region.iso2 === regionCode) ?? null,
+  getCitiesOfState: async (countryCode, regionCode) => cities.filter((city) => city.country_code === countryCode && city.state_code === regionCode),
+  getAllCitiesOfCountry: async (countryCode) => cities.filter((city) => city.country_code === countryCode),
+};
+
+await test("place hierarchy normalises a selected city", async () => {
+  const catalogue = new CscCatalogue(api);
+  const matches = await catalogue.cities("GB", "SCT", "peter");
+  equal(matches.length, 1, "city search count");
+  equal(matches[0]?.id, "csc:GB:SCT:100", "stable place id");
+  const place = await catalogue.get(matches[0]?.id as string);
+  equal(place.city.name, "Peterhead", "city name");
+  equal(place.timeZone, "Europe/London", "IANA timezone");
+  equal(place.continent, "Europe", "continent");
+});
+
+await test("duplicate city names remain distinct selections", async () => {
+  const catalogue = new CscCatalogue(api);
+  const uk = await catalogue.cities("GB", "SCT", "Aberdeen");
+  const us = await catalogue.cities("US", "SD", "Aberdeen");
+  assert(uk[0]?.id !== us[0]?.id, "duplicate cities must have different IDs");
+  equal(uk[0]?.id, placeId("GB", "SCT", 101), "UK Aberdeen ID");
+  equal(us[0]?.id, placeId("US", "SD", 200), "US Aberdeen ID");
+});
+
+const resolver = (resolution: CivilResolution): TimeResolver => ({
+  info: { provider: "test", providerVersion: "1", dataVersion: "1", supportedRange: "1900/2100", calendar: "proleptic_gregorian" },
+  resolve: () => resolution,
+});
+const clock = {
+  time: () => ({ julianDay: 2440000.5, julianEphemerisDay: 2440000.5005, deltaTSeconds: 43.2 }),
+};
+const birth = (timeAccuracy: BirthInput["timeAccuracy"], time: string | null): BirthInput => ({
+  date: "1991-06-15",
+  time,
+  timeAccuracy,
+  placeId: "csc:GB:SCT:100",
+});
+
+await test("exact historical time produces UTC, JD and JDE", () => {
+  const result = resolveBirthTime(birth("exact", "12:30:00"), "Europe/London", resolver({
+    kind: "exact",
+    localIso: "1991-06-15T12:30:00",
+    candidate: { fold: null, utcIso: "1991-06-15T11:30:00Z", offsetSeconds: 3600, daylightSaving: true },
+  }), clock);
+  equal(result.utcIso, "1991-06-15T11:30:00Z", "UTC instant");
+  equal(result.julianDay, 2440000.5, "Julian day");
+  equal(result.resolution.status, "exact", "resolution status");
+});
+
+await test("approximate time remains explicitly approximate", () => {
+  const result = resolveBirthTime(birth("approximate", "12:30:00"), "Europe/London", resolver({
+    kind: "exact",
+    localIso: "1991-06-15T12:30:00",
+    candidate: { fold: null, utcIso: "1991-06-15T11:30:00Z", offsetSeconds: 3600, daylightSaving: true },
+  }), clock);
+  equal(result.resolution.status, "approximate", "approximate status");
+  equal(result.resolution.reason, "birth_time_approximate", "approximate reason");
+});
+
+await test("unknown time does not invent an instant", () => {
+  const result = resolveBirthTime(birth("unknown", null), "Europe/London", resolver({ kind: "unsupported", localIso: "", reason: "unused" }), clock);
+  equal(result.utcIso, null, "unknown UTC");
+  equal(result.julianDay, null, "unknown Julian day");
+  equal(result.resolution.reason, "birth_time_unknown", "unknown reason");
+});
+
+await test("DST overlap is bounded rather than silently selected", () => {
+  const result = resolveBirthTime(birth("exact", "01:30:00"), "Europe/London", resolver({
+    kind: "ambiguous",
+    localIso: "2025-10-26T01:30:00",
+    candidates: [
+      { fold: 0, utcIso: "2025-10-26T00:30:00Z", offsetSeconds: 3600, daylightSaving: true },
+      { fold: 1, utcIso: "2025-10-26T01:30:00Z", offsetSeconds: 0, daylightSaving: false },
+    ],
+  }), clock);
+  equal(result.utcIso, null, "ambiguous UTC");
+  equal(result.resolution.status, "bounded", "ambiguous status");
+  equal(result.resolution.value?.utcStartIso, "2025-10-26T00:30:00Z", "earlier candidate");
+  equal(result.resolution.value?.utcEndIso, "2025-10-26T01:30:00Z", "later candidate");
+});
+
+await test("DST gap is unavailable", () => {
+  const result = resolveBirthTime(birth("exact", "01:30:00"), "Europe/London", resolver({
+    kind: "nonexistent",
+    localIso: "2025-03-30T01:30:00",
+    beforeUtcIso: "2025-03-30T00:59:59Z",
+    afterUtcIso: "2025-03-30T01:00:00Z",
+  }), clock);
+  equal(result.resolution.status, "unavailable", "gap status");
+  equal(result.resolution.reason, "nonexistent_local_time", "gap reason");
+});
+
+const planetIds = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"] as const satisfies readonly PlanetId[];
+const index = new Map<PlanetId, number>(planetIds.map((id, at) => [id, at]));
+const astronomy: AstronomyPort = {
+  provider: { repository: "test", revision: "1", version: "1" },
+  time: clock.time,
+  sample: (id, jde) => {
+    const at = index.get(id) ?? 0;
+    const direction = id === "mercury" ? -1 : 1;
+    const longitude = at * 0.4 + direction * (jde - 100) * 0.02;
+    return {
+      rightAscensionRadians: longitude,
+      declinationRadians: at * 0.01,
+      eclipticLongitudeRadians: longitude,
+      eclipticLatitudeRadians: at * 0.001,
+      distanceAu: 0.1 + at,
+    };
+  },
+};
+const exactTime: TimeData = {
+  localIso: "1991-06-15T12:30:00",
+  utcIso: "1991-06-15T11:30:00Z",
+  utcOffsetSeconds: 3600,
+  daylightSaving: true,
+  julianDay: 99.9,
+  julianEphemerisDay: 100,
+  deltaTSeconds: 43.2,
+  resolution: {
+    status: "exact",
+    reason: "none",
+    value: { fold: null, localStartIso: "1991-06-15T12:30:00", localEndIso: "1991-06-15T12:30:00", utcStartIso: "1991-06-15T11:30:00Z", utcEndIso: "1991-06-15T11:30:00Z" },
+  },
+};
+
+await test("astronomy calculation fills every required body", () => {
+  const result = calculateAstronomy(exactTime, astronomy);
+  equal(Object.keys(result.bodies).length, 10, "body count");
+  equal(result.bodies.mercury.motion, "retrograde", "Mercury motion");
+  equal(result.bodies.sun.motion, "direct", "Sun motion");
+  assert(result.bodies.pluto.distanceAu.value !== null, "Pluto distance must be present");
+  equal(result.frame.coordinates, "apparent", "reference frame");
+});
+
+await test("astronomy preserves unknown-time unavailability", () => {
+  const unknown: TimeData = {
+    localIso: null, utcIso: null, utcOffsetSeconds: null, daylightSaving: null,
+    julianDay: null, julianEphemerisDay: null, deltaTSeconds: null,
+    resolution: { status: "unavailable", value: null, reason: "birth_time_unknown" },
+  };
+  const result = calculateAstronomy(unknown, astronomy);
+  equal(result.bodies.sun.eclipticLongitudeDegrees.value, null, "unknown Sun longitude");
+  equal(result.bodies.sun.eclipticLongitudeDegrees.reason, "birth_time_unknown", "unknown reason");
+});
+
+console.log(`1..${passed}`);
