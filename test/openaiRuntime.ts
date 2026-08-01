@@ -212,7 +212,8 @@ await test("fixed plan uses one conversation, big substantive calls and a small 
   equal(result.run.calls, 4, "OpenAI call count");
   equal(result.run.retries, 1, "narrow retry count");
   const retryInput = client.inputs[1] as { correction?: { auditFailures?: string[] } };
-  assert((retryInput.correction?.auditFailures.length ?? 0) > 0, "retry must include audit failures");
+  const failures = retryInput.correction?.auditFailures ?? [];
+  assert(failures.length > 0, "retry must include audit failures");
   equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
   assert(result.run.units["tropical.point.sun"] !== undefined, "Sun unit retained");
   equal(fingerprintRef.startsWith("#/"), true, "fingerprint reference fixture");
