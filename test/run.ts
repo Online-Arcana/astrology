@@ -12,6 +12,10 @@ import { rankCompatibility } from "../src/compat/rank.js";
 import { auditField, auditList } from "../src/llm/audit/field.js";
 import { fieldProfiles } from "../src/llm/audit/profiles.js";
 import { resolveRef, refsValid } from "../src/ref/resolve.js";
+import { runInterpretation } from "../src/llm/orchestrate/run.js";
+import { sectionUnit } from "../src/llm/orchestrate/unit.js";
+import { strictShape, object, text } from "../src/llm/schema/build.js";
+import type { InterpretationCall, SchemaCall, SchemaClient, StrictShape } from "../src/llm/orchestrate/types.js";
 
 const equal = (actual: unknown, expected: unknown, message: string): void => {
   if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);
@@ -149,6 +153,90 @@ test("JSON references must resolve and remain in the permitted set", () => {
   equal((resolveRef(root, ref) as { value: number }).value, 12, "resolved value");
   ok(refsValid(root, [ref], new Set([ref])), "allowed reference");
   ok(!refsValid(root, [ref], new Set()), "disallowed reference");
+});
+
+test("interpretation reuses one conversation, retries narrowly and routes models", async () => {
+  const ref = "#/systems/tropical/points/mars" as const;
+  const calculation = { systems: { tropical: { points: { mars: { status: "exact", value: 17 } } } } };
+  const bad = {
+    status: "written", title: "Sexuality", summary: "I will analyse the supplied JSON.", detail: "Mars describes desire.",
+    themes: ["Mars desire"], strengths: ["Direct erotic initiative"], tensions: ["Impatience in intimacy"], sourceRefs: [ref],
+  };
+  const good = {
+    status: "written", title: "Sexuality", summary: "Mars gives desire a direct and initiating quality.",
+    detail: "Erotic pace is active, candid and responsive to clear mutual attraction.",
+    themes: ["Direct Mars desire"], strengths: ["Clear erotic initiative"], tensions: ["Impatience with hesitant intimacy"], sourceRefs: [ref],
+  };
+  const name = { value: "Martian-desire-pioneer" };
+  const seenModels: string[] = [];
+  const responses: object[] = [bad, good, name];
+
+  class FakeClient implements SchemaClient {
+    id: string | undefined;
+    async run<T extends object>(shape: StrictShape<T>, _input: unknown, options: SchemaCall): Promise<T> {
+      this.id ??= "conv_chart_one";
+      seenModels.push(options.body.model);
+      const value = responses.shift();
+      if (!value) throw new Error("Missing fake response");
+      return shape.parse ? shape.parse(value) : value as T;
+    }
+  }
+
+  const sexuality = sectionUnit({
+    id: "tropical-sexuality",
+    label: "Tropical sexuality",
+    task: "Interpret sexuality.",
+    data: calculation.systems.tropical.points.mars,
+    refs: [ref],
+    profile: fieldProfiles["sexuality"]!,
+  });
+  const generatedName: InterpretationCall = {
+    id: "generated-name",
+    label: "Generated name",
+    kind: "small",
+    shape: strictShape<{ value: string }>("generated_name", object({ value: text() })) as unknown as StrictShape<object>,
+    allowedSourceRefs: new Set([ref]),
+    input: ({ earlier }) => ({ earlier }),
+    audit: (value) => {
+      const candidate = value as { value?: unknown };
+      const valid = typeof candidate.value === "string" && generatedNamePattern.test(candidate.value);
+      return { valid, value, errors: valid ? [] : ["invalid generated name"] };
+    },
+  };
+
+  const result = await runInterpretation(
+    calculation,
+    [sexuality, generatedName],
+    readConfig({ ASTRAL_MAX_RETRIES: "2" }),
+    () => new FakeClient(),
+  );
+  equal(result.conversationId, "conv_chart_one", "shared conversation");
+  equal(result.calls, 3, "call count");
+  equal(result.retries, 1, "narrow retry count");
+  equal(result.units["tropical-sexuality"]?.attempts, 2, "section attempts");
+  equal(seenModels.join(","), "gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano", "model routing");
+});
+
+test("separate chart runs never share a conversation", async () => {
+  let sequence = 0;
+  class FakeClient implements SchemaClient {
+    id: string | undefined;
+    readonly #id = `conv_${sequence += 1}`;
+    async run<T extends object>(_shape: StrictShape<T>, _input: unknown, _options: SchemaCall): Promise<T> {
+      this.id = this.#id;
+      return { value: "Lunar-rebel-builder" } as T;
+    }
+  }
+  const unit: InterpretationCall = {
+    id: "name", label: "Name", kind: "small",
+    shape: strictShape<{ value: string }>("name", object({ value: text() })) as unknown as StrictShape<object>,
+    allowedSourceRefs: new Set(),
+    input: () => ({}),
+    audit: (value) => ({ valid: true, value, errors: [] }),
+  };
+  const first = await runInterpretation({}, [unit], readConfig({}), () => new FakeClient());
+  const second = await runInterpretation({}, [unit], readConfig({}), () => new FakeClient());
+  ok(first.conversationId !== second.conversationId, "chart conversations must be isolated");
 });
 
 for (const [name, run] of tests) {

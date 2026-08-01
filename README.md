@@ -18,6 +18,7 @@ The implementation branch currently establishes:
 - a typed civil-time resolver boundary with explicit gap and overlap handling
 - deterministic zodiac, lunar-phase, aspect and compatibility primitives
 - field-by-field local NLP audit with safe mechanical repair
+- bounded one-conversation interpretation orchestration with narrow retries
 
 The remaining calculation catalogues, ephemeris integration, interpretation orchestration, API and CLI are implemented in subsequent milestones against these contracts.
 
@@ -35,4 +36,4 @@ Configuration is documented in `.env.example`. Secrets are never written to `.as
 
 The finished project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
 
-See `docs/format.md`, `docs/time.md`, `docs/astrology.md` and `docs/audit.md`.
+See `docs/format.md`, `docs/time.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.

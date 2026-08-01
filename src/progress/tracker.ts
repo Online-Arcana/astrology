@@ -19,6 +19,7 @@ export class ProgressTracker {
   #current: WorkUnit | null = null;
   #currentStarted: number | null = null;
   #attempt = 1;
+  #modelName: string | null = null;
   #error: ChartProgress["error"] = null;
 
   constructor(jobId: string, units: readonly WorkUnit[], startedAtMs: number, maxAttempts: number) {
@@ -29,7 +30,7 @@ export class ProgressTracker {
     this.#maxAttempts = maxAttempts;
   }
 
-  start(id: string, status: ChartJobStatus, nowMs: number, attempt = 1): void {
+  start(id: string, status: ChartJobStatus, nowMs: number, attempt = 1, modelName: string | null = null): void {
     const unit = this.#units.find((candidate) => candidate.id === id);
     if (!unit) throw new Error(`Unknown work unit: ${id}`);
     if (this.#done.has(id)) throw new Error(`Completed work unit restarted: ${id}`);
@@ -37,6 +38,7 @@ export class ProgressTracker {
     this.#currentStarted = nowMs;
     this.#status = status;
     this.#attempt = attempt;
+    this.#modelName = modelName;
     this.#error = null;
   }
 
@@ -47,6 +49,7 @@ export class ProgressTracker {
     this.#done.add(id);
     this.#current = null;
     this.#currentStarted = null;
+    this.#modelName = null;
   }
 
   finish(nowMs: number): ChartProgress {
@@ -90,7 +93,7 @@ export class ProgressTracker {
       },
       model: {
         role: this.#current?.kind === "big" ? "big" : this.#current?.kind === "small" ? "small" : null,
-        name: null,
+        name: this.#modelName,
       },
       attempt: { current: this.#attempt, maximum: this.#maxAttempts },
       error: this.#error,

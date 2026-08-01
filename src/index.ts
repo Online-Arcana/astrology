@@ -18,3 +18,7 @@ export * from "./aspect/detect.js";
 export * from "./compat/rank.js";
 export * from "./ref/resolve.js";
 export * from "./llm/audit/index.js";
+export * from "./llm/schema/build.js";
+export * from "./llm/schema/section.js";
+export * from "./llm/orchestrate/index.js";
+export * from "./job/store.js";
