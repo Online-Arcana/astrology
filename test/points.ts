@@ -53,6 +53,7 @@ const houses = calculateHouseCharts({
   obliquityRadians: geometry.trueObliquityRadians,
   zodiac: "tropical",
 });
+const day = exact("day" as const);
 
 await test("Vertex, Antivertex and East Point match the independent fixture", () => {
   close(auxiliary.vertex, 336.2768392553082, 1e-8, "Vertex");
@@ -61,16 +62,16 @@ await test("Vertex, Antivertex and East Point match the independent fixture", ()
 });
 
 await test("sect uses the Sun's actual altitude", () => {
-  const day = calculateSect(astronomy, { ...angles, localSiderealDegrees: 0 }, 0);
-  equal(day.value, "day", "day sect");
+  const daySect = calculateSect(astronomy, { ...angles, localSiderealDegrees: 0 }, 0);
+  equal(daySect.value, "day", "day sect");
   const night = calculateSect(astronomy, { ...angles, localSiderealDegrees: 180 }, 0);
   equal(night.value, "night", "night sect");
 });
 
 await test("Fortune and Spirit use sect-correct formulas", () => {
-  const day = calculateLots(astronomy, angles, exact("day" as const));
-  close(day.fortune.value ?? -1, angles.ascendant + 96, 1e-9, "day Fortune");
-  close(day.spirit.value ?? -1, angles.ascendant - 96, 1e-9, "day Spirit");
+  const dayLots = calculateLots(astronomy, angles, day);
+  close(dayLots.fortune.value ?? -1, angles.ascendant + 96, 1e-9, "day Fortune");
+  close(dayLots.spirit.value ?? -1, angles.ascendant - 96, 1e-9, "day Spirit");
   const night = calculateLots(astronomy, angles, exact("night" as const));
   close(night.fortune.value ?? -1, angles.ascendant - 96, 1e-9, "night Fortune");
   close(night.spirit.value ?? -1, angles.ascendant + 96, 1e-9, "night Spirit");
@@ -82,11 +83,11 @@ const orbit: LunarOrbitSample = {
   meanApogee: { longitudeDegrees: 276, speedDegreesPerDay: 0.111 },
   trueApogee: { longitudeDegrees: 264, speedDegreesPerDay: -2.5 },
 };
-const lots = calculateLots(astronomy, angles, exact("day" as const));
+const lots = calculateLots(astronomy, angles, day);
 
 await test("fixed point map contains every required point", () => {
   const result = buildPoints({
-    astronomy, houses, angles, auxiliary, lunarOrbit: orbit, lots,
+    astronomy, houses, angles, auxiliary, lunarOrbit: orbit, lots, sect: day,
     zodiac: "tropical", ayanamshaDegrees: 0,
   });
   equal(Object.keys(result.points).length, 25, "point count");
@@ -94,6 +95,7 @@ await test("fixed point map contains every required point", () => {
   equal(result.points.north_node_true.motion, "direct", "true node motion");
   equal(result.points.lilith_true.position.value?.longitudeDegrees, 264, "true Lilith");
   equal(result.points.part_of_fortune.kind, "lot", "Fortune kind");
+  equal(result.points.sun.dignity.value?.traditionalRuler, "mercury", "Sun sign ruler");
 });
 
 await test("sidereal points shift without mixing tropical house geometry", () => {
@@ -105,17 +107,18 @@ await test("sidereal points shift without mixing tropical house geometry", () =>
     ayanamshaDegrees: 24,
   });
   const result = buildPoints({
-    astronomy, houses: siderealHouses, angles, auxiliary, lunarOrbit: orbit, lots,
+    astronomy, houses: siderealHouses, angles, auxiliary, lunarOrbit: orbit, lots, sect: day,
     zodiac: "sidereal", ayanamshaDegrees: 24,
   });
   close(result.points.sun.position.value?.longitudeDegrees ?? -1, 60, 1e-9, "sidereal Sun");
   close(result.points.ascendant.position.value?.longitudeDegrees ?? -1, angles.ascendant - 24, 1e-9, "sidereal Ascendant");
   close(result.points.part_of_fortune.position.value?.longitudeDegrees ?? -1, (lots.fortune.value as number) - 24, 1e-9, "sidereal Fortune");
+  equal(result.points.sun.dignity.value?.traditionalRuler, "mercury", "sidereal Sun ruler");
 });
 
 await test("house occupants are populated from point placements", () => {
   const result = buildPoints({
-    astronomy, houses, angles, auxiliary, lunarOrbit: orbit, lots,
+    astronomy, houses, angles, auxiliary, lunarOrbit: orbit, lots, sect: day,
     zodiac: "tropical", ayanamshaDegrees: 0,
   });
   const ascHouse = result.points.ascendant.houses.placidus.value?.house;
@@ -130,11 +133,13 @@ await test("missing time-dependent geometry remains explicit", () => {
       fortune: { status: "unavailable", value: null, reason: "birth_time_unknown" },
       spirit: { status: "unavailable", value: null, reason: "birth_time_unknown" },
     },
+    sect: { status: "unavailable", value: null, reason: "birth_time_unknown" },
     zodiac: "tropical", ayanamshaDegrees: 0, unavailableReason: "birth_time_unknown",
   });
   equal(result.points.ascendant.position.value, null, "unknown Ascendant");
   equal(result.points.ascendant.position.reason, "birth_time_unknown", "unknown Ascendant reason");
   equal(result.points.part_of_fortune.position.value, null, "unknown Fortune");
+  equal(result.points.sun.dignity.status, "bounded", "unknown-sect dignity status");
 });
 
 console.log(`1..${passed}`);
