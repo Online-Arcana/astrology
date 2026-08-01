@@ -3,7 +3,7 @@ import type { LotLongitudes } from "../astro/lots.js";
 import { calculateDignity } from "../dignity/calculate.js";
 import type { AuxiliaryAngles, CoreAngles } from "../house/angles.js";
 import { housePlacement } from "../house/chart.js";
-import type { Calc, CalcReason } from "../types/base.js";
+import type { Calc, CalcReason, CalcStatus } from "../types/base.js";
 import type {
   AstrologicalPoint,
   AstronomyData,
@@ -28,13 +28,14 @@ const pointIds = [
   "ascendant", "descendant", "midheaven", "imum_coeli", "vertex", "antivertex", "east_point",
   "part_of_fortune", "part_of_spirit", "lilith_mean", "lilith_true",
 ] as const satisfies readonly PointId[];
+type AvailableStatus = Extract<CalcStatus, "exact" | "approximate" | "bounded">;
 
 const unavailable = <T>(reason: CalcReason): Calc<T> => ({
   status: reason === "outside_supported_range" ? "unsupported" : "unavailable",
   value: null,
   reason,
 });
-const exact = <T>(value: T): Calc<T> => ({ status: "exact", value, reason: "none" });
+const available = <T>(value: T, status: AvailableStatus, reason: CalcReason): Calc<T> => ({ status, value, reason });
 
 const shiftPosition = (longitude: Calc<number>, shift: number): Calc<SignPosition> => longitude.value === null
   ? { status: longitude.status, value: null, reason: longitude.reason }
@@ -74,11 +75,20 @@ const point = (
   dignity,
 });
 
-const orbitLongitude = (sample: OrbitPointSample | null, offset = 0, reason: CalcReason): Calc<number> =>
-  sample ? exact(normaliseDegrees(sample.longitudeDegrees + offset)) : unavailable(reason);
+const orbitLongitude = (
+  sample: OrbitPointSample | null,
+  offset: number,
+  reason: CalcReason,
+  status: AvailableStatus,
+): Calc<number> => sample
+  ? available(normaliseDegrees(sample.longitudeDegrees + offset), status, reason)
+  : unavailable(reason);
 
-const angleLongitude = (value: number | null, reason: CalcReason): Calc<number> =>
-  value === null ? unavailable(reason) : exact(value);
+const angleLongitude = (
+  value: number | null,
+  reason: CalcReason,
+  status: AvailableStatus,
+): Calc<number> => value === null ? unavailable(reason) : available(value, status, reason);
 
 const lotLongitude = (value: Calc<number>): Calc<number> => value;
 
@@ -121,6 +131,8 @@ export interface PointBuildInput {
   sect: Calc<"day" | "night">;
   zodiac: Zodiac;
   ayanamshaDegrees: number;
+  timedStatus?: AvailableStatus;
+  timedReason?: CalcReason;
   unavailableReason?: CalcReason;
 }
 
@@ -131,6 +143,8 @@ export interface PointBuildResult {
 
 export const buildPoints = (input: PointBuildInput): PointBuildResult => {
   const reason = input.unavailableReason ?? "insufficient_data";
+  const timedStatus = input.timedStatus ?? "exact";
+  const timedReason = input.timedReason ?? "none";
   const shift = input.zodiac === "sidereal" ? input.ayanamshaDegrees : 0;
   const points = {} as PointMap<AstrologicalPoint>;
 
@@ -156,7 +170,13 @@ export const buildPoints = (input: PointBuildInput): PointBuildResult => {
     ["south_node_mean", orbit?.meanNode ?? null, 180],
   ];
   for (const [id, sample, offset] of orbitPoints) {
-    points[id] = point(id, "node", shiftPosition(orbitLongitude(sample, offset, reason), shift), sample ? motion(sample) : "unknown", input.houses);
+    points[id] = point(
+      id,
+      "node",
+      shiftPosition(orbitLongitude(sample, offset, sample ? timedReason : reason, timedStatus), shift),
+      sample ? motion(sample) : "unknown",
+      input.houses,
+    );
   }
 
   const angleValues: readonly [PointId, number | null][] = [
@@ -169,7 +189,13 @@ export const buildPoints = (input: PointBuildInput): PointBuildResult => {
     ["east_point", input.auxiliary?.eastPoint ?? null],
   ];
   for (const [id, value] of angleValues) {
-    points[id] = point(id, "angle", shiftPosition(angleLongitude(value, reason), shift), "not_applicable", input.houses);
+    points[id] = point(
+      id,
+      "angle",
+      shiftPosition(angleLongitude(value, value === null ? reason : timedReason, timedStatus), shift),
+      "not_applicable",
+      input.houses,
+    );
   }
 
   points.part_of_fortune = point(
@@ -192,7 +218,13 @@ export const buildPoints = (input: PointBuildInput): PointBuildResult => {
     ["lilith_true", orbit?.trueApogee ?? null],
   ];
   for (const [id, sample] of lilith) {
-    points[id] = point(id, "lilith", shiftPosition(orbitLongitude(sample, 0, reason), shift), sample ? motion(sample) : "unknown", input.houses);
+    points[id] = point(
+      id,
+      "lilith",
+      shiftPosition(orbitLongitude(sample, 0, sample ? timedReason : reason, timedStatus), shift),
+      sample ? motion(sample) : "unknown",
+      input.houses,
+    );
   }
 
   return { points, houses: populate(input.houses, points) };
