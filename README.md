@@ -6,7 +6,7 @@ The defining boundary is simple: deterministic code constructs the chart; the LL
 
 ## Status
 
-The implementation branch currently establishes:
+The implementation branch establishes:
 
 - strict fixed public types for calculation, interpretation and file output
 - pinned astronomy, schema, place and civil-time submodules
@@ -39,8 +39,6 @@ The implementation branch currently establishes:
 - one injectable end-to-end deterministic calculation service
 - stable RFC 8785 and SHA-256 calculation fingerprints
 - fixed field-by-field interpretation plans with permitted JSON references
-- strict CLI calculation and hierarchical place commands
-- localhost-by-default JSON API over the same service
 - field-by-field local NLP audit with safe mechanical repair
 - strict interpreted-chart assembly from the fixed plan
 - canonical `.astral` encoding with optional Ed25519 authority
@@ -50,8 +48,11 @@ The implementation branch currently establishes:
 - all substantive fields on the big model and only generated-name utilities on the small model
 - recursive audit and narrow correction of each specialised interpretation field
 - complete calculation-to-interpretation-to-`.astral` generation service
+- CLI commands for calculation, interpreted generation, validation and hierarchical place lookup
+- localhost-by-default JSON routes for calculation, generation, validation and place lookup
+- deterministic interfaces that remain usable without an OpenAI key
 
-The calculation, interpretation and file-generation boundaries are complete. The remaining interface milestone exposes interpreted `.astral` generation and file validation through the existing CLI and JSON API.
+Version `0.14.0` is the first complete implementation candidate against the fixed contracts. CI performs no live OpenAI request; final operational acceptance still requires an explicitly authorised real-key generation test outside the ordinary suite.
 
 ## Development
 
