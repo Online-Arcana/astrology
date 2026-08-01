@@ -29,11 +29,13 @@ The implementation branch currently establishes:
 - chart rulers, dispositors, mutual receptions and final dispositors
 - weighted balances, planetary and sign dominance, retrogrades and unaspected planets
 - deterministic Jones chart-pattern classification
-- deterministic zodiac, lunar-phase, aspect and compatibility primitives
+- major, minor, parallel and contra-parallel aspect detection
+- all nine required structural aspect patterns with exact aspect membership
+- deterministic zodiac, lunar-phase and compatibility primitives
 - field-by-field local NLP audit with safe mechanical repair
 - bounded one-conversation interpretation orchestration with narrow retries
 
-The remaining declination-aspect, aspect-pattern, eclipse and full compatibility catalogues are implemented in subsequent milestones against these contracts.
+The remaining eclipse and full compatibility catalogues are implemented in subsequent milestones against these contracts.
 
 ## Development
 
@@ -52,4 +54,4 @@ Configuration is documented in `.env.example`. Secrets are never written to `.as
 
 The finished project exposes CLI commands and a JSON API only. It contains no HTML, CSS, forms or browser application.
 
-See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.
+See `docs/format.md`, `docs/time.md`, `docs/calculation.md`, `docs/houses.md`, `docs/points.md`, `docs/dignity.md`, `docs/derived.md`, `docs/aspects.md`, `docs/astrology.md`, `docs/audit.md` and `docs/interpretation.md`.

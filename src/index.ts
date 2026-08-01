@@ -37,6 +37,8 @@ export * from "./derived/calculate.js";
 export * from "./astro/lunar.js";
 export * from "./aspect/catalogue.js";
 export * from "./aspect/detect.js";
+export * from "./aspect/declination.js";
+export * from "./pattern/detect.js";
 export * from "./compat/rank.js";
 export * from "./ref/resolve.js";
 export * from "./llm/audit/index.js";
