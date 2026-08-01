@@ -1,0 +1,12 @@
+[submodule "vendor/astronomia"]
+	path = vendor/astronomia
+	url = https://github.com/kitty-crow/astronomia.git
+[submodule "vendor/openai-schema"]
+	path = vendor/openai-schema
+	url = https://github.com/kitty-crow/openai-schema.git
+[submodule "vendor/places"]
+	path = vendor/places
+	url = https://github.com/dr5hn/countrystatecity-npm.git
+[submodule "vendor/time"]
+	path = vendor/time
+	url = https://github.com/js-joda/js-joda.git
