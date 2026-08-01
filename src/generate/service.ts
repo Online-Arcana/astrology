@@ -1,6 +1,5 @@
 import {
   CalculationService,
-  calculationOptionsFromConfig,
   loadCalculationPorts,
   type CalculationOptions,
 } from "../calculate/service.js";
@@ -14,7 +13,6 @@ import {
   runInterpretationPlan,
   structuredOutputCatalogue,
 } from "../llm/orchestrate/plan.js";
-import { defaultDeveloperInstruction } from "../llm/orchestrate/run.js";
 import type { InterpretationRun, SchemaClientFactory } from "../llm/orchestrate/types.js";
 import type { BirthInput } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
@@ -37,6 +35,12 @@ export interface GenerationRuntime {
   now(): string;
 }
 
+const optionsFromConfig = (config: Config): CalculationOptions => ({
+  primaryZodiac: config.chart.primaryZodiac,
+  ayanamsha: config.chart.ayanamsha,
+  interpretationMode: config.chart.interpretationMode,
+});
+
 const authority = (config: Config, generatedAt: string) => {
   const signing = config.signing;
   if (!signing.enabled || signing.privateKey === null || signing.publicKey === null) return null;
@@ -49,6 +53,14 @@ const authority = (config: Config, generatedAt: string) => {
     generatedAt,
   };
 };
+
+const baseDeveloperInstruction = [
+  "Interpret only the requested astrology field.",
+  "Never calculate placements, scores, ranks or availability.",
+  "Never output reasoning, planning, preambles, disclaimers or process narration.",
+  "Never combine multiple interpretation fields.",
+  "Return only the requested strict JSON schema.",
+].join("\n");
 
 const languageInstruction = (calculation: AstralCalculation): string => [
   `Write all interpretation text in ${calculation.subject.language}.`,
@@ -66,7 +78,7 @@ export class ChartGenerationService {
 
   async generate(
     birth: BirthInput,
-    options: CalculationOptions = calculationOptionsFromConfig(this.#runtime.config),
+    options: CalculationOptions = optionsFromConfig(this.#runtime.config),
   ): Promise<GeneratedChart> {
     const calculation = await this.#runtime.calculation.calculate(birth, options);
     const interpreted = await runInterpretationPlan(
@@ -102,7 +114,7 @@ export const loadChartGenerationService = async (
   const calculation = new CalculationService(ports);
   const schemaFactory: ChartSchemaFactory = (value) => createOpenAISchemaClientFactory({
     apiKey: config.openai.apiKey,
-    instructions: `${defaultDeveloperInstruction}\n\n${languageInstruction(value)}`,
+    instructions: `${baseDeveloperInstruction}\n\n${languageInstruction(value)}`,
     metadata: {
       service: "astral-charts",
       calculation_fingerprint: value.provenance.calculationFingerprint,
