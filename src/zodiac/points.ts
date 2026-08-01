@@ -1,5 +1,6 @@
 import type { LunarOrbitSample, OrbitPointSample } from "../astro/port.js";
 import type { LotLongitudes } from "../astro/lots.js";
+import { calculateDignity } from "../dignity/calculate.js";
 import type { AuxiliaryAngles, CoreAngles } from "../house/angles.js";
 import { housePlacement } from "../house/chart.js";
 import type { Calc, CalcReason } from "../types/base.js";
@@ -63,13 +64,14 @@ const point = (
   position: Calc<SignPosition>,
   pointMotion: AstrologicalPoint["motion"],
   houses: Record<HouseSystem, HouseChart>,
+  dignity: Calc<DignityState> = blankDignity(),
 ): AstrologicalPoint => ({
   id,
   kind,
   position,
   houses: placements(position, houses),
   motion: pointMotion,
-  dignity: blankDignity(),
+  dignity,
 });
 
 const orbitLongitude = (sample: OrbitPointSample | null, offset = 0, reason: CalcReason): Calc<number> =>
@@ -116,6 +118,7 @@ export interface PointBuildInput {
   auxiliary: AuxiliaryAngles | null;
   lunarOrbit: LunarOrbitSample | null;
   lots: LotLongitudes;
+  sect: Calc<"day" | "night">;
   zodiac: Zodiac;
   ayanamshaDegrees: number;
   unavailableReason?: CalcReason;
@@ -134,7 +137,15 @@ export const buildPoints = (input: PointBuildInput): PointBuildResult => {
   for (const id of planets) {
     const body = input.astronomy.bodies[id];
     const kind = id === "sun" || id === "moon" ? "luminary" : "planet";
-    points[id] = point(id, kind, shiftPosition(body.eclipticLongitudeDegrees, shift), body.motion, input.houses);
+    const position = shiftPosition(body.eclipticLongitudeDegrees, shift);
+    points[id] = point(
+      id,
+      kind,
+      position,
+      body.motion,
+      input.houses,
+      calculateDignity(id, position, input.sect),
+    );
   }
 
   const orbit = input.lunarOrbit;
