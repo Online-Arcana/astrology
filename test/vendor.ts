@@ -1,6 +1,7 @@
 import { calculateAstronomy } from "../src/astro/calculate.js";
 import { loadAstronomia } from "../src/astro/astronomia.js";
 import { loadLunarOrbit } from "../src/astro/lunarOrbit.js";
+import { loadEclipses } from "../src/eclipse/astronomia.js";
 import { auxiliaryAngles, coreAngles } from "../src/house/angles.js";
 import { loadCscCatalogue } from "../src/place/csc.js";
 import { resolveBirthTime } from "../src/time/calculate.js";
@@ -63,4 +64,15 @@ close(orbit.trueNode.longitudeDegrees, 289.0795438429075, 0.1, "true lunar node"
 close(orbit.meanApogee.longitudeDegrees, 275.5535836472449, 0.02, "mean lunar apogee");
 close(orbit.trueApogee.longitudeDegrees, 263.88071576723195, 0.2, "osculating lunar apogee");
 
-console.log("Pinned place, time, astronomy and calculated-point integrations passed");
+const eclipses = await loadEclipses();
+const solar = eclipses.sample("solar", 1991.52);
+assert(solar !== null, "Pinned eclipse provider missed the July 1991 solar eclipse");
+assert(solar.type === "total", `Unexpected July 1991 solar eclipse type: ${solar.type}`);
+assert(eclipses.utcIso(solar.julianEphemerisDay).startsWith("1991-07-11T"), "Unexpected July 1991 solar eclipse date");
+const lunar = eclipses.sample("lunar", 1991.49);
+assert(lunar !== null, "Pinned eclipse provider missed the June 1991 lunar eclipse");
+assert(lunar.type === "penumbral", `Unexpected June 1991 lunar eclipse type: ${lunar.type}`);
+assert(eclipses.utcIso(lunar.julianEphemerisDay).startsWith("1991-06-27T"), "Unexpected June 1991 lunar eclipse date");
+assert(lunar.activeHalfDurationDays > 0, "Lunar eclipse active duration is unavailable");
+
+console.log("Pinned place, time, astronomy, calculated-point and eclipse integrations passed");
