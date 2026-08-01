@@ -1,5 +1,5 @@
 import type { CoreAngles } from "../house/angles.js";
-import type { Calc, CalcReason } from "../types/base.js";
+import type { Calc, CalcReason, CalcStatus } from "../types/base.js";
 import type { AstronomyData } from "../types/astro.js";
 import { normaliseDegrees } from "../zodiac/position.js";
 
@@ -8,8 +8,24 @@ export interface LotLongitudes {
   spirit: Calc<number>;
 }
 
+type AvailableStatus = Extract<CalcStatus, "exact" | "approximate" | "bounded">;
+
 const unavailable = (reason: CalcReason): Calc<number> => ({ status: "unavailable", value: null, reason });
-const exact = (value: number): Calc<number> => ({ status: "exact", value: normaliseDegrees(value), reason: "none" });
+const available = (value: number, status: AvailableStatus, reason: CalcReason): Calc<number> => ({
+  status,
+  value: normaliseDegrees(value),
+  reason,
+});
+
+const combinedStatus = (...values: readonly Calc<unknown>[]): { status: AvailableStatus; reason: CalcReason } => {
+  const status: AvailableStatus = values.some((value) => value.status === "bounded")
+    ? "bounded"
+    : values.some((value) => value.status === "approximate")
+      ? "approximate"
+      : "exact";
+  const reason = values.find((value) => value.reason !== "none")?.reason ?? "none";
+  return { status, reason };
+};
 
 export const calculateLots = (
   astronomy: AstronomyData,
@@ -34,5 +50,9 @@ export const calculateLots = (
   const spirit = sect.value === "day"
     ? angles.ascendant + sun.value - moon.value
     : angles.ascendant + moon.value - sun.value;
-  return { fortune: exact(fortune), spirit: exact(spirit) };
+  const state = combinedStatus(sun, moon, sect);
+  return {
+    fortune: available(fortune, state.status, state.reason),
+    spirit: available(spirit, state.status, state.reason),
+  };
 };
