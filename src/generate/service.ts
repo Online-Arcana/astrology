@@ -7,7 +7,6 @@ import {
 import { assembleChart } from "../chart/assemble.js";
 import type { Config } from "../config.js";
 import { assembleAstralFile } from "../file/document.js";
-import { generatedChartName } from "../name/generate.js";
 import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
 import {
   nlpAuditProfile,
@@ -15,7 +14,7 @@ import {
   runInterpretationPlan,
   structuredOutputCatalogue,
 } from "../llm/orchestrate/plan.js";
-import { defaultDeveloperInstruction, InterpretationRunner } from "../llm/orchestrate/run.js";
+import { defaultDeveloperInstruction } from "../llm/orchestrate/run.js";
 import type { InterpretationRun, SchemaClientFactory } from "../llm/orchestrate/types.js";
 import type { BirthInput } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
@@ -28,9 +27,11 @@ export interface GeneratedChart {
   file: AstralFile;
 }
 
+export type ChartSchemaFactory = (calculation: AstralCalculation) => SchemaClientFactory;
+
 export interface GenerationRuntime {
   calculation: Pick<CalculationService, "calculate">;
-  schemaFactory: SchemaClientFactory;
+  schemaFactory: ChartSchemaFactory;
   config: Config;
   version: string;
   now(): string;
@@ -38,7 +39,7 @@ export interface GenerationRuntime {
 
 const authority = (config: Config, generatedAt: string) => {
   const signing = config.signing;
-  if (signing.privateKey === null || signing.publicKey === null) return null;
+  if (!signing.enabled || signing.privateKey === null || signing.publicKey === null) return null;
   return {
     issuer: signing.issuer,
     keys: {
@@ -68,49 +69,46 @@ export class ChartGenerationService {
     options: CalculationOptions = calculationOptionsFromConfig(this.#runtime.config),
   ): Promise<GeneratedChart> {
     const calculation = await this.#runtime.calculation.calculate(birth, options);
-    const runner = new InterpretationRunner(this.#runtime.schemaFactory, {
-      bigModel: this.#runtime.config.models.big,
-      smallModel: this.#runtime.config.models.small,
-      maxRetries: this.#runtime.config.runtime.maxRetries,
-    });
-    const interpretation = await runInterpretationPlan(runner, calculation, {
-      metadata: {
-        calculation_fingerprint: calculation.provenance.calculationFingerprint,
-        astral_charts_version: this.#runtime.version,
-        interpretation_mode: options.interpretationMode,
-      },
-      developerMessage: languageInstruction(calculation),
-    });
+    const interpreted = await runInterpretationPlan(
+      calculation,
+      this.#runtime.config,
+      this.#runtime.schemaFactory(calculation),
+    );
     const generatedAt = this.#runtime.now();
-    const chart = assembleChart(calculation, interpretation, {
+    const chart = assembleChart(calculation, interpreted.run, {
       generatedAt,
-      bigModel: this.#runtime.config.models.big,
-      smallModel: this.#runtime.config.models.small,
+      bigModel: this.#runtime.config.openai.bigModel,
+      smallModel: this.#runtime.config.openai.smallModel,
       structuredOutputSchema: structuredOutputCatalogue,
       promptCatalogue,
       astrologyCatalogue: calculation.provenance.astrologyProfile,
       nlpAuditProfile,
-      ...(calculation.subject.providedName === null
-        ? { generatedName: generatedChartName(calculation.provenance.calculationFingerprint) }
-        : {}),
+      ...(interpreted.generatedName === null ? {} : { generatedName: interpreted.generatedName }),
     });
     const file = await assembleAstralFile(calculation, chart, authority(this.#runtime.config, generatedAt));
-    return { calculation, interpretation, chart, file };
+    return { calculation, interpretation: interpreted.run, chart, file };
   }
 }
 
 export const loadChartGenerationService = async (
   config: Config,
   version = "0.13.0",
-  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions">> = {},
+  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata">> = {},
 ): Promise<ChartGenerationService> => {
-  if (config.openaiApiKey === null) throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
+  if (config.openai.apiKey.trim().length === 0) {
+    throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
+  }
   const ports = await loadCalculationPorts(version);
   const calculation = new CalculationService(ports);
-  const schemaFactory = createOpenAISchemaClientFactory({
-    apiKey: config.openaiApiKey,
-    instructions: defaultDeveloperInstruction,
-    metadata: { service: "astral-charts" },
+  const schemaFactory: ChartSchemaFactory = (value) => createOpenAISchemaClientFactory({
+    apiKey: config.openai.apiKey,
+    instructions: `${defaultDeveloperInstruction}\n\n${languageInstruction(value)}`,
+    metadata: {
+      service: "astral-charts",
+      calculation_fingerprint: value.provenance.calculationFingerprint,
+      astral_charts_version: version,
+      interpretation_mode: value.settings.interpretationMode,
+    },
     ...openai,
   });
   return new ChartGenerationService({
