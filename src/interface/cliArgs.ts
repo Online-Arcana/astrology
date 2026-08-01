@@ -7,13 +7,16 @@ export type PlaceCommand =
   | { action: "cities"; country: string; region: string | null; query: string }
   | { action: "get"; id: string };
 
+interface CalculationCommandOptions {
+  input: string;
+  output: string;
+  optionOverrides: Partial<CalculationOptions>;
+}
+
 export type CliCommand =
-  | {
-      kind: "calculate";
-      input: string;
-      output: string;
-      optionOverrides: Partial<CalculationOptions>;
-    }
+  | ({ kind: "calculate" } & CalculationCommandOptions)
+  | ({ kind: "generate"; pretty: boolean } & CalculationCommandOptions)
+  | { kind: "validate"; input: string; output: string; trusted: string | null }
   | { kind: "serve"; host: string; port: number; bodyLimitBytes: number }
   | { kind: "places"; command: PlaceCommand }
   | { kind: "help" };
@@ -25,6 +28,8 @@ const flag = (args: readonly string[], name: string): string | null => {
   if (!value || value.startsWith("--")) throw new Error(`${name} requires a value`);
   return value;
 };
+
+const present = (args: readonly string[], name: string): boolean => args.includes(name);
 
 const required = (args: readonly string[], name: string): string => {
   const value = flag(args, name);
@@ -47,6 +52,25 @@ const choice = <T extends string>(value: string | null, name: string, choices: r
   return value as T;
 };
 
+const calculationOptions = (args: readonly string[]): CalculationCommandOptions => {
+  const primaryZodiac = choice(flag(args, "--primary-zodiac"), "--primary-zodiac", ["tropical", "sidereal"] as const);
+  const ayanamsha = choice(flag(args, "--ayanamsha"), "--ayanamsha", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const);
+  const interpretationMode = choice(
+    flag(args, "--interpretation-mode"),
+    "--interpretation-mode",
+    ["tropical", "sidereal", "both"] as const,
+  );
+  const optionOverrides: Partial<CalculationOptions> = {};
+  if (primaryZodiac !== undefined) optionOverrides.primaryZodiac = primaryZodiac;
+  if (ayanamsha !== undefined) optionOverrides.ayanamsha = ayanamsha;
+  if (interpretationMode !== undefined) optionOverrides.interpretationMode = interpretationMode;
+  return {
+    input: flag(args, "--input") ?? "-",
+    output: flag(args, "--output") ?? "-",
+    optionOverrides,
+  };
+};
+
 const placeCommand = (args: readonly string[]): PlaceCommand => {
   const action = args[0];
   switch (action) {
@@ -67,25 +91,18 @@ const placeCommand = (args: readonly string[]): PlaceCommand => {
 export const parseCliArgs = (args: readonly string[]): CliCommand => {
   const command = args[0];
   if (command === undefined || command === "help" || command === "--help" || command === "-h") return { kind: "help" };
-  if (command === "calculate") {
-    const primaryZodiac = choice(flag(args, "--primary-zodiac"), "--primary-zodiac", ["tropical", "sidereal"] as const);
-    const ayanamsha = choice(flag(args, "--ayanamsha"), "--ayanamsha", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const);
-    const interpretationMode = choice(
-      flag(args, "--interpretation-mode"),
-      "--interpretation-mode",
-      ["tropical", "sidereal", "both"] as const,
-    );
-    const optionOverrides: Partial<CalculationOptions> = {};
-    if (primaryZodiac !== undefined) optionOverrides.primaryZodiac = primaryZodiac;
-    if (ayanamsha !== undefined) optionOverrides.ayanamsha = ayanamsha;
-    if (interpretationMode !== undefined) optionOverrides.interpretationMode = interpretationMode;
-    return {
-      kind: "calculate",
-      input: flag(args, "--input") ?? "-",
-      output: flag(args, "--output") ?? "-",
-      optionOverrides,
-    };
-  }
+  if (command === "calculate") return { kind: "calculate", ...calculationOptions(args) };
+  if (command === "generate") return {
+    kind: "generate",
+    ...calculationOptions(args),
+    pretty: present(args, "--pretty"),
+  };
+  if (command === "validate") return {
+    kind: "validate",
+    input: flag(args, "--input") ?? "-",
+    output: flag(args, "--output") ?? "-",
+    trusted: flag(args, "--trusted"),
+  };
   if (command === "serve") {
     return {
       kind: "serve",
@@ -105,6 +122,11 @@ Commands:
             [--primary-zodiac tropical|sidereal]
             [--ayanamsha lahiri|fagan_bradley|krishnamurti|raman]
             [--interpretation-mode tropical|sidereal|both]
+  generate  [--input FILE|-] [--output FILE|-] [--pretty]
+            [--primary-zodiac tropical|sidereal]
+            [--ayanamsha lahiri|fagan_bradley|krishnamurti|raman]
+            [--interpretation-mode tropical|sidereal|both]
+  validate  [--input FILE|-] [--output FILE|-] [--trusted FILE]
   serve [--host HOST] [--port PORT] [--body-limit BYTES]
   places continents
   places countries [--continent NAME]
