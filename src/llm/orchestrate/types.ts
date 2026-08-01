@@ -23,6 +23,7 @@ export type SchemaClientFactory = () => SchemaClient;
 export interface UnitContext {
   calculation: unknown;
   earlier: Readonly<Record<string, unknown>>;
+  correction: readonly string[];
 }
 
 export interface InterpretationCall {
