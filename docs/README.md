@@ -12,6 +12,7 @@ Start with the path that matches what you are doing.
 
 - [Calculation service](service.md) — end-to-end deterministic pipeline and dependency boundaries.
 - [Calculation path](calculation.md) — place resolution, civil time, astronomy and coordinate frame.
+- [Geographic data](places.md) — pinned place source, stable IDs and explicit selection.
 - [Civil time](time.md) — exact, approximate, unknown, ambiguous and invalid local times.
 
 ## Astrology model
