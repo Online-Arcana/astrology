@@ -1,5 +1,5 @@
 import { forbiddenPatterns, unwantedExamples } from "./catalogue.js";
-import { duplicateMatch, type NarrativeEntry } from "./duplicate.js";
+import { duplicateMatch, type NarrativeEntry, type PriorNarrative } from "./duplicate.js";
 import { leakedReferences } from "./reference.js";
 import { semanticIssues } from "./semantic.js";
 import { cosine, normaliseText, sentences } from "./text.js";
@@ -29,7 +29,7 @@ export interface FieldProfile {
   lexicon: readonly string[];
   minLength?: number;
   maxLength?: number;
-  priorFields?: readonly NarrativeEntry[];
+  priorFields?: readonly PriorNarrative[];
   fieldLexicons?: Readonly<Record<string, readonly string[]>>;
   semanticField?: string;
 }
@@ -202,4 +202,4 @@ export const auditList = (
   return { valid: issues.every((issue) => issue.repairable) && values.length > 0, values, issues };
 };
 
-export type { NarrativeEntry } from "./duplicate.js";
+export type { NarrativeEntry, PriorNarrative } from "./duplicate.js";
