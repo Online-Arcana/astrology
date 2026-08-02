@@ -52,32 +52,34 @@ const crcShape = (value: unknown): boolean => {
 };
 
 const compatibilityShape = (file: AstralFile): boolean => {
-  for (const zodiac of ["tropical", "sidereal"] as const) {
-    const matrix = file["astral-calculation"].compatibility[zodiac];
-    if (matrix.zodiac !== zodiac) return false;
-    for (const domain of compatibilityDomains) {
-      const scores = matrix.domains[domain];
-      if (scores.domain !== domain || !compatibilityValid(scores)) return false;
-    }
+  const calculation = file["astral-calculation"];
+  const matrix = calculation.compatibility;
+  if (matrix.zodiac !== calculation.system.zodiac) return false;
+  for (const domain of compatibilityDomains) {
+    const scores = matrix.domains[domain];
+    if (scores.domain !== domain || !compatibilityValid(scores)) return false;
   }
   return true;
 };
 
 const interpretationPlanShape = (file: AstralFile): boolean => {
-  const plan = file["astral-calculation"].interpretationPlan;
-  if (plan.schema !== "astral-interpretation-plan/1.0.0" || !Array.isArray(plan.units)) return false;
+  const calculation = file["astral-calculation"];
+  const plan = calculation.interpretationPlan;
+  if (plan.schema !== "astral-interpretation-plan/1.1.0" || !Array.isArray(plan.units)) return false;
+  if (plan.zodiac !== calculation.system.zodiac) return false;
   const ids = plan.units.map(({ id }) => id);
   return ids.length > 0
     && ids.every((id) => typeof id === "string" && id.length > 0)
     && new Set(ids).size === ids.length
-    && plan.units.every((unit) => Array.isArray(unit.allowedSourceRefs));
+    && plan.units.every((unit) => unit.zodiac === plan.zodiac && Array.isArray(unit.allowedSourceRefs));
 };
 
 const chartShape = (file: AstralFile): boolean => {
+  const calculation = file["astral-calculation"];
   const chart = file["astral-chart"];
-  if (chart.schema !== "astral-chart/1.0.0") return false;
-  if (chart.tropical.zodiac !== "tropical" || chart.sidereal.zodiac !== "sidereal") return false;
-  if (chart.compatibility.tropical.zodiac !== "tropical" || chart.compatibility.sidereal.zodiac !== "sidereal") return false;
+  if (chart.schema !== "astral-chart/1.1.0") return false;
+  if (chart.zodiac !== calculation.system.zodiac) return false;
+  if (chart.system.zodiac !== chart.zodiac || chart.compatibility.zodiac !== chart.zodiac) return false;
   const name = chart.subject.name;
   if (name.source === "generated" && !generatedNamePattern.test(name.value)) return false;
   return name.value.length > 0 && Array.isArray(name.sourceRefs);
@@ -88,7 +90,7 @@ export const isAstralFile = (value: unknown): value is AstralFile => {
   const file = value as unknown as AstralFile;
   try {
     return rootShapeValid(file)
-      && file["astral-calculation"]?.schema === "astral-calculation/1.0.0"
+      && file["astral-calculation"]?.schema === "astral-calculation/1.1.0"
       && chartShape(file)
       && crcShape(file.crc)
       && (file.authority === null || authorityShape(file.authority))
@@ -100,7 +102,7 @@ export const isAstralFile = (value: unknown): value is AstralFile => {
 };
 
 export const parseAstralFile = (value: unknown): AstralFile => {
-  if (!isAstralFile(value)) throw new TypeError("Value is not a structurally valid astral/1.0.0 file");
+  if (!isAstralFile(value)) throw new TypeError("Value is not a structurally valid astral/1.1.0 file");
   return value;
 };
 
