@@ -49,7 +49,9 @@ jobs:
               else:
                   lines.append('')
 
-          Path('/tmp/rebuild-runner.sh').write_text('\n'.join(lines) + '\n')
+          script = '\n'.join(lines) + '\n'
+          script = script.replace("marker = '    elif [[", "marker = '  elif [[")
+          Path('/tmp/rebuild-runner.sh').write_text(script)
           PY
 
           bash -n /tmp/rebuild-runner.sh
