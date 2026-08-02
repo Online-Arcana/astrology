@@ -13,6 +13,7 @@ import {
   runInterpretationPlan,
   structuredOutputCatalogue,
 } from "../llm/orchestrate/plan.js";
+import { buildSnapshot, snapshotText } from "../llm/orchestrate/snapshot.js";
 import type {
   InterpretationCheckpoint,
   InterpretationRecovery,
@@ -96,16 +97,64 @@ const languageInstruction = (calculation: AstralCalculation): string => {
   ].join("\n");
 };
 
-const recoveryFor = (
+const interpretationOrder = (calculation: AstralCalculation): string[] => [
+  ...calculation.interpretationPlan.units.map(({ id }) => id),
+  ...(calculation.subject.providedName === null ? ["generated-name"] : []),
+];
+
+const authoritativeInterpretation = async (
+  calculation: AstralCalculation,
+  interpretation: InterpretationCheckpoint,
+): Promise<InterpretationCheckpoint> => {
+  const saved = interpretation.snapshot;
+  if (saved === null || saved === undefined) return interpretation;
+
+  const rebuilt = await buildSnapshot(
+    { "astral-calculation": calculation },
+    interpretation.units,
+    interpretationOrder(calculation),
+    saved.revision,
+  );
+  if (rebuilt.sha256 !== saved.sha256) {
+    throw new Error("Generation recovery local snapshot does not match its accepted interpretation units");
+  }
+  if (saved.localSnapshot !== undefined) {
+    let local: unknown;
+    try {
+      local = JSON.parse(saved.localSnapshot);
+    } catch {
+      throw new Error("Generation recovery local snapshot is not valid JSON");
+    }
+    if (
+      typeof local !== "object"
+      || local === null
+      || (local as { sha256?: unknown }).sha256 !== saved.sha256
+    ) {
+      throw new Error("Generation recovery local snapshot identity is invalid");
+    }
+  }
+
+  return {
+    ...interpretation,
+    snapshot: {
+      ...saved,
+      remoteFileId: null,
+      acceptedOrder: [...rebuilt.acceptedOrder],
+      localSnapshot: snapshotText(rebuilt),
+    },
+  };
+};
+
+const recoveryFor = async (
   version: string,
   calculation: AstralCalculation,
   interpretation: InterpretationCheckpoint,
-): ChartGenerationCheckpoint => ({
+): Promise<ChartGenerationCheckpoint> => ({
   schema: generationRecoverySchema,
   version,
   calculationFingerprint: calculation.provenance.calculationFingerprint,
   calculation,
-  interpretation,
+  interpretation: await authoritativeInterpretation(calculation, interpretation),
 });
 
 const assertRecoveryBasis = (checkpoint: ChartGenerationCheckpoint, config: Config): void => {
@@ -151,7 +200,8 @@ export class ChartGenerationService {
       throw new Error("Generation recovery calculation fingerprint does not match its calculation");
     }
     assertRecoveryBasis(checkpoint, this.#runtime.config);
-    return this.#complete(checkpoint.calculation, hooks, checkpoint.interpretation);
+    const recovery = await authoritativeInterpretation(checkpoint.calculation, checkpoint.interpretation);
+    return this.#complete(checkpoint.calculation, hooks, recovery);
   }
 
   async #complete(
@@ -169,8 +219,8 @@ export class ChartGenerationService {
         ...(onCheckpoint === undefined
           ? {}
           : {
-              onCheckpoint: (checkpoint: InterpretationCheckpoint) =>
-                onCheckpoint(recoveryFor(this.#runtime.version, calculation, checkpoint)),
+              onCheckpoint: async (checkpoint: InterpretationCheckpoint) =>
+                onCheckpoint(await recoveryFor(this.#runtime.version, calculation, checkpoint)),
             }),
       },
       recovery,
