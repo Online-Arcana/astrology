@@ -184,8 +184,8 @@ export interface PrenatalEclipse {
   type: string;
   exactUtcIso: string;
   daysBeforeBirth: number;
-  tropicalPosition: SignPosition;
-  siderealPosition: SignPosition;
+  zodiac: Zodiac;
+  position: SignPosition;
   node: "north" | "south";
   magnitude: number | null;
 }
