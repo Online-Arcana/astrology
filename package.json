@@ -1,6 +1,6 @@
 {
   "name": "astral-charts",
-  "version": "0.16.2",
+  "version": "0.16.3",
   "description": "Deterministic natal astrology calculation and strictly structured interpretation",
   "type": "module",
   "license": "MIT",
@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.3"
   }
 }
