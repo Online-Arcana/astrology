@@ -23,6 +23,7 @@ export interface SchemaClient {
   readonly id: string | undefined;
   run<T extends object>(shape: StrictShape<T>, input: unknown, options: SchemaCall): Promise<T>;
   uploadFile?(name: string, content: string): Promise<UploadedFile>;
+  retrieveResponse?(id: string): Promise<unknown>;
 }
 
 export type SchemaClientFactory = (conversationId?: string) => SchemaClient;
