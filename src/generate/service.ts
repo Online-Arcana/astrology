@@ -13,6 +13,7 @@ import {
   type LegacyGenerationCheckpoint,
 } from "./migration.js";
 import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
+import { diagnosticHooks } from "../llm/orchestrate/diagnostics.js";
 import {
   nlpAuditProfile,
   promptCatalogue,
@@ -251,19 +252,20 @@ export class ChartGenerationService {
     recovery: InterpretationRecovery | null,
   ): Promise<GeneratedChart> {
     const { onCheckpoint, ...runHooks } = hooks;
+    const instrumented = diagnosticHooks({
+      ...runHooks,
+      ...(onCheckpoint === undefined
+        ? {}
+        : {
+            onCheckpoint: async (checkpoint: InterpretationCheckpoint) =>
+              onCheckpoint(await recoveryFor(this.#runtime.version, calculation, checkpoint)),
+          }),
+    }, () => this.#runtime.now());
     const interpreted = await runInterpretationPlan(
       calculation,
       this.#runtime.config,
       this.#runtime.schemaFactory(calculation),
-      {
-        ...runHooks,
-        ...(onCheckpoint === undefined
-          ? {}
-          : {
-              onCheckpoint: async (checkpoint: InterpretationCheckpoint) =>
-                onCheckpoint(await recoveryFor(this.#runtime.version, calculation, checkpoint)),
-            }),
-      },
+      instrumented,
       recovery,
     );
     const generatedAt = this.#runtime.now();
