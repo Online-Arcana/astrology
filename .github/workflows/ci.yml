@@ -32,7 +32,7 @@ jobs:
       - run: npm run test:vendor
 
   rebuild:
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/final-rebuild' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.head_ref == 'agent/run-final' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -58,10 +58,17 @@ jobs:
         run: |
           set -Eeuo pipefail
 
+          gh api \
+            "repos/$GITHUB_REPOSITORY/contents/.github/workflows/final-rebuild.yml?ref=agent/final-rebuild" \
+            --jq .content \
+            | tr -d '\n' \
+            | base64 --decode \
+            > /tmp/final-rebuild-source.yml
+
           python <<'PY'
           from pathlib import Path
 
-          source = Path('.github/workflows/final-rebuild.yml').read_text()
+          source = Path('/tmp/final-rebuild-source.yml').read_text()
           marker = '        run: |\n'
           if source.count(marker) != 1:
               raise SystemExit('Expected exactly one reconstruction run block')
