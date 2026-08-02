@@ -148,11 +148,13 @@ const themeTerms = [
 const forbidden = (sentence: string): boolean => forbiddenPatterns.some((pattern) => pattern.test(sentence));
 const boilerplate = (sentence: string): boolean => unwantedExamples.some((example) => cosine(sentence, example) >= 0.72);
 
-const has = (value: string, terms: readonly string[]): boolean =>
-  terms.some((term) => {
+const has = (value: string, terms: readonly string[]): boolean => {
+  const padded = ` ${value} `;
+  return terms.some((term) => {
     const normal = normaliseText(term);
-    return normal.length > 0 && value.includes(normal);
+    return normal.length > 0 && padded.includes(` ${normal} `);
   });
+};
 
 const roleFor = (id: string): SemanticRole | null => {
   const path = normaliseText(id);
