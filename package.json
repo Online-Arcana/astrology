@@ -1,6 +1,6 @@
 {
   "name": "astral-charts",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "description": "Deterministic natal astrology calculation and strictly structured interpretation",
   "type": "module",
   "license": "MIT",
@@ -14,7 +14,7 @@
   "scripts": {
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js && node .test/test/geometry.js && node .test/test/points.js && node .test/test/dignity.js && node .test/test/derived.js && node .test/test/patterns.js && node .test/test/eclipses.js && node .test/test/compatibility.js && node .test/test/service.js && node .test/test/interfaces.js && node .test/test/chartFile.js && node .test/test/openaiRuntime.js",
+    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js && node .test/test/geometry.js && node .test/test/points.js && node .test/test/dignity.js && node .test/test/derived.js && node .test/test/patterns.js && node .test/test/eclipses.js && node .test/test/compatibility.js && node .test/test/service.js && node .test/test/interfaces.js && node .test/test/chartFile.js && node .test/test/audit.js && node .test/test/openaiRuntime.js",
     "test:vendor": "tsc -p tsconfig.test.json && node .test/test/vendor.js",
     "ci": "npm run check && npm run test && npm run build",
     "start": "node dist/cli.js serve",
