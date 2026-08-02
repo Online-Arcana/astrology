@@ -7,6 +7,7 @@ Start with the path that matches what you are doing.
 - [CLI and JSON API](interfaces.md) — calculate charts, generate `.astral` files, validate files and browse places.
 - [Chart files](chart-files.md) — assemble, encode, decode, sign and validate complete files.
 - [`.astral` format](format.md) — canonical JSON, checksums, integrity scope and Ed25519 authority.
+- [Temporary job recovery](recovery.md) — resume interrupted generation with a short-lived ID and the same OpenAI conversation.
 
 ## Understand the engine
 
@@ -37,7 +38,7 @@ Start with the path that matches what you are doing.
 
 **Changing deterministic astrology:** service → astrology → the relevant subsystem document
 
-**Changing LLM interpretation:** interpretation → audit → chart-files
+**Changing LLM interpretation:** interpretation → audit → recovery → chart-files
 
 **Implementing a `.astral` reader:** format → chart-files
 
