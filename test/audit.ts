@@ -34,6 +34,14 @@ test("tension entries do not require a literal generic chart keyword", () => {
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
+test("theme entries may be concise semantic labels without artificial role keywords", () => {
+  const result = auditField(
+    "Emotional memory shaping instinctive reactions to familiar people and places.",
+    profile("tropical.point.moon.themes[2]"),
+  );
+  assert(result.valid, result.issues.map(({ message }) => message).join("; "));
+});
+
 test("a tension may describe how a strength becomes difficult", () => {
   const result = auditField(
     "Confidence and initiative can become excessive, creating pressure to act before everyone else is ready.",
