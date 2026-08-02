@@ -267,7 +267,7 @@ await test("interpretation plan contains only the selected system", async () => 
   equal(ids.includes("tropical.point.sun"), true, "Sun interpretation unit");
   equal(ids.some((id) => id.startsWith("sidereal.")), false, "no sidereal units");
   equal(ids.includes("cross-system"), false, "no cross-system unit");
-  equal(ids.includes("tropical.final-synthesis"), true, "selected final synthesis unit");
+  equal(ids.includes("final-synthesis"), true, "selected final synthesis unit");
   equal(
     result.interpretationPlan.units.every((unit) => unit.zodiac === "tropical" && unit.allowedSourceRefs.length > 0),
     true,
