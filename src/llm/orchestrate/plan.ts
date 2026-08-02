@@ -21,8 +21,8 @@ import type {
   UnitResult,
 } from "./types.js";
 
-export const promptCatalogue = "astral-prompts/1.0.0" as const;
-export const structuredOutputCatalogue = "astral-structured-output/1.0.0" as const;
+export const promptCatalogue = "astral-prompts/1.1.0" as const;
+export const structuredOutputCatalogue = "astral-structured-output/1.1.0" as const;
 export const nlpAuditProfile = "astral-nlp-audit/1.0.4" as const;
 export const modelRoutingProfile = "astral-model-routing/1.0.1" as const;
 
@@ -63,7 +63,7 @@ const human = (value: string): string => value
 const task = (unit: InterpretationUnit): string => {
   const subject = human(unit.section);
   const domain = unit.domain ? ` within the ${human(unit.domain)} compatibility domain` : "";
-  const system = unit.zodiac ? ` for the ${unit.zodiac} zodiac system` : " across both zodiac systems";
+  const system = ` for the ${unit.zodiac} zodiac system`;
   return sectionPrompt([
     `Write only the final ${subject} interpretation${system}${domain}.`,
     "Treat the supplied source objects as fixed facts.",
@@ -98,7 +98,7 @@ const correctionInstruction = (
 };
 
 const lexicon = (unit: InterpretationUnit): string[] => {
-  const specific = human(`${unit.section} ${unit.domain ?? ""} ${unit.zodiac ?? ""}`).toLowerCase().split(" ");
+  const specific = human(`${unit.section} ${unit.domain ?? ""} ${unit.zodiac}`).toLowerCase().split(" ");
   return [...new Set([
     ...specific,
     "astrology",
@@ -118,7 +118,6 @@ const lexicon = (unit: InterpretationUnit): string[] => {
 
 const synth = new Set([
   "synthesis",
-  "crossSystem",
   "finalSynthesis",
 ]);
 
@@ -168,7 +167,6 @@ const syntheticAllowed = (unit: InterpretationUnit): boolean =>
     "synthesis",
     "compatibility.overview",
     "compatibility.sign",
-    "crossSystem",
     "finalSynthesis",
   ].includes(unit.section);
 
@@ -201,10 +199,7 @@ const substantiveCalls = (
               ? "money"
               : null;
 
-    const specialist =
-      specialistKey === null
-        ? null
-        : fieldProfiles[specialistKey] ?? null;
+    const specialist = specialistKey === null ? null : fieldProfiles[specialistKey] ?? null;
 
     const profile: FieldProfile = {
       id: unit.id,
@@ -219,10 +214,7 @@ const substantiveCalls = (
       priorFields: prior,
       ...(specialist?.fieldLexicons === undefined
         ? {}
-        : {
-            fieldLexicons:
-              specialist.fieldLexicons,
-          }),
+        : { fieldLexicons: specialist.fieldLexicons }),
     };
 
     calls.push({
@@ -263,16 +255,14 @@ const substantiveCalls = (
   return { calls, synthetic };
 };
 
-const nameRefs = [
+const nameRefs = (calculation: AstralCalculation): readonly JsonRef[] => [
   "#/astral-calculation/provenance/calculationFingerprint",
-  "#/astral-calculation/systems/tropical/derived/dominantPlanets",
-  "#/astral-calculation/systems/tropical/derived/dominantSigns",
-  "#/astral-calculation/systems/sidereal/derived/dominantPlanets",
-  "#/astral-calculation/systems/sidereal/derived/dominantSigns",
+  "#/astral-calculation/system/derived/dominantPlanets",
+  "#/astral-calculation/system/derived/dominantSigns",
 ] as const satisfies readonly JsonRef[];
 
 const generatedNameCall = (calculation: AstralCalculation): InterpretationCall => {
-  const available = sources(calculation, nameRefs);
+  const available = sources(calculation, nameRefs(calculation));
   const allowed = new Set(available.map(({ ref }) => ref));
   return {
     id: "generated-name",
