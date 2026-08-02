@@ -49,6 +49,7 @@ const profileAt = (
 
   return {
     ...profile,
+    semanticField: key,
     lexicon: [
       ...new Set([
         ...profile.lexicon,
@@ -245,13 +246,6 @@ export const auditStructured = <
     valid: state.errors.length === 0,
     value: audited,
     errors: state.errors,
-    soft:
-      state.errors.length > 0
-      && state.errors.every(
-        (error) =>
-          error.endsWith(
-            "does not fit its semantic field",
-          ),
-      ),
+    soft: false,
   };
 };
