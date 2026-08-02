@@ -295,6 +295,20 @@ export const interpretationCalls = (
   };
 };
 
+const recoveryAwareCalls = (
+  calls: readonly InterpretationCall[],
+  recovery: InterpretationRecovery | null,
+): InterpretationCall[] => calls.map((call) => {
+  const migrated = recovery?.units[call.id];
+  if (migrated?.provenance?.migratedFromVersion === undefined) return call;
+  return {
+    ...call,
+    audit: (value, context) => value === migrated.value
+      ? { valid: true, value, errors: [] }
+      : call.audit(value, context),
+  };
+});
+
 export const runInterpretationPlan = async (
   calculation: AstralCalculation,
   config: Config,
@@ -305,7 +319,8 @@ export const runInterpretationPlan = async (
   const prepared = interpretationCalls(calculation);
   if (prepared.calls.length === 0) throw new Error("Interpretation plan contains no callable units");
 
-  const raw = await runInterpretation(root(calculation), prepared.calls, config, createClient, hooks, recovery);
+  const calls = recoveryAwareCalls(prepared.calls, recovery);
+  const raw = await runInterpretation(root(calculation), calls, config, createClient, hooks, recovery);
   const generated = raw.units["generated-name"]?.value as { value?: unknown } | undefined;
   const generatedName = calculation.subject.providedName === null
     ? typeof generated?.value === "string" ? generated.value : null
