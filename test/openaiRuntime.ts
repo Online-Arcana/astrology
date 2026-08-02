@@ -117,6 +117,13 @@ const calculation = {
         allowedSourceRefs: [unavailableRef],
       },
       {
+        id: "tropical.life.identityAndPurpose",
+        zodiac: "tropical",
+        section: "life.identityAndPurpose",
+        domain: null,
+        allowedSourceRefs: [exactRef],
+      },
+      {
         id: "final-synthesis",
         zodiac: null,
         section: "finalSynthesis",
@@ -131,6 +138,8 @@ const calculation = {
 class FakeClient implements SchemaClient {
   id: string | undefined;
   readonly models: string[] = [];
+  readonly efforts: string[] = [];
+  readonly tokens: number[] = [];
   readonly inputs: unknown[] = [];
   #sunAttempts = 0;
 
@@ -141,6 +150,9 @@ class FakeClient implements SchemaClient {
   ): Promise<T> {
     this.id ??= "conv_plan";
     this.models.push(options.body.model);
+    const reasoning = options.body["reasoning"] as { effort?: unknown } | undefined;
+    this.efforts.push(typeof reasoning?.effort === "string" ? reasoning.effort : "");
+    this.tokens.push(Number(options.body["max_output_tokens"]));
     this.inputs.push(input);
     if (shape.name === "generated_chart_name") return { value: "Solar-purpose-pathfinder" } as T;
     if (shape.name === "final-synthesis") {
@@ -185,7 +197,7 @@ class FakeClient implements SchemaClient {
   }
 }
 
-await test("fixed plan uses one conversation, big substantive calls and a small name utility", async () => {
+await test("fixed plan keeps one ordered conversation and routes fields by cost", async () => {
   const client = new FakeClient();
   const result = await runInterpretationPlan(
     calculation,
@@ -206,16 +218,27 @@ await test("fixed plan uses one conversation, big substantive calls and a small 
   );
   equal(
     client.models.join(","),
-    "gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
-    "substantive and utility model routing",
+    "gpt-5.4-nano,gpt-5.4-nano,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
+    "leaf section synthesis and utility model routing",
   );
-  equal(result.run.calls, 4, "OpenAI call count");
+  equal(
+    client.efforts.join(","),
+    "none,none,low,low,none",
+    "per-field reasoning routing",
+  );
+  equal(
+    client.tokens.join(","),
+    "1800,1800,3200,6000,128",
+    "per-field token ceilings",
+  );
+  equal(result.run.calls, 5, "OpenAI call count");
   equal(result.run.retries, 1, "narrow retry count");
   const retryInput = client.inputs[1] as { correction?: { auditFailures?: string[] } };
   const failures = retryInput.correction?.auditFailures ?? [];
   assert(failures.length > 0, "retry must include audit failures");
   equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
   assert(result.run.units["tropical.point.sun"] !== undefined, "Sun unit retained");
+  assert(result.run.units["tropical.life.identityAndPurpose"] !== undefined, "life section retained");
   equal(fingerprintRef.startsWith("#/"), true, "fingerprint reference fixture");
 });
 
