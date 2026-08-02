@@ -16,9 +16,22 @@ export const refinedInterpretationRules = [
   "Do not infer unavailable values, invent calculations or weaken any earlier rule.",
 ] as const;
 
+export const humanFirstInterpretationRules = [
+  "Write to the person, not about the chart.",
+  "Lead substantive narrative with direct second-person language such as you and your.",
+  "Do not lead a narrative sentence with a planet, sign, house, aspect, placement, calculation or astrological label.",
+  "Treat astrological factors as supporting evidence, not as the grammatical subject of the interpretation.",
+  "Translate astrology into ordinary personal language and avoid technical catalogue-style prose.",
+  "Mention technical factors briefly only when they genuinely clarify why the interpretation applies.",
+  "Keep every field concise, complete and focused on its own semantic purpose.",
+  "Do not repeat the same chart evidence or conclusion across neighbouring fields.",
+  "Never place sourceRefs or internal JSON paths inside narrative prose; references belong exclusively in sourceRefs.",
+] as const;
+
 export const directInterpretationRules = [
   ...baseInterpretationRules,
   ...refinedInterpretationRules,
+  ...humanFirstInterpretationRules,
 ] as const;
 
 export const sectionPrompt = (
