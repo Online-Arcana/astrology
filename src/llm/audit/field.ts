@@ -9,7 +9,11 @@ export type AuditCode =
   | "disclaimer"
   | "irrelevant"
   | "duplicate"
-  | "cross_field_leakage";
+  | "cross_field_leakage"
+  | "reference_leakage"
+  | "impersonal_voice"
+  | "technical_opening"
+  | "technical_density";
 
 export interface AuditIssue {
   code: AuditCode;
@@ -24,6 +28,7 @@ export interface FieldProfile {
   maxLength?: number;
   priorFields?: readonly string[];
   fieldLexicons?: Readonly<Record<string, readonly string[]>>;
+  semanticField?: string;
 }
 
 export interface FieldAudit {
@@ -38,112 +43,39 @@ type SemanticRole = "strength" | "tension" | "theme";
 const placeholders = /^(?:n\/a|none|unknown|tbd|todo|placeholder|\.\.\.)$/iu;
 const badFormat = /```|^\s{0,3}#{1,6}\s|^\s*[-*+]\s+/mu;
 const label = /^\s*[\p{L}\p{N} _-]{2,40}:\s*/u;
+const internalReference = /#\/[\p{L}\p{N}_~./-]+/u;
+const secondPerson = /\b(?:you|your|yours|yourself|tú|tu|tus|te|ti|usted|ustedes|su|sus|contigo)\b/iu;
+const impersonal = /\b(?:the native|this placement (?:indicates|suggests|shows|reveals)|this aspect (?:indicates|suggests|shows|reveals)|the chart (?:indicates|suggests|shows|reveals)|one may find|the individual)\b/iu;
+const technicalTerms = [
+  "sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto",
+  "aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
+  "ascendant", "descendant", "midheaven", "house", "houses", "aspect", "aspects", "conjunction", "opposition", "trine", "square", "sextile",
+  "sol", "luna", "mercurio", "venus", "marte", "júpiter", "saturno", "urano", "neptuno", "plutón", "ascendente", "casa", "casas", "aspecto", "aspectos",
+] as const;
+const technicalOpening = new RegExp(
+  `^(?:the|el|la|los|las)?\\s*(?:(?:${technicalTerms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")).join("|")})\\b|(?:a|an|un|una)?\\s*(?:planet|sign|house|aspect|placement|chart|planeta|signo|casa|aspecto|posición)\\b)`,
+  "iu",
+);
 
 const strengthTerms = [
-  "ability",
-  "advantage",
-  "asset",
-  "balance",
-  "capacity",
-  "clarity",
-  "confidence",
-  "courage",
-  "discipline",
-  "ease",
-  "effective",
-  "gift",
-  "initiative",
-  "insight",
-  "reliable",
-  "resilience",
-  "resource",
-  "stable",
-  "steadiness",
-  "strength",
-  "support",
-  "talent",
-  "fortaleza",
-  "capacidad",
-  "confianza",
-  "valor",
-  "disciplina",
-  "facilidad",
-  "talento",
-  "resiliencia",
-  "claridad",
-  "equilibrio",
-  "iniciativa",
+  "ability", "advantage", "asset", "balance", "capacity", "clarity", "confidence", "courage", "discipline", "ease",
+  "effective", "gift", "initiative", "insight", "reliable", "resilience", "resource", "stable", "steadiness", "strength",
+  "support", "talent", "fortaleza", "capacidad", "confianza", "valor", "disciplina", "facilidad", "talento", "resiliencia",
+  "claridad", "equilibrio", "iniciativa",
 ] as const;
 
 const tensionTerms = [
-  "blind spot",
-  "block",
-  "challenge",
-  "conflict",
-  "difficulty",
-  "excess",
-  "friction",
-  "frustration",
-  "imbalance",
-  "impatience",
-  "instability",
-  "pressure",
-  "rigid",
-  "risk",
-  "struggle",
-  "tension",
-  "volatile",
-  "vulnerable",
-  "bloqueo",
-  "conflicto",
-  "dificultad",
-  "exceso",
-  "friccion",
-  "frustracion",
-  "desequilibrio",
-  "impaciencia",
-  "inestabilidad",
-  "presion",
-  "rigidez",
-  "riesgo",
-  "tension",
-  "vulnerabilidad",
+  "blind spot", "block", "challenge", "conflict", "difficulty", "excess", "friction", "frustration", "imbalance", "impatience",
+  "instability", "pressure", "rigid", "risk", "struggle", "tension", "volatile", "vulnerable", "bloqueo", "conflicto",
+  "dificultad", "exceso", "friccion", "frustracion", "desequilibrio", "impaciencia", "inestabilidad", "presion", "rigidez",
+  "riesgo", "tension", "vulnerabilidad",
 ] as const;
 
 const themeTerms = [
-  "approach",
-  "development",
-  "direction",
-  "drive",
-  "dynamic",
-  "emphasis",
-  "expression",
-  "focus",
-  "identity",
-  "interplay",
-  "needs",
-  "orientation",
-  "pattern",
-  "priorities",
-  "purpose",
-  "rhythm",
-  "style",
-  "tendency",
-  "theme",
-  "desarrollo",
-  "direccion",
-  "dinamica",
-  "enfasis",
-  "expresion",
-  "identidad",
-  "necesidades",
-  "orientacion",
-  "patron",
-  "prioridades",
-  "proposito",
-  "ritmo",
-  "tendencia",
-  "tema",
+  "approach", "development", "direction", "drive", "dynamic", "emphasis", "expression", "focus", "identity", "interplay",
+  "needs", "orientation", "pattern", "priorities", "purpose", "rhythm", "style", "tendency", "theme", "desarrollo",
+  "direccion", "dinamica", "enfasis", "expresion", "identidad", "necesidades", "orientacion", "patron", "prioridades",
+  "proposito", "ritmo", "tendencia", "tema",
 ] as const;
 
 const strengthFrames = [
@@ -172,46 +104,33 @@ const countTerms = (value: string, terms: readonly string[]): number => {
   return count;
 };
 
-const has = (value: string, terms: readonly string[]): boolean => countTerms(value, terms) > 0;
 const countFrames = (value: string, patterns: readonly RegExp[]): number =>
   patterns.reduce((count, pattern) => count + (pattern.test(value) ? 1 : 0), 0);
 
 const roleFor = (id: string): SemanticRole | null => {
   const path = normaliseText(id);
-  if (/\b(?:strengths?|assets?|gifts?|advantages?|turn ons?|best expression|suitable fields?)\b/u.test(path)) {
-    return "strength";
-  }
-  if (/\b(?:tensions?|difficulties|risks?|blind spots?|frustrations?|turn offs?|contradictions?|growth edges?)\b/u.test(path)) {
-    return "tension";
-  }
-  if (/\b(?:themes?|emphasis|patterns?|styles?|needs|dynamic|summary|detail|overview|essence|narrative|synthesis|portrait|arc)\b/u.test(path)) {
-    return "theme";
-  }
+  if (/\b(?:strengths?|assets?|gifts?|advantages?|turn ons?|best expression|suitable fields?)\b/u.test(path)) return "strength";
+  if (/\b(?:tensions?|difficulties|risks?|blind spots?|frustrations?|turn offs?|contradictions?|growth edges?)\b/u.test(path)) return "tension";
+  if (/\b(?:themes?|emphasis|patterns?|styles?|needs|dynamic|summary|detail|overview|essence|narrative|synthesis|portrait|arc)\b/u.test(path)) return "theme";
   return null;
 };
 
-const isThemeLabel = (id: string): boolean =>
-  /themes?\[\d+\]$/u.test(id.toLocaleLowerCase("en-GB"));
+const isTitle = (id: string): boolean => /(?:^|\.)title$/iu.test(id);
+const isThemeLabel = (id: string): boolean => /themes?\[\d+\]$/u.test(id.toLocaleLowerCase("en-GB"));
 
 const termsFor = (role: SemanticRole): readonly string[] => {
   switch (role) {
-    case "strength":
-      return strengthTerms;
-    case "tension":
-      return tensionTerms;
-    case "theme":
-      return themeTerms;
+    case "strength": return strengthTerms;
+    case "tension": return tensionTerms;
+    case "theme": return themeTerms;
   }
 };
 
 const framesFor = (role: SemanticRole): readonly RegExp[] => {
   switch (role) {
-    case "strength":
-      return strengthFrames;
-    case "tension":
-      return tensionFrames;
-    case "theme":
-      return [];
+    case "strength": return strengthFrames;
+    case "tension": return tensionFrames;
+    case "theme": return [];
   }
 };
 
@@ -249,6 +168,95 @@ const clean = (value: string): { value: string; repaired: boolean; removed: bool
   return { value: text, repaired, removed };
 };
 
+const styleIssues = (value: string, id: string): AuditIssue[] => {
+  if (isTitle(id) || value.length < 36) return [];
+  const issues: AuditIssue[] = [];
+  if (internalReference.test(value)) {
+    issues.push({
+      code: "reference_leakage",
+      message: `${id} contains an internal JSON reference outside sourceRefs`,
+      repairable: false,
+    });
+  }
+  if (impersonal.test(value)) {
+    issues.push({
+      code: "impersonal_voice",
+      message: `${id} describes the chart impersonally instead of speaking to the person`,
+      repairable: false,
+    });
+  }
+  const narrativeSentences = sentences(value);
+  if (narrativeSentences.some((sentence) => technicalOpening.test(sentence))) {
+    issues.push({
+      code: "technical_opening",
+      message: `${id} leads with chart mechanics instead of human meaning`,
+      repairable: false,
+    });
+  }
+  if (value.length >= 60 && !secondPerson.test(value)) {
+    issues.push({
+      code: "impersonal_voice",
+      message: `${id} must use direct second-person language`,
+      repairable: false,
+    });
+  }
+  const normal = normaliseText(value);
+  const words = normal.split(" ").filter(Boolean);
+  const technical = countTerms(normal, technicalTerms);
+  if (words.length >= 20 && technical >= 5 && technical / words.length > 0.16) {
+    issues.push({
+      code: "technical_density",
+      message: `${id} is excessively technical for user-facing interpretation`,
+      repairable: false,
+    });
+  }
+  return issues;
+};
+
+const semanticIssues = (value: string, profile: FieldProfile): AuditIssue[] => {
+  const normal = normaliseText(value);
+  if (normal.split(" ").length < 8) return [];
+  const issues: AuditIssue[] = [];
+  const role = roleFor(profile.id);
+  if (role === "strength" || role === "tension") {
+    const opposite = oppositeRole(role);
+    const fitScore = roleScore(normal, role);
+    const oppositeScore = opposite === null ? 0 : roleScore(normal, opposite);
+    if (fitScore === 0 && oppositeScore >= 3) {
+      const expected = role === "strength" ? "a strength" : "a tension";
+      issues.push({
+        code: "irrelevant",
+        message: `${profile.id} appears to describe the opposite semantic role instead of ${expected}`,
+        repairable: false,
+      });
+    }
+  }
+
+  const field = profile.semanticField;
+  const fields = profile.fieldLexicons;
+  if (field !== undefined && fields !== undefined && !isThemeLabel(profile.id)) {
+    const expected = countTerms(normal, fields[field] ?? []);
+    let strongestField: string | null = null;
+    let strongestScore = 0;
+    for (const [candidate, terms] of Object.entries(fields)) {
+      if (candidate === field) continue;
+      const score = countTerms(normal, terms);
+      if (score > strongestScore) {
+        strongestField = candidate;
+        strongestScore = score;
+      }
+    }
+    if (expected === 0 && strongestScore >= 3 && strongestField !== null) {
+      issues.push({
+        code: "irrelevant",
+        message: `${profile.id} fits ${strongestField} more strongly than its own semantic field`,
+        repairable: false,
+      });
+    }
+  }
+  return issues;
+};
+
 export const auditField = (input: string, profile: FieldProfile): FieldAudit => {
   const issues: AuditIssue[] = [];
   const cleaned = clean(input);
@@ -264,29 +272,8 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
     issues.push({ code: "format", message: `${profile.id} is too long`, repairable: false });
   }
 
-  const normal = normaliseText(value);
-  if (normal.split(" ").length >= 8) {
-    const role = roleFor(profile.id);
-    const grounded = profile.lexicon.length === 0 || has(normal, profile.lexicon);
-    if (role === "strength" || role === "tension") {
-      const opposite = oppositeRole(role);
-      const fitScore = roleScore(normal, role);
-      const oppositeScore = opposite === null ? 0 : roleScore(normal, opposite);
-      if (fitScore === 0 && oppositeScore >= 3) {
-        const expected = role === "strength" ? "a strength" : "a tension";
-        issues.push({
-          code: "irrelevant",
-          message: `${profile.id} appears to describe the opposite semantic role instead of ${expected}`,
-          repairable: false,
-        });
-      }
-    } else {
-      const roleFit = role === null ? false : has(normal, termsFor(role));
-      if (!isThemeLabel(profile.id) && !grounded && !roleFit) {
-        issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
-      }
-    }
-  }
+  issues.push(...styleIssues(value, profile.id));
+  issues.push(...semanticIssues(value, profile));
 
   for (const prior of profile.priorFields ?? []) {
     if (value.length >= 60 && prior.length >= 60 && cosine(value, prior) >= 0.92) {
