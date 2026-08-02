@@ -13,6 +13,13 @@ jobs:
     if: github.head_ref == 'agent/rebuild-main-0.18.0' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: cdcbd5a6d0993b8d2e0c33a1bdb647642ba5cb9d
+      BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+      DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+      RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+      TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
     steps:
       - uses: actions/checkout@v4
         with:
