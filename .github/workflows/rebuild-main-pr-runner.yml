@@ -51,11 +51,32 @@ jobs:
               else:
                   lines.append('')
           script = '\n'.join(lines) + '\n'
-          old = 'script, count = pattern.subn(replacement, script, count=1)'
-          new = 'script, count = pattern.subn(lambda _match: replacement, script, count=1)'
-          if script.count(old) != 1:
-              raise SystemExit('Regex replacement call was not found exactly once')
-          Path('/tmp/rebuild-trigger.sh').write_text(script.replace(old, new))
+          replacements = {
+              'script, count = pattern.subn(replacement, script, count=1)':
+                  'script, count = pattern.subn(lambda _match: replacement, script, count=1)',
+              'exec bash /tmp/rebuild-main.sh': '''python <<'PATCHMAIN'
+          from pathlib import Path
+
+          path = Path("/tmp/rebuild-main.sh")
+          text = path.read_text()
+          changes = {
+              "if ! git diff --quiet -- test/vendor.ts; then": "if ! git diff --quiet; then",
+              "git add test/vendor.ts": "git add -A",
+          }
+          for old, new in changes.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f"Expected exactly one reconstruction fragment: {old}")
+              text = text.replace(old, new)
+          path.write_text(text)
+          PATCHMAIN
+          bash -n /tmp/rebuild-main.sh
+          exec bash /tmp/rebuild-main.sh''',
+          }
+          for old, new in replacements.items():
+              if script.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one trigger fragment: {old}')
+              script = script.replace(old, new)
+          Path('/tmp/rebuild-trigger.sh').write_text(script)
           PY
           bash -n /tmp/rebuild-trigger.sh
           exec bash /tmp/rebuild-trigger.sh
