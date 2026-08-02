@@ -1,126 +1,74 @@
 # Interpretation orchestration
 
-`kitty-crow/openai-schema` is the sole OpenAI runtime. `astrology` does not construct Conversations API or Responses API requests and does not depend on a second OpenAI SDK.
+`kitty-crow/openai-schema` is the sole structured OpenAI runtime. Deterministic code owns the calculation, interpretation plan, schemas, permitted references, audits, recovery and final assembly.
 
-The runtime path is:
+## Chart basis
 
-```text
-fixed interpretation plan
-  -> astrology sequencing and local audit
-  -> OpenAISchema.run(...)
-  -> OpenAI Conversations and Responses APIs
-```
+A chart has one immutable zodiac basis.
 
-## One conversation per chart
+- omitted zodiac means tropical
+- sidereal must be selected when the chart is created
+- omitted sidereal ayanamsha means Lahiri
+- another zodiac or ayanamsha requires another chart
+- prompts, source references, snapshots and synthesis are restricted to the selected basis
 
-One chart job constructs one `OpenAISchema` instance through the local `SchemaClient` adapter. The library lazily creates one OpenAI conversation and attaches every subsequent schema call to that exact conversation.
+New charts never generate tropical and sidereal interpretations together and never run cross-system reconciliation.
 
-After each call, `astrology` verifies that a conversation ID exists and has not changed. A missing or changed ID fails the chart. A later chart job constructs a new client, so conversations cannot be shared between charts.
+## Existing and refined instructions
 
-Calls remain ordered and serial within that conversation. This preserves deterministic field order, lets every accepted field participate in later duplicate checks and avoids concurrent writes racing against shared conversation state.
+The established rules remain cumulative: strict schema only, every required field present, no reasoning or process narration, no AI or prompt references, no disclaimers, no unsupported calculation, exact permitted references and no merged interpretation fields.
 
-The conversation ID is runtime state. It is not written into the calculation, interpreted chart or `.astral` file.
+The refined rules additionally require user-facing prose to:
 
-## Interrupted runs
+- speak directly to the person using `you` and `your`
+- lead with human meaning rather than a placement catalogue
+- use technical astrology only as supporting evidence
+- keep each property concise, complete and semantically distinct
+- avoid repeated conclusions and repeated chart evidence
+- keep local JSON paths exclusively in `sourceRefs`
 
-Interpretation can emit an `InterpretationCheckpoint` before and after remote calls and after each accepted field. It contains:
+The local audit checks style, semantic role, completeness, references, duplication and deterministic support across every narrative field.
 
-- the established conversation ID
-- accepted field results
-- total call and retry counts
-- the active field, attempt and narrow audit correction
+## Bounded generation
 
-Recovery must contain a completed prefix of the fixed plan. Every recovered field is re-audited in its original order, rebuilding cross-field duplicate context before generation continues. The `SchemaClientFactory` then reopens the stored conversation ID and starts at the active attempt or first unfinished field.
+Generation starts with a serial foundation of at most `ASTRAL_FOUNDATION_UNITS`, normally ten. Foundational units are accepted and checkpointed individually.
 
-`ChartGenerationCheckpoint` combines this state with the deterministic calculation, calculation fingerprint and exact runtime version. See [Temporary job recovery](recovery.md) for storage and lifecycle rules.
+The accepted foundation becomes a canonical snapshot with a revision, calculation fingerprint, accepted order and SHA-256 identity. The snapshot is uploaded once per wave as OpenAI `user_data` and attached directly as `input_file` context.
 
-## Responsibility split
+Each wave creates up to `ASTRAL_LANE_COUNT` fresh conversations, normally four. Each lane receives up to `ASTRAL_LANE_UNITS`, normally ten, and processes its units sequentially. At most one request per lane is active, so four lanes mean at most four concurrent interpretation requests, not forty.
 
-`openai-schema` owns:
+A unit may depend only on the shared base snapshot or an earlier unit in the same lane. The planner balances dependencies and expected token cost while respecting `ASTRAL_LANE_CONTEXT_TOKENS`.
 
-- conversation creation
-- Responses API transport
-- attaching calls to the active conversation
-- changing the strict JSON schema between fields
-- extracting and parsing structured JSON output
-- serialising queued calls on the same client
-- reopening an explicitly supplied conversation ID
+## Acceptance and assembly
 
-`astrology` owns:
+Each unit passes strict parsing and the complete local audit before its lane continues. Rejected drafts never become context for later units.
 
-- the fixed interpretation plan
-- one cohesive schema field per call
-- deterministic input projection
-- model, reasoning and token-budget routing
-- source-reference permissions
-- local deterministic NLP audit
-- safe mechanical repair
-- narrow field retry
-- checkpoint validation and resume order
-- progress and final chart assembly
+Accepted lane results are staged behind a wave barrier. Lane and cross-lane checks detect repeated prose and contradictory conclusions. Only affected units are repaired. Once the full wave passes, results are sorted into canonical plan order, assembled atomically and written into a new snapshot revision.
 
-There is no duplicate Responses API implementation in `astrology`.
+Previous lane conversations are then retired. The next wave creates fresh conversations from the new snapshot.
 
-## Field calls
+## Truncation condensation
 
-Every `InterpretationCall` has:
+Prompts require concise, complete schemas and reserve output space for later properties. A rare truncated or malformed response is not accepted directly and does not immediately fail the lane.
 
-- one stable ID and label
-- one strict output schema
-- one cohesive chart responsibility
-- only the relevant deterministic source objects
-- an explicit set of permitted local JSON references
-- one recursive field audit
-- a bounded model, reasoning and output-token route
+The inexpensive model receives the partial candidate, strict schema, deterministic input, permitted references, accepted snapshot and lane context. It returns a concise replacement object from the beginning rather than appending text. The replacement must pass every normal audit. A fresh primary-model generation occurs only when condensation cannot produce a valid result.
 
-The LLM never selects fields, availability, placements, house systems, aspects, dignity, compatibility scores or ranks.
+## Rate limits and failures
 
-Routing follows `astral-model-routing/1.0.1`:
+The shared limiter bounds concurrency, applies exponential backoff with jitter, honours server retry timing and reduces effective concurrency after throttling. Successful sibling work remains staged while one lane retries.
 
-- narrow leaf fields begin on `OPENAI_SMALL_MODEL`, no reasoning and at most 1,800 output tokens
-- an audited retry for a narrow field escalates to `OPENAI_BIG_MODEL` with low reasoning while keeping the same field schema, correction and conversation
-- chart overviews, compatibility overviews and life sections use `OPENAI_BIG_MODEL`, low reasoning and at most 3,200 output tokens
-- zodiac, cross-system and final syntheses use `OPENAI_BIG_MODEL`, configured reasoning and at most 6,000 output tokens
-- the generated three-word chart name uses `OPENAI_SMALL_MODEL`, no reasoning and at most 128 output tokens unless it itself requires an audited retry
+Failures are classified as transport, rate limit, timeout, truncation, schema, audit or coherence failures. A paused job retains accepted and staged work for recovery.
 
-Every route is also capped by `OPENAI_MAX_OUTPUT_TOKENS`, so an operator may impose a stricter global ceiling.
+## OpenAI file lifecycle
 
-When the subject supplied no name, the utility runs in the same chart conversation after the substantive fields. It must return exactly three hyphenated words. Its temporary result is removed from the interpretation-unit map before strict chart assembly, while its call and retry counts remain in provenance.
+The local snapshot is authoritative. The uploaded file is disposable transport. Recovery verifies the local snapshot identity and uploads it again rather than trusting a stale remote file ID. Superseded remote files may be deleted through the schema client.
 
-## Unavailable fields
+## Models and budgets
 
-If every permitted deterministic source for an ordinary generic section is unavailable, the host constructs a deterministic `status: unavailable` section and makes no LLM call.
+Leaf fields normally use `OPENAI_SMALL_MODEL`. Broad life areas, overviews and syntheses use `OPENAI_BIG_MODEL`. Retry escalation, reasoning effort and field token ceilings remain bounded by `OPENAI_MAX_OUTPUT_TOKENS`.
 
-Specialised fields and synthesis units must retain at least one available deterministic source. Their absence is a calculation or plan error rather than an invitation for the model to improvise.
+Actual progress is based on accepted weighted units, never calls made, retries, token spend or elapsed time.
 
-## Audit and retries
+## Diagnostics
 
-The strict schema parser validates structure first. Local NLP audit then examines every substantive string and string-array item, including specialised romance, sexuality, career, money, compatibility and synthesis fields.
-
-Audit checks include:
-
-- process narration and boilerplate
-- disclaimers
-- placeholders
-- forbidden formatting
-- semantic relevance
-- duplicate list entries
-- near-duplication across interpretation fields
-- local source-reference resolution
-- source-reference permission and deterministic availability
-
-A failed audit retries only that interpretation unit. The retry receives the exact audit failures and must return the same strict schema. Narrow fields escalate from nano to mini after the first failed audit rather than spending every attempt on the cheaper model. Broad parse retries inside `openai-schema` remain disabled so semantic retry scope stays under host control.
-
-## Transport options
-
-The adapter passes the routed model, reasoning effort, output-token limit, `store: false`, developer instructions and metadata into `OpenAISchema.run(...)`. The library adds the strict JSON schema and active or recovered conversation itself.
-
-Ordinary tests use fake clients or an injected fake `fetch`. They verify the real request shape without contacting OpenAI.
-
-## Resilient transport and audit continuation
-
-Responses are created in background mode with stable request and idempotency identifiers. Transient creation failures retry for up to fifteen minutes. Once a response ID exists, polling survives transient network errors and HTTP 408, 425, 429, 500, 502, 503 and 504 responses until the two-hour response deadline. The existing abort signal remains authoritative.
-
-A generic semantic-fit miss retries the same field once in the same chart conversation. If the corrected output still fails only that broad lexical heuristic, the structurally valid, source-grounded field is accepted with a warning so one weak heuristic cannot terminate a long chart. Process narration, placeholders, invalid references, structural errors, forbidden formatting and cross-field duplication remain terminal.
-
-Every interpretation unit now receives a strict `sourceRefs` enum containing only the references available and permitted for that unit. Specialised romance properties use property-specific semantic vocabulary, while correction prompts explicitly separate summary, detail, affection, courtship, attachment and commitment content.
+`RunHooks` can receive start, retry, rejected candidate, completion, checkpoint, wave and structured diagnostic events. Diagnostics include unit, attempt, model, configured output allowance, audit failures, repair provenance, snapshot identity, wave, lane and failure category. Rejected raw candidates remain diagnostic data and never enter the chart.
