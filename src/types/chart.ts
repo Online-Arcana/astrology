@@ -166,6 +166,16 @@ export interface CompatibilityInterpretation {
   domains: Record<CompatibilityDomain, CompatibilityDomainInterpretation>;
 }
 
+export interface CrossSystemInterpretation {
+  sharedThemes: string[];
+  tropicalEmphasis: string[];
+  siderealEmphasis: string[];
+  apparentContradictions: string[];
+  reconciliations: string[];
+  synthesis: string;
+  sourceRefs: JsonRef[];
+}
+
 export interface FinalSynthesis {
   essence: string;
   definingThemes: string[];
