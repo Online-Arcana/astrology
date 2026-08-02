@@ -200,6 +200,7 @@ export const runInterpretation = async (
         break;
       }
 
+      await hooks.onReject?.(unit, attempt, model, output, audited);
       correction = [...audited.errors];
       if (attempt < config.chart.maxRetries) {
         retries += 1;
