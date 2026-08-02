@@ -110,6 +110,18 @@ class OpenAISchemaClient implements SchemaClient {
     return { id: value["id"], name, purpose: "user_data" };
   }
 
+  async deleteFile(id: string): Promise<void> {
+    if (id.length === 0) throw new Error("OpenAI file id is required");
+    const response = await this.#fetcher(`${this.#base}/files/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${this.#apiKey}` },
+    });
+    if (!response.ok && response.status !== 404) {
+      throw new Error(`OpenAI snapshot deletion failed with HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`);
+    }
+    await response.body?.cancel();
+  }
+
   async retrieveResponse(id: string): Promise<unknown> {
     const response = await this.#fetcher(`${this.#base}/responses/${encodeURIComponent(id)}`, {
       method: "GET",
