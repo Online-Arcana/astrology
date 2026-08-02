@@ -32,12 +32,158 @@ export interface FieldAudit {
   issues: AuditIssue[];
 }
 
+type SemanticRole = "strength" | "tension" | "theme";
+
 const placeholders = /^(?:n\/a|none|unknown|tbd|todo|placeholder|\.\.\.)$/iu;
 const badFormat = /```|^\s{0,3}#{1,6}\s|^\s*[-*+]\s+/mu;
 const label = /^\s*[\p{L}\p{N} _-]{2,40}:\s*/u;
 
+const strengthTerms = [
+  "ability",
+  "advantage",
+  "asset",
+  "balance",
+  "capacity",
+  "clarity",
+  "confidence",
+  "courage",
+  "discipline",
+  "ease",
+  "effective",
+  "gift",
+  "initiative",
+  "insight",
+  "reliable",
+  "resilience",
+  "resource",
+  "stable",
+  "steadiness",
+  "strength",
+  "support",
+  "talent",
+  "fortaleza",
+  "capacidad",
+  "confianza",
+  "valor",
+  "disciplina",
+  "facilidad",
+  "talento",
+  "resiliencia",
+  "claridad",
+  "equilibrio",
+  "iniciativa",
+] as const;
+
+const tensionTerms = [
+  "blind spot",
+  "block",
+  "challenge",
+  "conflict",
+  "difficulty",
+  "excess",
+  "friction",
+  "frustration",
+  "imbalance",
+  "impatience",
+  "instability",
+  "pressure",
+  "rigid",
+  "risk",
+  "struggle",
+  "tension",
+  "volatile",
+  "vulnerable",
+  "bloqueo",
+  "conflicto",
+  "dificultad",
+  "exceso",
+  "friccion",
+  "frustracion",
+  "desequilibrio",
+  "impaciencia",
+  "inestabilidad",
+  "presion",
+  "rigidez",
+  "riesgo",
+  "tension",
+  "vulnerabilidad",
+] as const;
+
+const themeTerms = [
+  "approach",
+  "development",
+  "direction",
+  "drive",
+  "dynamic",
+  "emphasis",
+  "expression",
+  "focus",
+  "identity",
+  "interplay",
+  "needs",
+  "orientation",
+  "pattern",
+  "priorities",
+  "purpose",
+  "rhythm",
+  "style",
+  "tendency",
+  "theme",
+  "desarrollo",
+  "direccion",
+  "dinamica",
+  "enfasis",
+  "expresion",
+  "identidad",
+  "necesidades",
+  "orientacion",
+  "patron",
+  "prioridades",
+  "proposito",
+  "ritmo",
+  "tendencia",
+  "tema",
+] as const;
+
 const forbidden = (sentence: string): boolean => forbiddenPatterns.some((pattern) => pattern.test(sentence));
 const boilerplate = (sentence: string): boolean => unwantedExamples.some((example) => cosine(sentence, example) >= 0.72);
+
+const has = (value: string, terms: readonly string[]): boolean =>
+  terms.some((term) => {
+    const normal = normaliseText(term);
+    return normal.length > 0 && value.includes(normal);
+  });
+
+const roleFor = (id: string): SemanticRole | null => {
+  const path = normaliseText(id);
+  if (/\b(?:strengths?|assets?|gifts?|advantages?|turn ons?|best expression|suitable fields?)\b/u.test(path)) {
+    return "strength";
+  }
+  if (/\b(?:tensions?|difficulties|risks?|blind spots?|frustrations?|turn offs?|contradictions?|growth edges?)\b/u.test(path)) {
+    return "tension";
+  }
+  if (/\b(?:themes?|emphasis|patterns?|styles?|needs|dynamic|summary|detail|overview|essence|narrative|synthesis|portrait|arc)\b/u.test(path)) {
+    return "theme";
+  }
+  return null;
+};
+
+const termsFor = (role: SemanticRole): readonly string[] => {
+  switch (role) {
+    case "strength":
+      return strengthTerms;
+    case "tension":
+      return tensionTerms;
+    case "theme":
+      return themeTerms;
+  }
+};
+
+const oppositeTermsFor = (role: SemanticRole): readonly string[] => {
+  if (role === "strength") return tensionTerms;
+  if (role === "tension") return strengthTerms;
+  return [];
+};
 
 const clean = (value: string): { value: string; repaired: boolean; removed: boolean } => {
   let repaired = false;
@@ -78,11 +224,30 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
   if (profile.maxLength !== undefined && value.length > profile.maxLength) {
     issues.push({ code: "format", message: `${profile.id} is too long`, repairable: false });
   }
+
   const normal = normaliseText(value);
-  if (profile.lexicon.length > 0 && normal.split(" ").length >= 8) {
-    const relevant = profile.lexicon.some((term) => normal.includes(normaliseText(term)));
-    if (!relevant) issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
+  if (normal.split(" ").length >= 8) {
+    const role = roleFor(profile.id);
+    const grounded = profile.lexicon.length === 0 || has(normal, profile.lexicon);
+    if (role === "strength" || role === "tension") {
+      const fits = has(normal, termsFor(role));
+      const opposite = has(normal, oppositeTermsFor(role));
+      if (opposite && !fits) {
+        const expected = role === "strength" ? "a strength" : "a tension";
+        issues.push({
+          code: "irrelevant",
+          message: `${profile.id} appears to describe the opposite semantic role instead of ${expected}`,
+          repairable: false,
+        });
+      }
+    } else {
+      const roleFit = role === null ? false : has(normal, termsFor(role));
+      if (!grounded && !roleFit) {
+        issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
+      }
+    }
   }
+
   for (const prior of profile.priorFields ?? []) {
     if (value.length >= 60 && prior.length >= 60 && cosine(value, prior) >= 0.92) {
       issues.push({ code: "cross_field_leakage", message: `${profile.id} is a near-duplicate of another field`, repairable: false });
