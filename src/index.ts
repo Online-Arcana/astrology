@@ -67,3 +67,4 @@ export * from "./llm/schema/chart.js";
 export * from "./llm/orchestrate/index.js";
 export * from "./llm/orchestrate/plan.js";
 export * from "./job/store.js";
+export * from "./job/recovery.js";
