@@ -6,3 +6,6 @@ coverage/
 *.astral
 *.log
 .DS_Store
+
+# Local manual test harness
+/test/local/
