@@ -28,10 +28,21 @@ export const humanFirstInterpretationRules = [
   "Never place sourceRefs or internal JSON paths inside narrative prose; references belong exclusively in sourceRefs.",
 ] as const;
 
+export const completionInterpretationRules = [
+  "Complete the entire schema before adding optional detail.",
+  "Use one or two complete sentences for ordinary narrative properties unless the schema clearly needs more.",
+  "Keep summary fields to one or two complete sentences and detail fields to several focused sentences.",
+  "Keep list entries short, independent and complete.",
+  "Do not spend most of the response elaborating early properties or omit later properties.",
+  "Finish every sentence, clause and list entry naturally.",
+  "Before returning, verify that every required property is present and no text ends midway through a thought.",
+] as const;
+
 export const directInterpretationRules = [
   ...baseInterpretationRules,
   ...refinedInterpretationRules,
   ...humanFirstInterpretationRules,
+  ...completionInterpretationRules,
 ] as const;
 
 export const sectionPrompt = (
