@@ -67,6 +67,39 @@ jobs:
               if text.count(old) != 1:
                   raise SystemExit(f"Expected exactly one reconstruction fragment: {old}")
               text = text.replace(old, new)
+
+          marker = '    elif [[ "$sha" == fe8bd6a400f5319ed1df543413336ab741f2d9b7 ]]; then\n'
+          if text.count(marker) != 1:
+              raise SystemExit("Places milestone marker was not found exactly once")
+          rename = """    elif [[ "$sha" == 15e6937b0393f92ca521d6e0d172f68fb9aa2965 ]]; then
+              python <<'PYRENAME'
+          from pathlib import Path
+          import json
+
+          for file in Path(".").rglob("*"):
+              if not file.is_file() or ".git" in file.parts:
+                  continue
+              try:
+                  value = file.read_text()
+              except (UnicodeDecodeError, OSError):
+                  continue
+              value = value.replace("kitty-crow/astral-charts", "kitty-crow/astrology")
+              value = value.replace("astral-charts", "astrology")
+              file.write_text(value)
+
+          package = Path("package.json")
+          data = json.loads(package.read_text())
+          data["name"] = "astrology"
+          data["bin"] = {"astrology": "./dist/cli.js"}
+          package.write_text(json.dumps(data, indent=2) + "\\n")
+          PYRENAME
+              git add -A
+              commit_sanitised \\
+                "$sha" \\
+                "rename project to astrology" \\
+                "Adopt the final repository, package and CLI identity throughout runtime configuration and documentation."
+          """ + marker
+          text = text.replace(marker, rename)
           path.write_text(text)
           PATCHMAIN
           bash -n /tmp/rebuild-main.sh
