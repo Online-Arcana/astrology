@@ -1,12 +1,12 @@
 # Interpretation orchestration
 
-`kitty-crow/openai-schema` is the sole OpenAI runtime. `astral-charts` does not construct Conversations API or Responses API requests and does not depend on a second OpenAI SDK.
+`kitty-crow/openai-schema` is the sole OpenAI runtime. `astrology` does not construct Conversations API or Responses API requests and does not depend on a second OpenAI SDK.
 
 The runtime path is:
 
 ```text
 fixed interpretation plan
-  -> astral-charts sequencing and local audit
+  -> astrology sequencing and local audit
   -> OpenAISchema.run(...)
   -> OpenAI Conversations and Responses APIs
 ```
@@ -15,7 +15,7 @@ fixed interpretation plan
 
 One chart job constructs one `OpenAISchema` instance through the local `SchemaClient` adapter. The library lazily creates one OpenAI conversation and attaches every subsequent schema call to that exact conversation.
 
-After each call, `astral-charts` verifies that a conversation ID exists and has not changed. A missing or changed ID fails the chart. A later chart job constructs a new client, so conversations cannot be shared between charts.
+After each call, `astrology` verifies that a conversation ID exists and has not changed. A missing or changed ID fails the chart. A later chart job constructs a new client, so conversations cannot be shared between charts.
 
 Calls remain ordered and serial within that conversation. This preserves deterministic field order, lets every accepted field participate in later duplicate checks and avoids concurrent writes racing against shared conversation state.
 
@@ -46,7 +46,7 @@ Recovery must contain a completed prefix of the fixed plan. Every recovered fiel
 - serialising queued calls on the same client
 - reopening an explicitly supplied conversation ID
 
-`astral-charts` owns:
+`astrology` owns:
 
 - the fixed interpretation plan
 - one cohesive schema field per call
@@ -59,7 +59,7 @@ Recovery must contain a completed prefix of the fixed plan. Every recovered fiel
 - checkpoint validation and resume order
 - progress and final chart assembly
 
-There is no duplicate Responses API implementation in `astral-charts`.
+There is no duplicate Responses API implementation in `astrology`.
 
 ## Field calls
 

@@ -30,18 +30,18 @@ Request options are optional. Missing options use environment configuration.
 
 ## CLI
 
-After building, the executable is `dist/cli.js` and the package binary is `astral-charts`.
+After building, the executable is `dist/cli.js` and the package binary is `astrology`.
 
 ### Deterministic calculation
 
 ```sh
-astral-charts calculate < request.json > calculation.json
+astrology calculate < request.json > calculation.json
 ```
 
 Use files and override selected settings:
 
 ```sh
-astral-charts calculate \
+astrology calculate \
   --input request.json \
   --output calculation.json \
   --primary-zodiac sidereal \
@@ -52,7 +52,7 @@ astral-charts calculate \
 ### Interpreted `.astral` generation
 
 ```sh
-astral-charts generate \
+astrology generate \
   --input request.json \
   --output chart.astral
 ```
@@ -62,7 +62,7 @@ astral-charts generate \
 Output is canonical RFC 8785 JSON by default. Use `--pretty` for indented JSON with a trailing newline:
 
 ```sh
-astral-charts generate --input request.json --output chart.astral --pretty
+astrology generate --input request.json --output chart.astral --pretty
 ```
 
 Presentation whitespace does not alter integrity or authority verification because validation canonicalises the parsed object.
@@ -72,13 +72,13 @@ The calculation-setting overrides accepted by `calculate` are also accepted by `
 ### File validation
 
 ```sh
-astral-charts validate --input chart.astral
+astrology validate --input chart.astral
 ```
 
 Provide an optional trusted-authority list:
 
 ```sh
-astral-charts validate \
+astrology validate \
   --input chart.astral \
   --trusted trusted-authorities.json \
   --output validation.json
@@ -97,17 +97,17 @@ Unsigned and valid-but-untrusted files remain valid results and do not by themse
 ### Place data
 
 ```sh
-astral-charts places continents
-astral-charts places countries --continent Europe
-astral-charts places regions --country GB
-astral-charts places cities --country GB --region ENG --query London
-astral-charts places get --id csc:GB:ENG:100
+astrology places continents
+astrology places countries --continent Europe
+astrology places regions --country GB
+astrology places cities --country GB --region ENG --query London
+astrology places get --id csc:GB:ENG:100
 ```
 
 ### Server
 
 ```sh
-astral-charts serve --host 127.0.0.1 --port 8787
+astrology serve --host 127.0.0.1 --port 8787
 ```
 
 The default host is `127.0.0.1`. Exposing the server on another interface is an explicit operator decision.
