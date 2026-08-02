@@ -20,6 +20,7 @@ import type {
   InterpretationRun,
   RunHooks,
   SchemaClientFactory,
+  WaveCheckpoint,
 } from "../llm/orchestrate/types.js";
 import type { BirthInput } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
@@ -102,12 +103,35 @@ const interpretationOrder = (calculation: AstralCalculation): string[] => [
   ...(calculation.subject.providedName === null ? ["generated-name"] : []),
 ];
 
+const expandedWave = (wave: WaveCheckpoint | null | undefined): WaveCheckpoint | null | undefined => {
+  if (wave === null || wave === undefined) return wave;
+  const phase = wave.assembled
+    ? "assembled"
+    : wave.lanes.every(({ status }) => status === "complete" || status === "blocked")
+      ? "barrier"
+      : "running";
+  return {
+    ...wave,
+    lanes: wave.lanes.map((lane) => ({
+      ...lane,
+      assignments: [...lane.assignments],
+      completed: [...lane.completed],
+      position: lane.completed.length,
+    })),
+    staged: { ...wave.staged },
+    conflicts: [...wave.conflicts],
+    phase,
+    stagedOrder: Object.keys(wave.staged),
+  };
+};
+
 const authoritativeInterpretation = async (
   calculation: AstralCalculation,
   interpretation: InterpretationCheckpoint,
 ): Promise<InterpretationCheckpoint> => {
+  const wave = expandedWave(interpretation.wave);
   const saved = interpretation.snapshot;
-  if (saved === null || saved === undefined) return interpretation;
+  if (saved === null || saved === undefined) return { ...interpretation, wave };
 
   const rebuilt = await buildSnapshot(
     { "astral-calculation": calculation },
@@ -142,6 +166,7 @@ const authoritativeInterpretation = async (
       acceptedOrder: [...rebuilt.acceptedOrder],
       localSnapshot: snapshotText(rebuilt),
     },
+    wave,
   };
 };
 
