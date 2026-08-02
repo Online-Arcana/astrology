@@ -1,11 +1,11 @@
 import type { AstronomyPort, LunarOrbitPort } from "../astro/port.js";
 import type { Calc, CalcReason, CalcStatus, TimeData } from "../types/base.js";
-import type { Ayanamsha, NatalEclipse, PrenatalEclipse } from "../types/astro.js";
+import type { Ayanamsha, NatalEclipse, PrenatalEclipse, Zodiac } from "../types/astro.js";
 import { ayanamshaDegrees } from "../zodiac/ayanamsha.js";
 import { normaliseDegrees, signPosition } from "../zodiac/position.js";
 import type { EclipseEventSample, EclipseKind, EclipsePort } from "./port.js";
 
-export const eclipseProfile = "western_eclipses/1.0.0" as const;
+export const eclipseProfile = "western_eclipses/1.1.0" as const;
 
 export interface EclipseCalculation {
   atBirth: Calc<NatalEclipse>;
@@ -18,7 +18,8 @@ export interface EclipseCalculationInput {
   astronomy: AstronomyPort;
   lunarOrbit: LunarOrbitPort;
   eclipses: EclipsePort;
-  ayanamsha: Ayanamsha;
+  zodiac: Zodiac;
+  ayanamsha: Ayanamsha | null;
 }
 
 interface EventFacts {
@@ -119,18 +120,23 @@ const prenatalValue = (
   astronomy: AstronomyPort,
   lunarOrbit: LunarOrbitPort,
   eclipses: EclipsePort,
-  ayanamsha: Ayanamsha,
+  zodiac: Zodiac,
+  ayanamsha: Ayanamsha | null,
 ): PrenatalEclipse => {
   const eventFacts = facts(event, astronomy, lunarOrbit);
+  const longitudeDegrees = zodiac === "tropical"
+    ? eventFacts.longitudeDegrees
+    : eventFacts.longitudeDegrees - ayanamshaDegrees(
+        event.julianEphemerisDay,
+        ayanamsha ?? "lahiri",
+      );
   return {
     kind: event.kind,
     type: event.type,
     exactUtcIso: eclipses.utcIso(event.julianEphemerisDay),
     daysBeforeBirth: birthJde - event.julianEphemerisDay,
-    tropicalPosition: signPosition(eventFacts.longitudeDegrees),
-    siderealPosition: signPosition(
-      eventFacts.longitudeDegrees - ayanamshaDegrees(event.julianEphemerisDay, ayanamsha),
-    ),
+    zodiac,
+    position: signPosition(longitudeDegrees),
     node: eventFacts.node,
     magnitude: event.magnitude,
   };
@@ -157,6 +163,13 @@ const natalValue = (
 };
 
 export const calculateEclipses = (input: EclipseCalculationInput): EclipseCalculation => {
+  if (input.zodiac === "sidereal" && input.ayanamsha === null) {
+    throw new Error("Sidereal eclipse calculation requires one selected ayanamsha");
+  }
+  if (input.zodiac === "tropical" && input.ayanamsha !== null) {
+    throw new Error("Tropical eclipse calculation cannot use an ayanamsha");
+  }
+
   const birthJde = input.time.julianEphemerisDay;
   if (birthJde === null) {
     const reason = noTimeReason(input.time);
@@ -190,6 +203,7 @@ export const calculateEclipses = (input: EclipseCalculationInput): EclipseCalcul
             input.astronomy,
             input.lunarOrbit,
             input.eclipses,
+            input.zodiac,
             input.ayanamsha,
           ),
           reason: state.reason,
@@ -204,6 +218,7 @@ export const calculateEclipses = (input: EclipseCalculationInput): EclipseCalcul
             input.astronomy,
             input.lunarOrbit,
             input.eclipses,
+            input.zodiac,
             input.ayanamsha,
           ),
           reason: state.reason,
