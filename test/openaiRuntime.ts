@@ -93,17 +93,14 @@ const exactRef = "#/astral-calculation/source" as JsonRef;
 const unavailableRef = "#/astral-calculation/unavailable" as JsonRef;
 const fingerprintRef = "#/astral-calculation/provenance/calculationFingerprint" as JsonRef;
 const calculation = {
-  schema: "astral-calculation/1.0.0",
+  schema: "astral-calculation/1.1.0",
   subject: { providedName: null, language: "en", adult: true },
   source: { status: "exact", value: { sign: "aries", meaning: "solar purpose" }, reason: "none" },
   unavailable: { status: "unavailable", value: null, reason: "birth_time_unknown" },
-  systems: {
-    tropical: { derived: { dominantPlanets: [], dominantSigns: [] } },
-    sidereal: { derived: { dominantPlanets: [], dominantSigns: [] } },
-  },
-  settings: { interpretationMode: "both" },
+  system: { zodiac: "tropical", derived: { dominantPlanets: [], dominantSigns: [] } },
+  settings: { primaryZodiac: "tropical", siderealAyanamsha: null, interpretationMode: "tropical" },
   interpretationPlan: {
-    schema: "astral-interpretation-plan/1.0.0",
+    schema: "astral-interpretation-plan/1.1.0",
     units: [
       {
         id: "tropical.point.sun",
@@ -128,7 +125,7 @@ const calculation = {
       },
       {
         id: "final-synthesis",
-        zodiac: null,
+        zodiac: "tropical",
         section: "finalSynthesis",
         domain: null,
         allowedSourceRefs: [exactRef],
@@ -160,17 +157,17 @@ class FakeClient implements SchemaClient {
     if (shape.name === "generated_chart_name") return { value: "Solar-purpose-pathfinder" } as T;
     if (shape.name === "final-synthesis") {
       return {
-        essence: "The astrological chart centres a clear solar purpose.",
-        definingThemes: ["Purposeful planetary self-expression"],
-        strongestAssets: ["Steady chart-based confidence"],
-        recurringTensions: ["Balancing personal purpose with relationship needs"],
-        relationshipPattern: "Relationships work best when the chart's directness is transparent.",
-        sexualPattern: "Desire follows confidence, trust and explicit communication.",
-        friendshipPattern: "The chart's friendship pattern grows through shared purpose and mutual encouragement.",
-        vocationalPattern: "Planetary emphasis favours visible and purposeful work.",
-        moneyPattern: "Material choices improve when they support the chart's central priorities.",
-        developmentalArc: "The chart's developmental pattern makes solar purpose more collaborative and flexible.",
-        closingPortrait: "This astrological chart portrait combines purposeful expression with relational balance.",
+        essence: "You centre your life around clear purpose and deliberate self-expression.",
+        definingThemes: ["You develop purpose through sustained choices."],
+        strongestAssets: ["You bring steady confidence to visible responsibilities."],
+        recurringTensions: ["You may struggle to balance personal aims with relationship needs."],
+        relationshipPattern: "You relate best when your directness remains transparent and considerate.",
+        sexualPattern: "Your desire responds to confidence, trust and explicit communication.",
+        friendshipPattern: "You build friendship through shared purpose and mutual encouragement.",
+        vocationalPattern: "You favour visible work that carries a clear sense of purpose.",
+        moneyPattern: "You make stronger material choices when they support your central priorities.",
+        developmentalArc: "You grow by making your sense of purpose more collaborative and flexible.",
+        closingPortrait: "You combine purposeful expression with a growing capacity for relational balance.",
         sourceRefs: [exactRef],
       } as T;
     }
@@ -178,11 +175,11 @@ class FakeClient implements SchemaClient {
       return {
         status: "written",
         title: "Identity and purpose",
-        summary: "This life theme favours deliberate choices that give personal identity a clear and constructive direction.",
-        detail: "Purpose develops through sustained commitments rather than isolated displays, allowing ambition to mature into dependable contribution.",
-        themes: ["Purpose shaped through conscious commitment"],
-        strengths: ["A durable sense of personal direction"],
-        tensions: ["Pressure to prove identity through constant action"],
+        summary: "You favour deliberate choices that give your identity a clear and constructive direction.",
+        detail: "Your purpose develops through sustained commitments, allowing ambition to mature into dependable contribution.",
+        themes: ["You shape purpose through conscious commitment."],
+        strengths: ["You sustain a durable sense of personal direction."],
+        tensions: ["You may feel pressure to prove yourself through constant action."],
         sourceRefs: [exactRef],
       } as T;
     }
@@ -202,17 +199,17 @@ class FakeClient implements SchemaClient {
     return {
       status: "written",
       title: "Solar purpose",
-      summary: "The solar chart placement emphasises purpose, identity and visible self-expression.",
-      detail: "This planetary position supports direct action when personal aims remain connected to the wider chart pattern.",
-      themes: ["Solar identity and purposeful expression"],
-      strengths: ["Confident planetary initiative"],
-      tensions: ["Over-identifying with one chart theme"],
+      summary: "You express purpose most clearly when you act with confidence and visible intention.",
+      detail: "You take direct action most effectively when personal aims remain connected to wider responsibilities.",
+      themes: ["You seek purposeful self-expression."],
+      strengths: ["You show confident initiative."],
+      tensions: ["You may identify too strongly with one defining aim."],
       sourceRefs: [exactRef],
     } as T;
   }
 }
 
-await test("fixed plan keeps one ordered conversation and routes fields by cost", async () => {
+await test("fixed plan keeps one bounded foundation conversation and routes fields by cost", async () => {
   const client = new FakeClient();
   const result = await runInterpretationPlan(
     calculation,
