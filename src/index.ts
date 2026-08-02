@@ -59,6 +59,7 @@ export * from "./interface/server.js";
 export * from "./interface/cliArgs.js";
 export * from "./ref/resolve.js";
 export * from "./llm/openaiSchema.js";
+export * from "./llm/openaiTransport.js";
 export * from "./llm/audit/index.js";
 export * from "./llm/audit/structured.js";
 export * from "./llm/schema/build.js";
