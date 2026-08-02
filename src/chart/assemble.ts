@@ -42,31 +42,12 @@ const pointIds = [
 ] as const satisfies readonly PointId[];
 
 const lifeSections = [
-  "identityAndPurpose",
-  "emotionalNature",
-  "mindAndCommunication",
-  "romance",
-  "sexuality",
-  "committedPartnerships",
-  "homeAndFamily",
-  "childhoodPatterns",
-  "creativityAndSelfExpression",
-  "childrenAndNurturing",
-  "friendship",
-  "communityAndGroups",
-  "workStyle",
-  "careerAndVocation",
-  "businessAndLeadership",
-  "moneyAndMaterialSecurity",
-  "publicLifeAndAmbition",
-  "conflictAndAssertion",
-  "growthAndOpportunity",
-  "restrictionsAndResponsibility",
-  "transformationAndCrisis",
-  "spiritualityAndMeaning",
-  "unconsciousPatterns",
-  "wellbeingAndDailyRhythm",
-  "developmentalDirection",
+  "identityAndPurpose", "emotionalNature", "mindAndCommunication", "romance", "sexuality",
+  "committedPartnerships", "homeAndFamily", "childhoodPatterns", "creativityAndSelfExpression",
+  "childrenAndNurturing", "friendship", "communityAndGroups", "workStyle", "careerAndVocation",
+  "businessAndLeadership", "moneyAndMaterialSecurity", "publicLifeAndAmbition", "conflictAndAssertion",
+  "growthAndOpportunity", "restrictionsAndResponsibility", "transformationAndCrisis", "spiritualityAndMeaning",
+  "unconsciousPatterns", "wellbeingAndDailyRhythm", "developmentalDirection",
 ] as const satisfies readonly (keyof LifeInterpretation)[];
 
 export interface ChartAssemblyOptions {
@@ -128,8 +109,7 @@ const reader = (calculation: AstralCalculation, run: InterpretationRun): Reader 
       const unit = plan.get(id);
       if (!unit) throw new Error(`Interpretation unit ${id} is not in the plan`);
       const parsed = parse(result(id).value);
-      const references = sourceRefs(parsed, id);
-      if (!refsValid(root, references, new Set(unit.allowedSourceRefs))) {
+      if (!refsValid(root, sourceRefs(parsed, id), new Set(unit.allowedSourceRefs))) {
         throw new Error(`Interpretation unit ${id} contains unresolved, unavailable or unpermitted source references`);
       }
       return parsed;
@@ -145,20 +125,11 @@ const life = (values: Reader, zodiac: Zodiac): LifeInterpretation => {
   for (const key of lifeSections) {
     const id = `${zodiac}.life.${key}`;
     switch (key) {
-      case "romance":
-        output.romance = values.value(id, parseRomanticInterpretation);
-        break;
-      case "sexuality":
-        output.sexuality = values.value(id, parseSexualInterpretation);
-        break;
-      case "careerAndVocation":
-        output.careerAndVocation = values.value(id, parseCareerInterpretation);
-        break;
-      case "moneyAndMaterialSecurity":
-        output.moneyAndMaterialSecurity = values.value(id, parseMoneyInterpretation);
-        break;
-      default:
-        ordinary[key] = section(values, id);
+      case "romance": output.romance = values.value(id, parseRomanticInterpretation); break;
+      case "sexuality": output.sexuality = values.value(id, parseSexualInterpretation); break;
+      case "careerAndVocation": output.careerAndVocation = values.value(id, parseCareerInterpretation); break;
+      case "moneyAndMaterialSecurity": output.moneyAndMaterialSecurity = values.value(id, parseMoneyInterpretation); break;
+      default: ordinary[key] = section(values, id);
     }
   }
   return output;
@@ -178,10 +149,7 @@ const houses = (values: Reader, zodiac: Zodiac): HouseMap<Section> => {
   return output;
 };
 
-const system = (
-  calculation: AstralCalculation,
-  values: Reader,
-): SystemInterpretation => {
+const system = (calculation: AstralCalculation, values: Reader): SystemInterpretation => {
   const zodiac = calculation.system.zodiac;
   const deterministic = calculation.system;
   return {
@@ -194,14 +162,8 @@ const system = (
     },
     points: points(values, zodiac),
     houses: houses(values, zodiac),
-    aspects: deterministic.aspects.map(({ id }) => ({
-      id,
-      section: section(values, `${zodiac}.aspect.${id}`),
-    })),
-    patterns: deterministic.patterns.map(({ id }) => ({
-      id,
-      section: section(values, `${zodiac}.pattern.${id}`),
-    })),
+    aspects: deterministic.aspects.map(({ id }) => ({ id, section: section(values, `${zodiac}.aspect.${id}`) })),
+    patterns: deterministic.patterns.map(({ id }) => ({ id, section: section(values, `${zodiac}.pattern.${id}`) })),
     lunar: {
       phase: section(values, `${zodiac}.lunar.phase`),
       nodes: section(values, `${zodiac}.lunar.nodes`),
@@ -304,7 +266,11 @@ export const assembleChart = (
       nlpAuditProfile: options.nlpAuditProfile,
       interpretationCalls: run.calls,
       retries: run.retries,
-      sharedConversation: true,
+      sharedConversation: false,
+      orchestration: "bounded_waves",
+      conversationCount: run.conversationIds?.length ?? 1,
+      waves: run.waves ?? 0,
+      snapshotRevision: run.snapshotRevision ?? 0,
       phases,
     },
   };
