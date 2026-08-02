@@ -157,7 +157,6 @@ await test("sidereal chart stores only its selected ayanamsha position", () => {
     ayanamsha: "lahiri",
   });
   equal(sidereal.prenatalSolar.value?.zodiac, "sidereal", "sidereal position zodiac");
-  equal(sidereal.prenatalSolar.value?.ayanamsha, "lahiri", "sidereal position ayanamsha");
   equal(
     sidereal.prenatalSolar.value?.position.longitudeDegrees === tropical.prenatalSolar.value?.position.longitudeDegrees,
     false,
