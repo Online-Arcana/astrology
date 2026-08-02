@@ -6,7 +6,7 @@
 	url = https://github.com/kitty-crow/openai-schema.git
 [submodule "vendor/places"]
 	path = vendor/places
-	url = https://github.com/dr5hn/countrystatecity-npm.git
+	url = https://github.com/kitty-crow/countrystatecity.git
 [submodule "vendor/time"]
 	path = vendor/time
 	url = https://github.com/js-joda/js-joda.git

@@ -10,9 +10,9 @@ export const vendorRevisions = {
     version: "1.0.1",
   },
   places: {
-    repository: "dr5hn/countrystatecity-npm",
-    revision: "c3d0110907fe34ce6eb759c2124d06fb921f5ef8",
-    version: "1.0.7",
+    repository: "kitty-crow/countrystatecity",
+    revision: "9decab11ff380b50f40f82e29d89c2a3b1e0ef7f",
+    version: "2.1.0",
   },
   time: {
     repository: "js-joda/js-joda",

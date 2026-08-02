@@ -19,7 +19,7 @@
     "ci": "npm run check && npm run test && npm run build",
     "start": "node dist/cli.js serve",
     "vendor:astronomia": "npm --prefix vendor/astronomia install && npm --prefix vendor/astronomia run build",
-    "vendor:places": "npx --yes pnpm@9.0.0 --dir vendor/places install --frozen-lockfile && npx --yes pnpm@9.0.0 --dir vendor/places --filter @countrystatecity/countries build",
+    "vendor:places": "npm --prefix vendor/places ci --ignore-scripts && npm --prefix vendor/places run build --workspace=@countrystatecity/countries",
     "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time/packages/core run build-dist && npm --prefix vendor/time/packages/timezone run build-dist",
     "vendor:schema": "npm --prefix vendor/openai-schema install && npm --prefix vendor/openai-schema run build",
     "vendor:build": "npm run vendor:astronomia && npm run vendor:places && npm run vendor:time && npm run vendor:schema"
