@@ -20,7 +20,7 @@ import type {
 
 export const promptCatalogue = "astral-prompts/1.0.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.0.0" as const;
-export const nlpAuditProfile = "astral-nlp-audit/1.0.0" as const;
+export const nlpAuditProfile = "astral-nlp-audit/1.0.1" as const;
 
 export interface PlanInterpretationResult {
   run: InterpretationRun;
