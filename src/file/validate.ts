@@ -5,6 +5,7 @@ import type {
   AstralValidation,
   TrustedAuthority,
 } from "../types/file.js";
+import type { LegacyAstralFile, ReadableAstralFile } from "../types/legacy.js";
 import { signatureValid } from "./authority.js";
 import { canonicalise } from "./canonical.js";
 import { integrityValid } from "./integrity.js";
@@ -17,6 +18,11 @@ const exactArray = (value: unknown, expected: readonly string[]): boolean =>
   Array.isArray(value)
   && value.length === expected.length
   && value.every((item, index) => item === expected[index]);
+
+const exactKeys = (value: Record<string, unknown>, expected: readonly string[]): boolean => {
+  const keys = Object.keys(value);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(value, key));
+};
 
 const hex = (value: unknown, length: number): boolean =>
   typeof value === "string" && new RegExp(`^[0-9a-f]{${length}}$`, "u").test(value);
@@ -52,32 +58,34 @@ const crcShape = (value: unknown): boolean => {
 };
 
 const compatibilityShape = (file: AstralFile): boolean => {
-  for (const zodiac of ["tropical", "sidereal"] as const) {
-    const matrix = file["astral-calculation"].compatibility[zodiac];
-    if (matrix.zodiac !== zodiac) return false;
-    for (const domain of compatibilityDomains) {
-      const scores = matrix.domains[domain];
-      if (scores.domain !== domain || !compatibilityValid(scores)) return false;
-    }
+  const calculation = file["astral-calculation"];
+  const matrix = calculation.compatibility;
+  if (matrix.zodiac !== calculation.system.zodiac) return false;
+  for (const domain of compatibilityDomains) {
+    const scores = matrix.domains[domain];
+    if (scores.domain !== domain || !compatibilityValid(scores)) return false;
   }
   return true;
 };
 
 const interpretationPlanShape = (file: AstralFile): boolean => {
-  const plan = file["astral-calculation"].interpretationPlan;
-  if (plan.schema !== "astral-interpretation-plan/1.0.0" || !Array.isArray(plan.units)) return false;
+  const calculation = file["astral-calculation"];
+  const plan = calculation.interpretationPlan;
+  if (plan.schema !== "astral-interpretation-plan/1.1.0" || !Array.isArray(plan.units)) return false;
+  if (plan.zodiac !== calculation.system.zodiac) return false;
   const ids = plan.units.map(({ id }) => id);
   return ids.length > 0
     && ids.every((id) => typeof id === "string" && id.length > 0)
     && new Set(ids).size === ids.length
-    && plan.units.every((unit) => Array.isArray(unit.allowedSourceRefs));
+    && plan.units.every((unit) => unit.zodiac === plan.zodiac && Array.isArray(unit.allowedSourceRefs));
 };
 
 const chartShape = (file: AstralFile): boolean => {
+  const calculation = file["astral-calculation"];
   const chart = file["astral-chart"];
-  if (chart.schema !== "astral-chart/1.0.0") return false;
-  if (chart.tropical.zodiac !== "tropical" || chart.sidereal.zodiac !== "sidereal") return false;
-  if (chart.compatibility.tropical.zodiac !== "tropical" || chart.compatibility.sidereal.zodiac !== "sidereal") return false;
+  if (chart.schema !== "astral-chart/1.1.0") return false;
+  if (chart.zodiac !== calculation.system.zodiac) return false;
+  if (chart.system.zodiac !== chart.zodiac || chart.compatibility.zodiac !== chart.zodiac) return false;
   const name = chart.subject.name;
   if (name.source === "generated" && !generatedNamePattern.test(name.value)) return false;
   return name.value.length > 0 && Array.isArray(name.sourceRefs);
@@ -88,7 +96,7 @@ export const isAstralFile = (value: unknown): value is AstralFile => {
   const file = value as unknown as AstralFile;
   try {
     return rootShapeValid(file)
-      && file["astral-calculation"]?.schema === "astral-calculation/1.0.0"
+      && file["astral-calculation"]?.schema === "astral-calculation/1.1.0"
       && chartShape(file)
       && crcShape(file.crc)
       && (file.authority === null || authorityShape(file.authority))
@@ -99,20 +107,43 @@ export const isAstralFile = (value: unknown): value is AstralFile => {
   }
 };
 
+export const isLegacyAstralFile = (value: unknown): value is LegacyAstralFile => {
+  if (!record(value) || !exactKeys(value, ["schema", "astral-calculation", "astral-chart", "crc", "authority"])) {
+    return false;
+  }
+  const calculation = value["astral-calculation"];
+  const chart = value["astral-chart"];
+  return value["schema"] === "astral/1.0.0"
+    && record(calculation)
+    && calculation["schema"] === "astral-calculation/1.0.0"
+    && record(chart)
+    && chart["schema"] === "astral-chart/1.0.0"
+    && crcShape(value["crc"])
+    && (value["authority"] === null || authorityShape(value["authority"]));
+};
+
 export const parseAstralFile = (value: unknown): AstralFile => {
-  if (!isAstralFile(value)) throw new TypeError("Value is not a structurally valid astral/1.0.0 file");
+  if (!isAstralFile(value)) throw new TypeError("Value is not a structurally valid astral/1.1.0 file");
   return value;
 };
 
-export const decodeAstralFile = (text: string): AstralFile => {
-  let value: unknown;
+export const parseReadableAstralFile = (value: unknown): ReadableAstralFile => {
+  if (isAstralFile(value) || isLegacyAstralFile(value)) return value;
+  throw new TypeError("Value is not a readable astral/1.1.0 or legacy astral/1.0.0 file");
+};
+
+const decode = (text: string): unknown => {
   try {
-    value = JSON.parse(text) as unknown;
+    return JSON.parse(text) as unknown;
   } catch (cause) {
     throw new TypeError("Astral file is not valid JSON", { cause });
   }
-  return parseAstralFile(value);
 };
+
+export const decodeAstralFile = (text: string): AstralFile => parseAstralFile(decode(text));
+
+export const decodeReadableAstralFile = (text: string): ReadableAstralFile =>
+  parseReadableAstralFile(decode(text));
 
 export const encodeAstralFile = (file: AstralFile, pretty = false): string => {
   parseAstralFile(file);
@@ -144,6 +175,13 @@ export const validateAstralFile = async (
   value: unknown,
   trusted: readonly TrustedAuthority[] = [],
 ): Promise<AstralValidation> => {
+  if (isLegacyAstralFile(value)) {
+    return {
+      structure: "valid",
+      integrity: "unsupported",
+      authority: value.authority === null ? "unsigned" : "unknown_key",
+    };
+  }
   if (!isAstralFile(value)) {
     return { structure: "invalid", integrity: "invalid_crc", authority: "invalid" };
   }

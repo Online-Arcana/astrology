@@ -4,6 +4,27 @@ export type ChartJobStatus =
   | "queued" | "calculating" | "interpreting" | "auditing"
   | "assembling" | "signing" | "completed" | "failed" | "cancelled";
 
+export interface ActiveLaneProgress {
+  laneId: string | null;
+  unitId: string;
+  label: string;
+  attempt: number;
+  model: string | null;
+}
+
+export interface ChartProgressDetails {
+  phase: "deterministic" | "interpretation" | "final" | "completed" | "failed" | "cancelled";
+  acceptedWeight: number;
+  totalWeight: number;
+  currentWave: number | null;
+  activeLanes: ActiveLaneProgress[];
+  stagedUnits: number;
+  repairingUnits: string[];
+  retryingUnits: string[];
+  rateLimited: boolean;
+  finalValidation: boolean;
+}
+
 export interface ChartProgress {
   jobId: string;
   status: ChartJobStatus;
@@ -26,4 +47,5 @@ export interface ChartProgress {
   model: { role: "big" | "small" | null; name: string | null };
   attempt: { current: number; maximum: number };
   error: { code: string; message: string } | null;
+  details?: ChartProgressDetails;
 }

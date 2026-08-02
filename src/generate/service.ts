@@ -6,25 +6,34 @@ import {
 import { assembleChart } from "../chart/assemble.js";
 import type { Config } from "../config.js";
 import { assembleAstralFile } from "../file/document.js";
+import {
+  legacyBirthInput,
+  legacyGenerationRecoverySchema,
+  migrateLegacyInterpretation,
+  type LegacyGenerationCheckpoint,
+} from "./migration.js";
 import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
+import { diagnosticHooks } from "../llm/orchestrate/diagnostics.js";
 import {
   nlpAuditProfile,
   promptCatalogue,
   runInterpretationPlan,
   structuredOutputCatalogue,
 } from "../llm/orchestrate/plan.js";
+import { buildSnapshot, snapshotText } from "../llm/orchestrate/snapshot.js";
 import type {
   InterpretationCheckpoint,
   InterpretationRecovery,
   InterpretationRun,
   RunHooks,
   SchemaClientFactory,
+  WaveCheckpoint,
 } from "../llm/orchestrate/types.js";
 import type { BirthInput } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
 import type { AstralCalculation, AstralFile } from "../types/file.js";
 
-export const generationRecoverySchema = "astral-generation-recovery/1.0.0" as const;
+export const generationRecoverySchema = "astral-generation-recovery/1.1.0" as const;
 
 export interface GeneratedChart {
   calculation: AstralCalculation;
@@ -40,6 +49,8 @@ export interface ChartGenerationCheckpoint {
   calculation: AstralCalculation;
   interpretation: InterpretationCheckpoint;
 }
+
+export type ResumableChartGenerationCheckpoint = ChartGenerationCheckpoint | LegacyGenerationCheckpoint;
 
 export interface GenerationHooks extends Omit<RunHooks, "onCheckpoint"> {
   onCheckpoint?: (checkpoint: ChartGenerationCheckpoint) => void | Promise<void>;
@@ -82,24 +93,114 @@ const baseDeveloperInstruction = [
   "Return only the requested strict JSON schema.",
 ].join("\n");
 
-const languageInstruction = (calculation: AstralCalculation): string => [
-  `Write all interpretation text in ${calculation.subject.language}.`,
-  "The subject is an adult.",
-  "Astrology may be interpreted as symbolism, tendencies and patterns only.",
-  "Do not add medical, legal, financial, safeguarding or crisis advice.",
-].join("\n");
+const languageInstruction = (calculation: AstralCalculation): string => {
+  const ayanamsha = calculation.settings.siderealAyanamsha;
+  return [
+    `Write all interpretation text in ${calculation.subject.language}.`,
+    "The subject is an adult.",
+    "Astrology may be interpreted as symbolism, tendencies and patterns only.",
+    "Do not add medical, legal, financial, safeguarding or crisis advice.",
+    `Use only the selected ${calculation.system.zodiac} zodiac system.`,
+    ayanamsha === null
+      ? "Do not mention, compare or import sidereal placements or ayanamshas."
+      : `Use only the ${ayanamsha} ayanamsha and never import another ayanamsha or tropical placement.`,
+  ].join("\n");
+};
 
-const recoveryFor = (
+const interpretationOrder = (calculation: AstralCalculation): string[] => [
+  ...calculation.interpretationPlan.units.map(({ id }) => id),
+  ...(calculation.subject.providedName === null ? ["generated-name"] : []),
+];
+
+const expandedWave = (wave: WaveCheckpoint | null | undefined): WaveCheckpoint | null => {
+  if (wave === null || wave === undefined) return null;
+  const phase = wave.assembled
+    ? "assembled"
+    : wave.lanes.every(({ status }) => status === "complete" || status === "blocked")
+      ? "barrier"
+      : "running";
+  return {
+    ...wave,
+    lanes: wave.lanes.map((lane) => ({
+      ...lane,
+      assignments: [...lane.assignments],
+      completed: [...lane.completed],
+      position: lane.completed.length,
+    })),
+    staged: { ...wave.staged },
+    conflicts: [...wave.conflicts],
+    phase,
+    stagedOrder: Object.keys(wave.staged),
+  };
+};
+
+const authoritativeInterpretation = async (
+  calculation: AstralCalculation,
+  interpretation: InterpretationCheckpoint,
+): Promise<InterpretationCheckpoint> => {
+  const wave = expandedWave(interpretation.wave);
+  const saved = interpretation.snapshot;
+  if (saved === null || saved === undefined) return { ...interpretation, wave };
+
+  const rebuilt = await buildSnapshot(
+    { "astral-calculation": calculation },
+    interpretation.units,
+    interpretationOrder(calculation),
+    saved.revision,
+  );
+  if (rebuilt.sha256 !== saved.sha256) {
+    throw new Error("Generation recovery local snapshot does not match its accepted interpretation units");
+  }
+  if (saved.localSnapshot !== undefined) {
+    let local: unknown;
+    try {
+      local = JSON.parse(saved.localSnapshot);
+    } catch {
+      throw new Error("Generation recovery local snapshot is not valid JSON");
+    }
+    if (
+      typeof local !== "object"
+      || local === null
+      || (local as { sha256?: unknown }).sha256 !== saved.sha256
+    ) {
+      throw new Error("Generation recovery local snapshot identity is invalid");
+    }
+  }
+
+  return {
+    ...interpretation,
+    snapshot: {
+      ...saved,
+      remoteFileId: null,
+      acceptedOrder: [...rebuilt.acceptedOrder],
+      localSnapshot: snapshotText(rebuilt),
+    },
+    wave,
+  };
+};
+
+const recoveryFor = async (
   version: string,
   calculation: AstralCalculation,
   interpretation: InterpretationCheckpoint,
-): ChartGenerationCheckpoint => ({
+): Promise<ChartGenerationCheckpoint> => ({
   schema: generationRecoverySchema,
   version,
   calculationFingerprint: calculation.provenance.calculationFingerprint,
   calculation,
-  interpretation,
+  interpretation: await authoritativeInterpretation(calculation, interpretation),
 });
+
+const assertRecoveryBasis = (checkpoint: ChartGenerationCheckpoint, config: Config): void => {
+  const settings = checkpoint.calculation.settings;
+  if (settings.primaryZodiac !== config.chart.primaryZodiac || settings.interpretationMode !== config.chart.interpretationMode) {
+    throw new Error("Generation recovery zodiac does not match the runtime chart configuration; create or resume the matching chart instead");
+  }
+  const expectedAyanamsha = settings.primaryZodiac === "sidereal" ? config.chart.ayanamsha : null;
+  if (settings.siderealAyanamsha !== expectedAyanamsha) {
+    throw new Error("Generation recovery ayanamsha does not match the runtime chart configuration; create or resume the matching chart instead");
+  }
+};
 
 export class ChartGenerationService {
   readonly #runtime: GenerationRuntime;
@@ -118,9 +219,17 @@ export class ChartGenerationService {
   }
 
   async resume(
-    checkpoint: ChartGenerationCheckpoint,
+    checkpoint: ResumableChartGenerationCheckpoint,
     hooks: GenerationHooks = {},
   ): Promise<GeneratedChart> {
+    if (checkpoint.schema === legacyGenerationRecoverySchema) {
+      const calculation = await this.#runtime.calculation.calculate(
+        legacyBirthInput(checkpoint),
+        optionsFromConfig(this.#runtime.config),
+      );
+      const recovery = migrateLegacyInterpretation(checkpoint, calculation);
+      return this.#complete(calculation, hooks, recovery);
+    }
     if (checkpoint.schema !== generationRecoverySchema) {
       throw new Error("Generation recovery schema is unsupported");
     }
@@ -132,7 +241,9 @@ export class ChartGenerationService {
     if (checkpoint.calculation.provenance.calculationFingerprint !== checkpoint.calculationFingerprint) {
       throw new Error("Generation recovery calculation fingerprint does not match its calculation");
     }
-    return this.#complete(checkpoint.calculation, hooks, checkpoint.interpretation);
+    assertRecoveryBasis(checkpoint, this.#runtime.config);
+    const recovery = await authoritativeInterpretation(checkpoint.calculation, checkpoint.interpretation);
+    return this.#complete(checkpoint.calculation, hooks, recovery);
   }
 
   async #complete(
@@ -141,19 +252,20 @@ export class ChartGenerationService {
     recovery: InterpretationRecovery | null,
   ): Promise<GeneratedChart> {
     const { onCheckpoint, ...runHooks } = hooks;
+    const instrumented = diagnosticHooks({
+      ...runHooks,
+      ...(onCheckpoint === undefined
+        ? {}
+        : {
+            onCheckpoint: async (checkpoint: InterpretationCheckpoint) =>
+              onCheckpoint(await recoveryFor(this.#runtime.version, calculation, checkpoint)),
+          }),
+    }, () => this.#runtime.now());
     const interpreted = await runInterpretationPlan(
       calculation,
       this.#runtime.config,
       this.#runtime.schemaFactory(calculation),
-      {
-        ...runHooks,
-        ...(onCheckpoint === undefined
-          ? {}
-          : {
-              onCheckpoint: (checkpoint: InterpretationCheckpoint) =>
-                onCheckpoint(recoveryFor(this.#runtime.version, calculation, checkpoint)),
-            }),
-      },
+      instrumented,
       recovery,
     );
     const generatedAt = this.#runtime.now();
@@ -174,7 +286,7 @@ export class ChartGenerationService {
 
 export const loadChartGenerationService = async (
   config: Config,
-  version = "0.18.2",
+  version = "0.19.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata">> = {},
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {
@@ -189,7 +301,8 @@ export const loadChartGenerationService = async (
       service: "astral-charts",
       calculation_fingerprint: value.provenance.calculationFingerprint,
       astral_charts_version: version,
-      interpretation_mode: value.settings.interpretationMode,
+      zodiac: value.system.zodiac,
+      ayanamsha: value.settings.siderealAyanamsha ?? "none",
     },
     ...openai,
   });

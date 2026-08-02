@@ -1,5 +1,6 @@
 import type { CalculationOptions } from "../calculate/service.js";
 import type { BirthInput } from "../types/base.js";
+import type { Zodiac } from "../types/astro.js";
 
 export interface CalculationRequest {
   birth: BirthInput;
@@ -46,19 +47,41 @@ const birth = (value: unknown): BirthInput => {
   return result;
 };
 
+const selectedZodiac = (raw: Record<string, unknown>, defaults: CalculationOptions): Zodiac => {
+  const supplied: Array<readonly [string, unknown]> = [];
+  for (const [name, value] of [
+    ["options.zodiac", raw["zodiac"]],
+    ["options.primaryZodiac", raw["primaryZodiac"]],
+    ["options.interpretationMode", raw["interpretationMode"]],
+  ] as const) {
+    if (value !== undefined) supplied.push([name, value]);
+  }
+  if (supplied.some(([, value]) => value === "both")) {
+    throw new Error("A chart cannot contain both zodiac systems; create separate tropical and sidereal charts");
+  }
+  const first = supplied[0];
+  const selected = first === undefined
+    ? defaults.primaryZodiac
+    : oneOf(first[1], first[0], ["tropical", "sidereal"] as const);
+  for (const [name, value] of supplied.slice(1)) {
+    if (oneOf(value, name, ["tropical", "sidereal"] as const) !== selected) {
+      throw new Error("options.zodiac, options.primaryZodiac and options.interpretationMode must select the same zodiac");
+    }
+  }
+  return selected;
+};
+
 const options = (value: unknown, defaults: CalculationOptions): CalculationOptions => {
   if (value === undefined) return defaults;
   const raw = object(value, "options");
+  const zodiac = selectedZodiac(raw, defaults);
+  const ayanamshaValue = raw["ayanamsha"] ?? raw["siderealAyanamsha"];
   return {
-    primaryZodiac: raw["primaryZodiac"] === undefined
-      ? defaults.primaryZodiac
-      : oneOf(raw["primaryZodiac"], "options.primaryZodiac", ["tropical", "sidereal"] as const),
-    ayanamsha: raw["ayanamsha"] === undefined
+    primaryZodiac: zodiac,
+    ayanamsha: ayanamshaValue === undefined
       ? defaults.ayanamsha
-      : oneOf(raw["ayanamsha"], "options.ayanamsha", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const),
-    interpretationMode: raw["interpretationMode"] === undefined
-      ? defaults.interpretationMode
-      : oneOf(raw["interpretationMode"], "options.interpretationMode", ["tropical", "sidereal", "both"] as const),
+      : oneOf(ayanamshaValue, "options.ayanamsha", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const),
+    interpretationMode: zodiac,
   };
 };
 

@@ -46,17 +46,15 @@ const lifeSections = [
 ] as const;
 
 const ref = (value: string): JsonRef => `#/${value}` as JsonRef;
-const systemRef = (zodiac: Zodiac, path = ""): JsonRef =>
-  ref(`astral-calculation/systems/${zodiac}${path.length > 0 ? `/${path}` : ""}`);
-const compatibilityRef = (zodiac: Zodiac, domain: CompatibilityDomain, sign?: Sign): JsonRef =>
-  systemRefPath(zodiac, domain, sign);
-const systemRefPath = (zodiac: Zodiac, domain: CompatibilityDomain, sign?: Sign): JsonRef => ref(
-  `astral-calculation/compatibility/${zodiac}/domains/${domain}${sign ? `/signs/${sign}` : ""}`,
+const systemRef = (path = ""): JsonRef =>
+  ref(`astral-calculation/system${path.length > 0 ? `/${path}` : ""}`);
+const compatibilityRef = (domain?: CompatibilityDomain, sign?: Sign): JsonRef => ref(
+  `astral-calculation/compatibility${domain ? `/domains/${domain}` : ""}${sign ? `/signs/${sign}` : ""}`,
 );
 
 const unit = (
   id: string,
-  zodiac: Zodiac | null,
+  zodiac: Zodiac,
   section: string,
   domain: string | null,
   allowedSourceRefs: readonly JsonRef[],
@@ -68,10 +66,11 @@ const unit = (
   allowedSourceRefs: [...allowedSourceRefs],
 });
 
-const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): InterpretationUnit[] => {
+const systemUnits = (calculation: ZodiacCalculation): InterpretationUnit[] => {
+  const zodiac = calculation.zodiac;
   const units: InterpretationUnit[] = [];
   const prefix = `${zodiac}.`;
-  units.push(unit(`${prefix}overview`, zodiac, "overview", null, [systemRef(zodiac)]));
+  units.push(unit(`${prefix}overview`, zodiac, "overview", null, [systemRef()]));
 
   for (const point of ["sun", "moon", "ascendant"] as const) {
     units.push(unit(
@@ -79,7 +78,7 @@ const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): Interpreta
       zodiac,
       `bigThree.${point}`,
       null,
-      [systemRef(zodiac, `points/${point}`)],
+      [systemRef(`points/${point}`)],
     ));
   }
 
@@ -89,7 +88,7 @@ const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): Interpreta
       zodiac,
       `points.${point}`,
       null,
-      [systemRef(zodiac, `points/${point}`)],
+      [systemRef(`points/${point}`)],
     ));
   }
 
@@ -99,7 +98,7 @@ const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): Interpreta
       zodiac,
       `houses.${house}`,
       null,
-      [systemRef(zodiac, `houses/placidus/houses/${house}`)],
+      [systemRef(`houses/placidus/houses/${house}`)],
     ));
   }
 
@@ -109,7 +108,7 @@ const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): Interpreta
       zodiac,
       `aspects.${aspect.id}`,
       null,
-      [systemRef(zodiac, `aspects/${index}`)],
+      [systemRef(`aspects/${index}`)],
     ));
   });
 
@@ -119,35 +118,35 @@ const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): Interpreta
       zodiac,
       `patterns.${pattern.id}`,
       null,
-      [systemRef(zodiac, `patterns/${index}`)],
+      [systemRef(`patterns/${index}`)],
     ));
   });
 
   units.push(
-    unit(`${prefix}lunar.phase`, zodiac, "lunar.phase", null, [systemRef(zodiac, "lunarPhase")]),
+    unit(`${prefix}lunar.phase`, zodiac, "lunar.phase", null, [systemRef("lunarPhase")]),
     unit(`${prefix}lunar.nodes`, zodiac, "lunar.nodes", null, [
-      systemRef(zodiac, "points/north_node_true"),
-      systemRef(zodiac, "points/south_node_true"),
-      systemRef(zodiac, "points/north_node_mean"),
-      systemRef(zodiac, "points/south_node_mean"),
+      systemRef("points/north_node_true"),
+      systemRef("points/south_node_true"),
+      systemRef("points/north_node_mean"),
+      systemRef("points/south_node_mean"),
     ]),
     unit(`${prefix}lunar.lilith`, zodiac, "lunar.lilith", null, [
-      systemRef(zodiac, "points/lilith_mean"),
-      systemRef(zodiac, "points/lilith_true"),
+      systemRef("points/lilith_mean"),
+      systemRef("points/lilith_true"),
     ]),
-    unit(`${prefix}eclipse.at-birth`, zodiac, "eclipses.atBirth", null, [systemRef(zodiac, "eclipses/atBirth")]),
-    unit(`${prefix}eclipse.prenatal-solar`, zodiac, "eclipses.prenatalSolar", null, [systemRef(zodiac, "eclipses/prenatalSolar")]),
-    unit(`${prefix}eclipse.prenatal-lunar`, zodiac, "eclipses.prenatalLunar", null, [systemRef(zodiac, "eclipses/prenatalLunar")]),
+    unit(`${prefix}eclipse.at-birth`, zodiac, "eclipses.atBirth", null, [systemRef("eclipses/atBirth")]),
+    unit(`${prefix}eclipse.prenatal-solar`, zodiac, "eclipses.prenatalSolar", null, [systemRef("eclipses/prenatalSolar")]),
+    unit(`${prefix}eclipse.prenatal-lunar`, zodiac, "eclipses.prenatalLunar", null, [systemRef("eclipses/prenatalLunar")]),
     unit(`${prefix}rulership-dignity`, zodiac, "rulershipAndDignity", null, [
-      systemRef(zodiac, "points"),
-      systemRef(zodiac, "derived/dispositors"),
-      systemRef(zodiac, "derived/mutualReceptions"),
+      systemRef("points"),
+      systemRef("derived/dispositors"),
+      systemRef("derived/mutualReceptions"),
     ]),
-    unit(`${prefix}chart-balance`, zodiac, "chartBalance", null, [systemRef(zodiac, "derived/balances")]),
+    unit(`${prefix}chart-balance`, zodiac, "chartBalance", null, [systemRef("derived/balances")]),
     unit(`${prefix}dominant-themes`, zodiac, "dominantThemes", null, [
-      systemRef(zodiac, "derived/dominantPlanets"),
-      systemRef(zodiac, "derived/dominantSigns"),
-      systemRef(zodiac, "derived/jonesPattern"),
+      systemRef("derived/dominantPlanets"),
+      systemRef("derived/dominantSigns"),
+      systemRef("derived/jonesPattern"),
     ]),
   );
 
@@ -157,11 +156,11 @@ const systemUnits = (zodiac: Zodiac, calculation: ZodiacCalculation): Interpreta
       zodiac,
       `life.${section}`,
       null,
-      [systemRef(zodiac, "points"), systemRef(zodiac, "houses"), systemRef(zodiac, "aspects")],
+      [systemRef("points"), systemRef("houses"), systemRef("aspects")],
     ));
   }
 
-  units.push(unit(`${prefix}synthesis`, zodiac, "synthesis", null, [systemRef(zodiac)]));
+  units.push(unit(`${prefix}synthesis`, zodiac, "synthesis", null, [systemRef()]));
   return units;
 };
 
@@ -173,7 +172,7 @@ const compatibilityUnits = (zodiac: Zodiac): InterpretationUnit[] => {
       zodiac,
       "compatibility.overview",
       domain,
-      [compatibilityRef(zodiac, domain)],
+      [compatibilityRef(domain)],
     ));
     for (const sign of signs) {
       units.push(unit(
@@ -181,7 +180,7 @@ const compatibilityUnits = (zodiac: Zodiac): InterpretationUnit[] => {
         zodiac,
         "compatibility.sign",
         domain,
-        [compatibilityRef(zodiac, domain, sign)],
+        [compatibilityRef(domain, sign)],
       ));
     }
   }
@@ -189,24 +188,16 @@ const compatibilityUnits = (zodiac: Zodiac): InterpretationUnit[] => {
 };
 
 export const buildInterpretationPlan = (
-  tropical: ZodiacCalculation,
-  sidereal: ZodiacCalculation,
+  calculation: ZodiacCalculation,
 ): InterpretationPlan => ({
-  schema: "astral-interpretation-plan/1.0.0",
+  schema: "astral-interpretation-plan/1.1.0",
+  zodiac: calculation.zodiac,
   units: [
-    ...systemUnits("tropical", tropical),
-    ...systemUnits("sidereal", sidereal),
-    ...compatibilityUnits("tropical"),
-    ...compatibilityUnits("sidereal"),
-    unit("cross-system", null, "crossSystem", null, [
-      systemRef("tropical"),
-      systemRef("sidereal"),
-    ]),
-    unit("final-synthesis", null, "finalSynthesis", null, [
-      systemRef("tropical", "derived"),
-      systemRef("sidereal", "derived"),
-      ref("astral-calculation/compatibility/tropical"),
-      ref("astral-calculation/compatibility/sidereal"),
+    ...systemUnits(calculation),
+    ...compatibilityUnits(calculation.zodiac),
+    unit("final-synthesis", calculation.zodiac, "finalSynthesis", null, [
+      systemRef("derived"),
+      compatibilityRef(),
     ]),
   ],
 });

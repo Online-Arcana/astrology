@@ -1,24 +1,53 @@
 import type { Config } from "../../config.js";
+import { coherenceIssues, conflictingUnits } from "./coherence.js";
+import { foundationPlan, wavePlan, type LanePlan } from "./planner.js";
+import { AdaptiveLimiter } from "./rateLimit.js";
+import { buildSnapshot, snapshotInput, snapshotText, type InterpretationSnapshot } from "./snapshot.js";
 import type {
   ActiveInterpretationUnit,
   InterpretationCall,
   InterpretationCheckpoint,
+  InterpretationFailureKind,
   InterpretationRecovery,
   InterpretationRun,
+  LaneCheckpoint,
   RunHooks,
   SchemaClient,
   SchemaClientFactory,
+  SnapshotCheckpoint,
   UnitContext,
   UnitResult,
+  WaveCheckpoint,
 } from "./types.js";
+
+interface Counters {
+  calls: number;
+  retries: number;
+  conversations: Set<string>;
+}
+
+interface ExecutionOptions {
+  calculation: unknown;
+  unit: InterpretationCall;
+  client: SchemaClient;
+  createClient: SchemaClientFactory;
+  config: Config;
+  limiter: AdaptiveLimiter;
+  hooks: RunHooks;
+  earlier: Readonly<Record<string, UnitResult<object>>>;
+  snapshot: InterpretationSnapshot | null;
+  remoteFileId: string | null;
+  counters: Counters;
+  resume: ActiveInterpretationUnit | null;
+  correction: readonly string[];
+  onState(active: ActiveInterpretationUnit | null): Promise<void>;
+}
 
 const baseModelFor = (config: Config, kind: InterpretationCall["kind"]): string =>
   kind === "big" ? config.openai.bigModel : config.openai.smallModel;
 
 const modelFor = (config: Config, unit: InterpretationCall, attempt: number): string =>
-  unit.kind === "small" && attempt > 1
-    ? config.openai.bigModel
-    : baseModelFor(config, unit.kind);
+  unit.kind === "small" && attempt > 1 ? config.openai.bigModel : baseModelFor(config, unit.kind);
 
 const effortFor = (config: Config, unit: InterpretationCall, model: string): string =>
   unit.kind === "small" && model === config.openai.bigModel
@@ -28,83 +57,286 @@ const effortFor = (config: Config, unit: InterpretationCall, model: string): str
 const tokensFor = (config: Config, unit: InterpretationCall): number =>
   Math.min(unit.tokens ?? config.openai.maxOutputTokens, config.openai.maxOutputTokens);
 
-const assertConversation = (client: SchemaClient, expected: string | null): string => {
-  const id = client.id;
-  if (!id) throw new Error("openai-schema did not establish a chart conversation ID");
-  if (expected !== null && id !== expected) throw new Error("Chart conversation ID changed during generation");
-  return id;
-};
-
 const count = (value: number, name: string): number => {
   if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${name} must be a non-negative integer`);
   return value;
 };
 
-const activeCopy = (value: ActiveInterpretationUnit | null): ActiveInterpretationUnit | null =>
-  value === null
-    ? null
-    : { id: value.id, attempt: value.attempt, correction: [...value.correction] };
+const activeCopy = (value: ActiveInterpretationUnit | null): ActiveInterpretationUnit | null => {
+  if (value === null) return null;
+  return {
+    id: value.id,
+    attempt: value.attempt,
+    correction: [...value.correction],
+    ...(value.failureKind === undefined ? {} : { failureKind: value.failureKind }),
+  };
+};
 
-const initial = (recovery: InterpretationRecovery | null): InterpretationRecovery => recovery ?? {
-  conversationId: null,
-  units: {},
-  calls: 0,
-  retries: 0,
-  active: null,
+const conversation = (client: SchemaClient, counters: Counters): string => {
+  const id = client.id;
+  if (!id) throw new Error("openai-schema did not establish an interpretation conversation ID");
+  counters.conversations.add(id);
+  return id;
+};
+
+const rawText = (cause: unknown): string => {
+  if (typeof cause !== "object" || cause === null) return "";
+  const candidate = (cause as Record<string, unknown>)["rawText"];
+  return typeof candidate === "string" ? candidate : "";
+};
+
+const responseStatus = (cause: unknown): string | null => {
+  if (typeof cause !== "object" || cause === null) return null;
+  const candidate = (cause as Record<string, unknown>)["responseStatus"];
+  return typeof candidate === "string" ? candidate : null;
+};
+
+const httpStatus = (cause: unknown): number | null => {
+  if (typeof cause !== "object" || cause === null) return null;
+  const candidate = (cause as Record<string, unknown>)["status"];
+  return typeof candidate === "number" ? candidate : null;
+};
+
+const truncation = (cause: unknown): boolean => {
+  if (responseStatus(cause) === "incomplete") return true;
+  const raw = rawText(cause).trim();
+  if (raw.length === 0) return false;
+  return !/[}\]]\s*$/u.test(raw) || /[,;:\-–—]\s*$/u.test(raw);
+};
+
+const failureKind = (cause: unknown): InterpretationFailureKind => {
+  if (httpStatus(cause) === 429) return "rate_limit";
+  if (truncation(cause)) return "truncation";
+  if (responseStatus(cause) === "failed") return "transport";
+  if (cause instanceof Error && /timeout|deadline|timed out/iu.test(cause.message)) return "timeout";
+  if (rawText(cause).length > 0) return "schema";
+  return "transport";
+};
+
+const callInput = (
+  unit: InterpretationCall,
+  context: UnitContext,
+  snapshot: InterpretationSnapshot | null,
+  remoteFileId: string | null,
+): unknown => {
+  const input = unit.input(context);
+  return snapshot === null ? input : snapshotInput(remoteFileId, snapshot, input);
+};
+
+const state = (
+  unit: InterpretationCall,
+  attempt: number,
+  correction: readonly string[],
+  kind?: InterpretationFailureKind,
+): ActiveInterpretationUnit => ({
+  id: unit.id,
+  attempt,
+  correction: [...correction],
+  ...(kind === undefined ? {} : { failureKind: kind }),
+});
+
+const repairInstruction = [
+  "The primary interpretation response was truncated or malformed.",
+  "Return a concise, complete replacement for the entire strict schema from the beginning.",
+  "Preserve the conclusions and useful meaning present in partialCandidate instead of independently changing the interpretation.",
+  "Condense verbose material, complete unfinished thoughts and fill missing properties only from deterministicInput and snapshot context.",
+  "Write directly to the person using you and your.",
+  "Never place internal JSON references in prose; references belong only in sourceRefs.",
+  "Finish every required property, sentence and list entry.",
+].join("\n");
+
+const repairTruncation = async (
+  options: ExecutionOptions,
+  cause: unknown,
+  context: UnitContext,
+  attempt: number,
+  originalModel: string,
+): Promise<UnitResult<object> | null> => {
+  const repairClient = options.createClient();
+  const model = options.config.openai.smallModel;
+  const partialCandidate = rawText(cause);
+  options.counters.calls += 1;
+  options.counters.retries += 1;
+  let output: object;
+  try {
+    output = await options.limiter.run(() => repairClient.run(
+      options.unit.shape,
+      options.snapshot === null
+        ? {
+            instruction: repairInstruction,
+            truncationReason: responseStatus(cause) ?? "malformed_json",
+            partialCandidate,
+            deterministicInput: options.unit.input(context),
+          }
+        : snapshotInput(options.remoteFileId, options.snapshot, {
+            instruction: repairInstruction,
+            truncationReason: responseStatus(cause) ?? "malformed_json",
+            partialCandidate,
+            deterministicInput: options.unit.input(context),
+          }),
+      {
+        body: {
+          model,
+          store: false,
+          reasoning: { effort: "none" },
+          max_output_tokens: tokensFor(options.config, options.unit),
+        },
+        retries: 0,
+      },
+    ));
+  } catch {
+    return null;
+  }
+  conversation(repairClient, options.counters);
+  const audited = options.unit.audit(output, context);
+  if (!audited.valid) {
+    await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
+    return null;
+  }
+  return {
+    id: options.unit.id,
+    value: audited.value,
+    attempts: attempt,
+    model: originalModel,
+    provenance: { repairedBy: model, repairKind: "truncation_condensation" },
+  };
+};
+
+const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object>> => {
+  let correction = [
+    ...(options.resume?.correction ?? []),
+    ...options.correction,
+  ];
+  const maximumAttempts = options.config.chart.maxRetries;
+  const firstAttempt = options.resume?.attempt ?? 1;
+  if (!Number.isSafeInteger(firstAttempt) || firstAttempt < 1 || firstAttempt > maximumAttempts) {
+    throw new Error(`Recovery attempt is invalid for ${options.unit.id}`);
+  }
+
+  for (let attempt = firstAttempt; attempt <= maximumAttempts; attempt += 1) {
+    const model = modelFor(options.config, options.unit, attempt);
+    const context: UnitContext = {
+      calculation: options.calculation,
+      earlier: options.earlier,
+      correction,
+    };
+    options.hooks.onStart?.(options.unit, attempt, model);
+    await options.onState(state(options.unit, attempt, correction));
+    options.counters.calls += 1;
+
+    let output: object;
+    try {
+      output = await options.limiter.run(() => options.client.run(
+        options.unit.shape,
+        callInput(options.unit, context, options.snapshot, options.remoteFileId),
+        {
+          body: {
+            model,
+            store: false,
+            reasoning: { effort: effortFor(options.config, options.unit, model) },
+            max_output_tokens: tokensFor(options.config, options.unit),
+          },
+          retries: 0,
+        },
+      ));
+      conversation(options.client, options.counters);
+    } catch (cause: unknown) {
+      if (options.client.id !== undefined) conversation(options.client, options.counters);
+      const kind = failureKind(cause);
+      if (kind === "truncation") {
+        const repaired = await repairTruncation(options, cause, context, attempt, model);
+        if (repaired !== null) {
+          options.hooks.onComplete?.(repaired);
+          await options.onState(null);
+          return repaired;
+        }
+      }
+      if ((kind === "schema" || kind === "truncation") && attempt < maximumAttempts) {
+        options.counters.retries += 1;
+        correction = [
+          `Previous output was incomplete or malformed: ${cause instanceof Error ? cause.message : String(cause)}`,
+        ];
+        options.hooks.onRetry?.(options.unit, attempt, correction);
+        await options.onState(state(options.unit, attempt + 1, correction, kind));
+        continue;
+      }
+      await options.onState(state(options.unit, attempt, correction, kind));
+      throw cause;
+    }
+
+    const audited = options.unit.audit(output, context);
+    const softAccepted = !audited.valid && audited.soft === true && attempt >= maximumAttempts;
+    if (audited.valid || softAccepted) {
+      const result: UnitResult<object> = { id: options.unit.id, value: audited.value, attempts: attempt, model };
+      if (softAccepted) options.hooks.onSoftAccept?.(options.unit, attempt, audited.errors);
+      options.hooks.onComplete?.(result);
+      await options.onState(null);
+      return result;
+    }
+
+    await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
+    correction = [...audited.errors];
+    if (attempt < maximumAttempts) {
+      options.counters.retries += 1;
+      options.hooks.onRetry?.(options.unit, attempt, correction);
+      await options.onState(state(options.unit, attempt + 1, correction, "audit"));
+      continue;
+    }
+    await options.onState(state(options.unit, attempt, correction, "audit"));
+    throw new Error(`Interpretation unit ${options.unit.id} failed audit: ${audited.errors.join("; ")}`);
+  }
+  throw new Error(`Interpretation unit ${options.unit.id} produced no accepted output`);
+};
+
+const validateResult = (
+  calculation: unknown,
+  call: InterpretationCall,
+  result: UnitResult<object>,
+  earlier: Readonly<Record<string, UnitResult<object>>>,
+  maximumAttempts: number,
+): UnitResult<object> => {
+  if (result.id !== call.id) throw new Error(`Recovered interpretation unit ID mismatch for ${call.id}`);
+  if (!Number.isSafeInteger(result.attempts) || result.attempts < 1 || result.attempts > maximumAttempts) {
+    throw new Error(`Recovered interpretation attempts are invalid for ${call.id}`);
+  }
+  if (typeof result.model !== "string" || result.model.length === 0) {
+    throw new Error(`Recovered interpretation model is invalid for ${call.id}`);
+  }
+  const audited = call.audit(result.value, { calculation, earlier, correction: [] });
+  if (!audited.valid && audited.soft !== true) {
+    throw new Error(`Recovered interpretation unit ${call.id} failed audit: ${audited.errors.join("; ")}`);
+  }
+  return { ...result, value: audited.value };
 };
 
 const restore = (
   calculation: unknown,
-  units: readonly InterpretationCall[],
+  calls: readonly InterpretationCall[],
   recovery: InterpretationRecovery,
   maximumAttempts: number,
 ): Record<string, UnitResult<object>> => {
-  const known = new Set(units.map(({ id }) => id));
+  const known = new Map(calls.map((call) => [call.id, call]));
   for (const id of Object.keys(recovery.units)) {
     if (!known.has(id)) throw new Error(`Recovery contains unknown interpretation unit ${id}`);
   }
-
-  const recoveredCount = Object.keys(recovery.units).length;
-  if (recoveredCount > 0 && recovery.conversationId === null) {
+  if (Object.keys(recovery.units).length > 0 && recovery.conversationId === null) {
     throw new Error("Recovered interpretation units require a conversation ID");
   }
 
   const completed: Record<string, UnitResult<object>> = {};
-  let gap = false;
-
-  for (const unit of units) {
-    const result = recovery.units[unit.id];
-    if (result === undefined) {
-      gap = true;
-      continue;
-    }
-    if (gap) throw new Error("Recovered interpretation units must form a completed prefix");
-    if (result.id !== unit.id) throw new Error(`Recovered interpretation unit ID mismatch for ${unit.id}`);
-    if (!Number.isSafeInteger(result.attempts) || result.attempts < 1 || result.attempts > maximumAttempts) {
-      throw new Error(`Recovered interpretation attempts are invalid for ${unit.id}`);
-    }
-    if (typeof result.model !== "string" || result.model.length === 0) {
-      throw new Error(`Recovered interpretation model is invalid for ${unit.id}`);
-    }
-
-    const context: UnitContext = {
-      calculation,
-      earlier: completed,
-      correction: [],
-    };
-    const audited = unit.audit(result.value, context);
-    if (!audited.valid && audited.soft !== true) {
-      throw new Error(`Recovered interpretation unit ${unit.id} failed audit: ${audited.errors.join("; ")}`);
-    }
-    completed[unit.id] = { ...result, value: audited.value };
-    unit.onAccept?.(audited.value);
+  for (const call of calls) {
+    const result = recovery.units[call.id];
+    if (result === undefined) continue;
+    const restored = validateResult(calculation, call, result, completed, maximumAttempts);
+    completed[call.id] = restored;
+    call.onAccept?.(restored.value);
   }
 
-  const pending = units.find(({ id }) => completed[id] === undefined) ?? null;
   const active = recovery.active;
   if (active !== null) {
-    if (pending === null || active.id !== pending.id) {
-      throw new Error("Recovery active unit must be the first unfinished interpretation unit");
+    const call = known.get(active.id);
+    if (call === undefined || completed[active.id] !== undefined) {
+      throw new Error("Recovery active unit must be unfinished and present in the interpretation plan");
     }
     if (!Number.isSafeInteger(active.attempt) || active.attempt < 1 || active.attempt > maximumAttempts) {
       throw new Error(`Recovery attempt is invalid for ${active.id}`);
@@ -113,108 +345,386 @@ const restore = (
       throw new Error(`Recovery correction is invalid for ${active.id}`);
     }
   }
-
   return completed;
 };
 
+const restoreStaged = (
+  calculation: unknown,
+  calls: readonly InterpretationCall[],
+  completed: Readonly<Record<string, UnitResult<object>>>,
+  wave: WaveCheckpoint | null,
+  maximumAttempts: number,
+): Record<string, UnitResult<object>> => {
+  if (wave === null || wave.assembled) return {};
+  const staged: Record<string, UnitResult<object>> = {};
+  const byId = new Map(calls.map((call) => [call.id, call]));
+  for (const call of calls) {
+    const result = wave.staged[call.id];
+    if (result === undefined || completed[call.id] !== undefined) continue;
+    staged[call.id] = validateResult(
+      calculation,
+      call,
+      result,
+      { ...completed, ...staged },
+      maximumAttempts,
+    );
+  }
+  for (const id of Object.keys(wave.staged)) {
+    if (!byId.has(id)) throw new Error(`Recovery wave contains unknown interpretation unit ${id}`);
+  }
+  return staged;
+};
+
+const emptyRecovery = (): InterpretationRecovery => ({
+  conversationId: null,
+  units: {},
+  calls: 0,
+  retries: 0,
+  active: null,
+  orchestration: "waves",
+  foundationComplete: false,
+  snapshot: null,
+  wave: null,
+});
+
+const laneCheckpoint = (plan: LanePlan): LaneCheckpoint => ({
+  id: plan.id,
+  conversationId: null,
+  assignments: plan.units.map(({ id }) => id),
+  completed: [],
+  active: null,
+  status: "pending",
+  failureKind: null,
+});
+
+const recoveredPlans = (
+  calls: readonly InterpretationCall[],
+  wave: WaveCheckpoint,
+): LanePlan[] => {
+  const known = new Map(calls.map((call) => [call.id, call]));
+  return wave.lanes.map((lane) => {
+    const units = lane.assignments.map((id) => {
+      const call = known.get(id);
+      if (call === undefined) throw new Error(`Recovery lane ${lane.id} contains unknown unit ${id}`);
+      return call;
+    });
+    return {
+      id: lane.id,
+      units,
+      estimatedTokens: units.reduce((total, call) => total + (call.tokens ?? 1_800), 0),
+    };
+  });
+};
+
+const without = (
+  values: Readonly<Record<string, UnitResult<object>>>,
+  id: string,
+): Record<string, UnitResult<object>> => Object.fromEntries(
+  Object.entries(values).filter(([key]) => key !== id),
+);
+
 export const runInterpretation = async (
   calculation: unknown,
-  units: readonly InterpretationCall[],
+  calls: readonly InterpretationCall[],
   config: Config,
   createClient: SchemaClientFactory,
   hooks: RunHooks = {},
   recovery: InterpretationRecovery | null = null,
 ): Promise<InterpretationRun> => {
-  if (units.length === 0) throw new Error("Interpretation requires at least one unit");
-  if (new Set(units.map((unit) => unit.id)).size !== units.length) throw new Error("Interpretation unit IDs must be unique");
+  if (calls.length === 0) throw new Error("Interpretation requires at least one unit");
+  if (new Set(calls.map(({ id }) => id)).size !== calls.length) throw new Error("Interpretation unit IDs must be unique");
 
-  const recovered = initial(recovery);
-  const completed = restore(calculation, units, recovered, config.chart.maxRetries);
-  let conversationId = recovered.conversationId;
-  let calls = count(recovered.calls, "Recovery call count");
-  let retries = count(recovered.retries, "Recovery retry count");
-  const client = createClient(conversationId ?? undefined);
+  const recovered = recovery ?? emptyRecovery();
+  const completed = restore(calculation, calls, recovered, config.chart.maxRetries);
+  const counters: Counters = {
+    calls: count(recovered.calls, "Recovery call count"),
+    retries: count(recovered.retries, "Recovery retry count"),
+    conversations: new Set(recovered.conversationId === null ? [] : [recovered.conversationId]),
+  };
+  const limiter = new AdaptiveLimiter(config.chart.laneCount ?? 4);
+  const order = calls.map(({ id }) => id);
+  let foundationComplete = recovered.foundationComplete ?? false;
+  let snapshotState: SnapshotCheckpoint | null = recovered.snapshot ?? null;
+  let currentWave: WaveCheckpoint | null = recovered.wave ?? null;
+  let waveNumber = currentWave?.id ?? 0;
+  let primaryConversationId = recovered.conversationId;
+  let checkpointTail = Promise.resolve();
 
   const checkpoint = async (active: ActiveInterpretationUnit | null): Promise<void> => {
-    if (!hooks.onCheckpoint) return;
+    if (hooks.onCheckpoint === undefined) return;
     const value: InterpretationCheckpoint = {
-      conversationId,
+      conversationId: primaryConversationId,
       units: { ...completed },
-      calls,
-      retries,
+      calls: counters.calls,
+      retries: counters.retries,
       active: activeCopy(active),
+      orchestration: "waves",
+      foundationComplete,
+      snapshot: snapshotState,
+      wave: currentWave,
     };
-    await hooks.onCheckpoint(value);
+    checkpointTail = checkpointTail.then(async () => { await hooks.onCheckpoint?.(value); });
+    await checkpointTail;
   };
 
-  for (const unit of units) {
-    if (completed[unit.id] !== undefined) continue;
+  if (!foundationComplete) {
+    const maximum = config.chart.foundationUnits ?? 10;
+    const remaining = Math.max(0, maximum - Object.keys(completed).length);
+    const foundation = remaining === 0 ? [] : foundationPlan(calls, completed, remaining);
+    const client = createClient(primaryConversationId ?? undefined);
+    let contextTokens = 0;
+    for (const unit of foundation) {
+      const estimate = unit.tokens ?? 1_800;
+      if (contextTokens > 0 && contextTokens + estimate > (config.chart.laneContextTokens ?? 60_000)) break;
+      const resume = recovered.active?.id === unit.id ? activeCopy(recovered.active) : null;
+      const result = await executeUnit({
+        calculation,
+        unit,
+        client,
+        createClient,
+        config,
+        limiter,
+        hooks,
+        earlier: completed,
+        snapshot: null,
+        remoteFileId: null,
+        counters,
+        resume,
+        correction: [],
+        onState: checkpoint,
+      });
+      completed[unit.id] = result;
+      unit.onAccept?.(result.value);
+      contextTokens += estimate;
+      primaryConversationId = conversation(client, counters);
+      await checkpoint(null);
+    }
+    foundationComplete = true;
+    await checkpoint(null);
+  }
 
-    const resumed = recovered.active?.id === unit.id ? recovered.active : null;
-    const tokens = tokensFor(config, unit);
-    let accepted: UnitResult<object> | null = null;
-    let correction: readonly string[] = [...(resumed?.correction ?? [])];
-    const firstAttempt = resumed?.attempt ?? 1;
-    const context = (): UnitContext => ({ calculation, earlier: completed, correction });
+  let snapshot = await buildSnapshot(calculation, completed, order, snapshotState?.revision ?? 0);
+  snapshotState = {
+    revision: snapshot.revision,
+    sha256: snapshot.sha256,
+    remoteFileId: snapshotState?.sha256 === snapshot.sha256 ? snapshotState.remoteFileId : null,
+    acceptedOrder: [...snapshot.acceptedOrder],
+  };
+  await checkpoint(null);
 
-    for (let attempt = firstAttempt; attempt <= config.chart.maxRetries; attempt += 1) {
-      const model = modelFor(config, unit, attempt);
-      const effort = effortFor(config, unit, model);
-      const active: ActiveInterpretationUnit = { id: unit.id, attempt, correction: [...correction] };
-      hooks.onStart?.(unit, attempt, model);
-      calls += 1;
-      await checkpoint(active);
+  while (Object.keys(completed).length < calls.length) {
+    const resumingWave = currentWave !== null
+      && !currentWave.assembled
+      && currentWave.baseSnapshotRevision === snapshot.revision;
+    if (!resumingWave) waveNumber += 1;
+    const plans = resumingWave
+      ? recoveredPlans(calls, currentWave as WaveCheckpoint)
+      : wavePlan(calls, completed, config.chart.laneCount ?? 4, config.chart.laneUnits ?? 10);
+    if (plans.length === 0) throw new Error("Interpretation planner could not produce a dependency-safe wave");
 
-      let output: object;
-      try {
-        output = await client.run(unit.shape, unit.input(context()), {
-          body: {
-            model,
-            store: false,
-            reasoning: { effort },
-            max_output_tokens: tokens,
-          },
-          retries: 0,
+    const uploader = createClient();
+    let remoteFileId = snapshotState.remoteFileId;
+    if (remoteFileId === null && uploader.uploadFile !== undefined) {
+      const upload = uploader.uploadFile.bind(uploader);
+      const uploaded = await limiter.run(() => upload(
+        `astral-snapshot-${snapshot.revision}.json`,
+        snapshotText(snapshot),
+      ));
+      remoteFileId = uploaded.id;
+      snapshotState = { ...snapshotState, remoteFileId };
+    }
+
+    const staged = resumingWave
+      ? restoreStaged(calculation, calls, completed, currentWave, config.chart.maxRetries)
+      : {};
+    const lanes = resumingWave
+      ? (currentWave as WaveCheckpoint).lanes.map((lane): LaneCheckpoint => ({
+          ...lane,
+          assignments: [...lane.assignments],
+          completed: [...lane.completed],
+          active: activeCopy(lane.active),
+          status: lane.status === "complete" && lane.assignments.some((id) => staged[id] === undefined)
+            ? "pending"
+            : lane.status,
+        }))
+      : plans.map(laneCheckpoint);
+    currentWave = {
+      id: waveNumber,
+      baseSnapshotRevision: snapshot.revision,
+      lanes,
+      staged: { ...staged },
+      conflicts: resumingWave ? [...(currentWave as WaveCheckpoint).conflicts] : [],
+      assembled: false,
+    };
+    await hooks.onWave?.(currentWave);
+    await checkpoint(null);
+
+    const laneRuns = plans.map(async (plan, index): Promise<void> => {
+      const lane = lanes[index];
+      if (lane === undefined) throw new Error(`Missing checkpoint for ${plan.id}`);
+      const client = createClient(lane.conversationId ?? undefined);
+      lane.status = "running";
+      lane.failureKind = null;
+      let contextTokens = 0;
+      const local: Record<string, UnitResult<object>> = {};
+
+      for (const unit of plan.units) {
+        const existing = staged[unit.id];
+        if (existing !== undefined) {
+          local[unit.id] = existing;
+          if (!lane.completed.includes(unit.id)) lane.completed.push(unit.id);
+          continue;
+        }
+        const estimate = unit.tokens ?? 1_800;
+        if (contextTokens > 0 && contextTokens + estimate > (config.chart.laneContextTokens ?? 60_000)) break;
+        const resume = lane.active?.id === unit.id ? activeCopy(lane.active) : null;
+        try {
+          const result = await executeUnit({
+            calculation,
+            unit,
+            client,
+            createClient,
+            config,
+            limiter,
+            hooks,
+            earlier: { ...completed, ...local },
+            snapshot,
+            remoteFileId,
+            counters,
+            resume,
+            correction: [],
+            onState: async (active) => {
+              lane.active = activeCopy(active);
+              currentWave = { ...(currentWave as WaveCheckpoint), lanes: [...lanes], staged: { ...staged } };
+              await checkpoint(active);
+            },
+          });
+          staged[unit.id] = result;
+          local[unit.id] = result;
+          if (!lane.completed.includes(unit.id)) lane.completed.push(unit.id);
+          lane.conversationId = conversation(client, counters);
+          lane.active = null;
+          contextTokens += estimate;
+          currentWave = { ...(currentWave as WaveCheckpoint), lanes: [...lanes], staged: { ...staged } };
+          await checkpoint(null);
+        } catch (cause: unknown) {
+          lane.status = "failed";
+          lane.failureKind = failureKind(cause);
+          lane.active = lane.active === null
+            ? state(unit, 1, [], lane.failureKind)
+            : { ...lane.active, failureKind: lane.failureKind };
+          currentWave = { ...(currentWave as WaveCheckpoint), lanes: [...lanes], staged: { ...staged } };
+          await checkpoint(lane.active);
+          throw cause;
+        }
+      }
+
+      lane.status = "complete";
+      lane.active = null;
+      const laneUnits = Object.fromEntries(lane.completed
+        .filter((id) => staged[id] !== undefined)
+        .map((id) => [id, staged[id] as UnitResult<object>]));
+      const issues = coherenceIssues(laneUnits, "lane");
+      if (issues.length > 0) {
+        lane.status = "blocked";
+        currentWave = {
+          ...(currentWave as WaveCheckpoint),
+          lanes: [...lanes],
+          conflicts: [...new Set([...(currentWave?.conflicts ?? []), ...issues.map(({ message }) => message)])],
+          staged: { ...staged },
+        };
+      }
+      await checkpoint(null);
+    });
+
+    const outcomes = await Promise.allSettled(laneRuns);
+    const failed = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === "rejected");
+    if (failed !== undefined) throw failed.reason;
+
+    const waveIssues = coherenceIssues(staged, "wave");
+    if (waveIssues.length > 0) {
+      const affected = conflictingUnits(waveIssues);
+      currentWave = {
+        ...(currentWave as WaveCheckpoint),
+        conflicts: [...new Set([...(currentWave?.conflicts ?? []), ...waveIssues.map(({ message }) => message)])],
+        staged: { ...staged },
+      };
+      await checkpoint(null);
+
+      for (const id of affected) {
+        const unit = calls.find((candidate) => candidate.id === id);
+        if (unit === undefined) continue;
+        const client = createClient();
+        const correction = waveIssues.filter(({ units }) => units.includes(id)).map(({ message }) => message);
+        const result = await executeUnit({
+          calculation,
+          unit,
+          client,
+          createClient,
+          config,
+          limiter,
+          hooks,
+          earlier: { ...completed, ...without(staged, id) },
+          snapshot,
+          remoteFileId,
+          counters,
+          resume: null,
+          correction,
+          onState: checkpoint,
         });
-      } catch (cause: unknown) {
-        if (client.id !== undefined) conversationId = assertConversation(client, conversationId);
-        await checkpoint(active);
-        throw cause;
-      }
-
-      conversationId = assertConversation(client, conversationId);
-      await checkpoint(active);
-
-      const audited = unit.audit(output, context());
-      const softAccepted = !audited.valid
-        && audited.soft === true
-        && attempt >= config.chart.maxRetries;
-
-      if (audited.valid || softAccepted) {
-        accepted = { id: unit.id, value: audited.value, attempts: attempt, model };
-        completed[unit.id] = accepted;
-        unit.onAccept?.(audited.value);
-        if (softAccepted) hooks.onSoftAccept?.(unit, attempt, audited.errors);
-        hooks.onComplete?.(accepted);
+        staged[id] = {
+          ...result,
+          provenance: { ...(result.provenance ?? {}), repairKind: "coherence_correction" },
+        };
+        currentWave = { ...(currentWave as WaveCheckpoint), staged: { ...staged } };
         await checkpoint(null);
-        break;
       }
 
-      await hooks.onReject?.(unit, attempt, model, output, audited);
-      correction = [...audited.errors];
-      if (attempt < config.chart.maxRetries) {
-        retries += 1;
-        hooks.onRetry?.(unit, attempt, audited.errors);
-        await checkpoint({ id: unit.id, attempt: attempt + 1, correction });
-      } else {
-        await checkpoint({ id: unit.id, attempt, correction });
-        throw new Error(`Interpretation unit ${unit.id} failed audit: ${audited.errors.join("; ")}`);
+      const remaining = coherenceIssues(staged, "wave");
+      if (remaining.length > 0) {
+        currentWave = {
+          ...(currentWave as WaveCheckpoint),
+          conflicts: remaining.map(({ message }) => message),
+          staged: { ...staged },
+        };
+        await checkpoint(null);
+        throw new Error(`Wave coherence failed: ${remaining.map(({ message }) => message).join("; ")}`);
       }
     }
 
-    if (!accepted) throw new Error(`Interpretation unit ${unit.id} produced no accepted output`);
+    for (const id of order) {
+      const result = staged[id];
+      if (result === undefined) continue;
+      completed[id] = result;
+      calls.find((call) => call.id === id)?.onAccept?.(result.value);
+    }
+    currentWave = { ...(currentWave as WaveCheckpoint), staged: { ...staged }, assembled: true, conflicts: [] };
+    snapshot = await buildSnapshot(calculation, completed, order, snapshot.revision + 1);
+    snapshotState = {
+      revision: snapshot.revision,
+      sha256: snapshot.sha256,
+      remoteFileId: null,
+      acceptedOrder: [...snapshot.acceptedOrder],
+    };
+    await hooks.onWave?.(currentWave);
+    await checkpoint(null);
+    currentWave = null;
+    await checkpoint(null);
   }
 
-  if (conversationId === null) throw new Error("Interpretation completed without a conversation ID");
-  return { conversationId, units: completed, calls, retries };
+  const conversationIds = [...counters.conversations];
+  const conversationId = primaryConversationId ?? conversationIds[0] ?? recovered.conversationId;
+  if (conversationId === null || conversationId === undefined) {
+    throw new Error("Interpretation completed without a conversation ID");
+  }
+  return {
+    conversationId,
+    units: completed,
+    calls: counters.calls,
+    retries: counters.retries,
+    orchestration: "waves",
+    conversationIds,
+    snapshotRevision: snapshot.revision,
+    waves: waveNumber,
+  };
 };

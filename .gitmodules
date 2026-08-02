@@ -9,4 +9,4 @@
 	url = https://github.com/kitty-crow/countrystatecity.git
 [submodule "vendor/time"]
 	path = vendor/time
-	url = https://github.com/js-joda/js-joda.git
+	url = https://github.com/kitty-crow/ts-joda.git

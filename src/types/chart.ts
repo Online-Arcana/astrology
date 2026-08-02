@@ -216,20 +216,20 @@ export interface ChartProvenance {
   nlpAuditProfile: string;
   interpretationCalls: number;
   retries: number;
-  sharedConversation: true;
+  sharedConversation: false;
+  orchestration: "bounded_waves";
+  conversationCount: number;
+  waves: number;
+  snapshotRevision: number;
   phases: LlmPhaseProvenance[];
 }
 
 export interface AstralChart {
-  schema: "astral-chart/1.0.0";
+  schema: "astral-chart/1.1.0";
   subject: FinalSubject;
-  tropical: SystemInterpretation & { zodiac: "tropical" };
-  sidereal: SystemInterpretation & { zodiac: "sidereal" };
-  crossSystem: CrossSystemInterpretation;
-  compatibility: {
-    tropical: CompatibilityInterpretation & { zodiac: "tropical" };
-    sidereal: CompatibilityInterpretation & { zodiac: "sidereal" };
-  };
+  zodiac: Zodiac;
+  system: SystemInterpretation;
+  compatibility: CompatibilityInterpretation;
   finalSynthesis: FinalSynthesis;
   provenance: ChartProvenance;
 }

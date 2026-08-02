@@ -20,5 +20,5 @@ export const rootShapeValid = (file: AstralFile): boolean => {
   const keys = Object.keys(file);
   return keys.length === rootKeys.length
     && rootKeys.every((key) => Object.hasOwn(file, key))
-    && file.schema === "astral/1.0.0";
+    && file.schema === "astral/1.1.0";
 };

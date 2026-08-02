@@ -25,7 +25,6 @@ import {
   compatibilityDomain,
   parseCareerInterpretation,
   parseCompatibilityOverview,
-  parseCrossSystem,
   parseFinalSynthesis,
   parseMoneyInterpretation,
   parseRomanticInterpretation,
@@ -43,31 +42,12 @@ const pointIds = [
 ] as const satisfies readonly PointId[];
 
 const lifeSections = [
-  "identityAndPurpose",
-  "emotionalNature",
-  "mindAndCommunication",
-  "romance",
-  "sexuality",
-  "committedPartnerships",
-  "homeAndFamily",
-  "childhoodPatterns",
-  "creativityAndSelfExpression",
-  "childrenAndNurturing",
-  "friendship",
-  "communityAndGroups",
-  "workStyle",
-  "careerAndVocation",
-  "businessAndLeadership",
-  "moneyAndMaterialSecurity",
-  "publicLifeAndAmbition",
-  "conflictAndAssertion",
-  "growthAndOpportunity",
-  "restrictionsAndResponsibility",
-  "transformationAndCrisis",
-  "spiritualityAndMeaning",
-  "unconsciousPatterns",
-  "wellbeingAndDailyRhythm",
-  "developmentalDirection",
+  "identityAndPurpose", "emotionalNature", "mindAndCommunication", "romance", "sexuality",
+  "committedPartnerships", "homeAndFamily", "childhoodPatterns", "creativityAndSelfExpression",
+  "childrenAndNurturing", "friendship", "communityAndGroups", "workStyle", "careerAndVocation",
+  "businessAndLeadership", "moneyAndMaterialSecurity", "publicLifeAndAmbition", "conflictAndAssertion",
+  "growthAndOpportunity", "restrictionsAndResponsibility", "transformationAndCrisis", "spiritualityAndMeaning",
+  "unconsciousPatterns", "wellbeingAndDailyRhythm", "developmentalDirection",
 ] as const satisfies readonly (keyof LifeInterpretation)[];
 
 export interface ChartAssemblyOptions {
@@ -129,8 +109,7 @@ const reader = (calculation: AstralCalculation, run: InterpretationRun): Reader 
       const unit = plan.get(id);
       if (!unit) throw new Error(`Interpretation unit ${id} is not in the plan`);
       const parsed = parse(result(id).value);
-      const references = sourceRefs(parsed, id);
-      if (!refsValid(root, references, new Set(unit.allowedSourceRefs))) {
+      if (!refsValid(root, sourceRefs(parsed, id), new Set(unit.allowedSourceRefs))) {
         throw new Error(`Interpretation unit ${id} contains unresolved, unavailable or unpermitted source references`);
       }
       return parsed;
@@ -146,20 +125,11 @@ const life = (values: Reader, zodiac: Zodiac): LifeInterpretation => {
   for (const key of lifeSections) {
     const id = `${zodiac}.life.${key}`;
     switch (key) {
-      case "romance":
-        output.romance = values.value(id, parseRomanticInterpretation);
-        break;
-      case "sexuality":
-        output.sexuality = values.value(id, parseSexualInterpretation);
-        break;
-      case "careerAndVocation":
-        output.careerAndVocation = values.value(id, parseCareerInterpretation);
-        break;
-      case "moneyAndMaterialSecurity":
-        output.moneyAndMaterialSecurity = values.value(id, parseMoneyInterpretation);
-        break;
-      default:
-        ordinary[key] = section(values, id);
+      case "romance": output.romance = values.value(id, parseRomanticInterpretation); break;
+      case "sexuality": output.sexuality = values.value(id, parseSexualInterpretation); break;
+      case "careerAndVocation": output.careerAndVocation = values.value(id, parseCareerInterpretation); break;
+      case "moneyAndMaterialSecurity": output.moneyAndMaterialSecurity = values.value(id, parseMoneyInterpretation); break;
+      default: ordinary[key] = section(values, id);
     }
   }
   return output;
@@ -179,12 +149,9 @@ const houses = (values: Reader, zodiac: Zodiac): HouseMap<Section> => {
   return output;
 };
 
-const system = (
-  calculation: AstralCalculation,
-  values: Reader,
-  zodiac: Zodiac,
-): SystemInterpretation => {
-  const deterministic = calculation.systems[zodiac];
+const system = (calculation: AstralCalculation, values: Reader): SystemInterpretation => {
+  const zodiac = calculation.system.zodiac;
+  const deterministic = calculation.system;
   return {
     zodiac,
     overview: section(values, `${zodiac}.overview`),
@@ -195,14 +162,8 @@ const system = (
     },
     points: points(values, zodiac),
     houses: houses(values, zodiac),
-    aspects: deterministic.aspects.map(({ id }) => ({
-      id,
-      section: section(values, `${zodiac}.aspect.${id}`),
-    })),
-    patterns: deterministic.patterns.map(({ id }) => ({
-      id,
-      section: section(values, `${zodiac}.pattern.${id}`),
-    })),
+    aspects: deterministic.aspects.map(({ id }) => ({ id, section: section(values, `${zodiac}.aspect.${id}`) })),
+    patterns: deterministic.patterns.map(({ id }) => ({ id, section: section(values, `${zodiac}.pattern.${id}`) })),
     lunar: {
       phase: section(values, `${zodiac}.lunar.phase`),
       nodes: section(values, `${zodiac}.lunar.nodes`),
@@ -275,9 +236,6 @@ export const assembleChart = (
   options: ChartAssemblyOptions,
 ): AstralChart => {
   const values = reader(calculation, run);
-  if (!calculation.interpretationPlan.units.some(({ id }) => id === "cross-system")) {
-    throw new Error("Interpretation plan is missing cross-system");
-  }
   if (!calculation.interpretationPlan.units.some(({ id }) => id === "final-synthesis")) {
     throw new Error("Interpretation plan is missing final-synthesis");
   }
@@ -285,21 +243,18 @@ export const assembleChart = (
     const result = values.result(unit.id);
     return {
       id: unit.id,
-      schema: options.unitSchemas?.[unit.id] ?? "astral-interpretation-unit/1.0.0",
+      schema: options.unitSchemas?.[unit.id] ?? "astral-interpretation-unit/1.1.0",
       model: result.model,
       attempts: result.attempts,
     };
   });
+  const zodiac = calculation.system.zodiac;
   return {
-    schema: "astral-chart/1.0.0",
+    schema: "astral-chart/1.1.0",
     subject: subject(calculation, options.generatedName),
-    tropical: system(calculation, values, "tropical") as SystemInterpretation & { zodiac: "tropical" },
-    sidereal: system(calculation, values, "sidereal") as SystemInterpretation & { zodiac: "sidereal" },
-    crossSystem: values.value("cross-system", parseCrossSystem),
-    compatibility: {
-      tropical: compatibility(values, "tropical") as CompatibilityInterpretation & { zodiac: "tropical" },
-      sidereal: compatibility(values, "sidereal") as CompatibilityInterpretation & { zodiac: "sidereal" },
-    },
+    zodiac,
+    system: system(calculation, values),
+    compatibility: compatibility(values, zodiac),
     finalSynthesis: values.value("final-synthesis", parseFinalSynthesis),
     provenance: {
       generatedAt: options.generatedAt,
@@ -311,7 +266,11 @@ export const assembleChart = (
       nlpAuditProfile: options.nlpAuditProfile,
       interpretationCalls: run.calls,
       retries: run.retries,
-      sharedConversation: true,
+      sharedConversation: false,
+      orchestration: "bounded_waves",
+      conversationCount: run.conversationIds?.length ?? 1,
+      waves: run.waves ?? 0,
+      snapshotRevision: run.snapshotRevision ?? 0,
       phases,
     },
   };

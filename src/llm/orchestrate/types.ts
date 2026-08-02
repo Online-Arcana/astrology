@@ -13,9 +13,18 @@ export interface SchemaCall {
   retryDelayMs?: number;
 }
 
+export interface UploadedFile {
+  id: string;
+  name: string;
+  purpose: "user_data";
+}
+
 export interface SchemaClient {
   readonly id: string | undefined;
   run<T extends object>(shape: StrictShape<T>, input: unknown, options: SchemaCall): Promise<T>;
+  uploadFile?(name: string, content: string): Promise<UploadedFile>;
+  deleteFile?(id: string): Promise<void>;
+  retrieveResponse?(id: string): Promise<unknown>;
 }
 
 export type SchemaClientFactory = (conversationId?: string) => SchemaClient;
@@ -33,6 +42,7 @@ export interface InterpretationCall {
   kind: Extract<WorkKind, "big" | "small">;
   effort?: ReasoningEffort;
   tokens?: number;
+  dependsOn?: readonly string[];
   shape: StrictShape<object>;
   allowedSourceRefs: ReadonlySet<JsonRef>;
   input(context: UnitContext): unknown;
@@ -47,17 +57,71 @@ export interface UnitAudit<T extends object> {
   soft?: boolean;
 }
 
+export type InterpretationRepairKind =
+  | "truncation_condensation"
+  | "audit_correction"
+  | "coherence_correction";
+
 export interface UnitResult<T extends object> {
   id: string;
   value: T;
   attempts: number;
   model: string;
+  provenance?: {
+    repairedBy?: string;
+    repairKind?: InterpretationRepairKind;
+    migratedFromVersion?: string;
+  };
 }
+
+export type InterpretationFailureKind =
+  | "transport"
+  | "rate_limit"
+  | "timeout"
+  | "truncation"
+  | "schema"
+  | "audit"
+  | "coherence";
 
 export interface ActiveInterpretationUnit {
   id: string;
   attempt: number;
   correction: readonly string[];
+  failureKind?: InterpretationFailureKind;
+}
+
+export interface SnapshotCheckpoint {
+  revision: number;
+  sha256: string;
+  remoteFileId: string | null;
+  acceptedOrder: string[];
+  localSnapshot?: string;
+}
+
+export type LaneStatus = "pending" | "running" | "blocked" | "complete" | "failed";
+
+export interface LaneCheckpoint {
+  id: string;
+  conversationId: string | null;
+  assignments: string[];
+  completed: string[];
+  active: ActiveInterpretationUnit | null;
+  status: LaneStatus;
+  failureKind: InterpretationFailureKind | null;
+  position?: number;
+}
+
+export type WavePhase = "running" | "barrier" | "assembled";
+
+export interface WaveCheckpoint {
+  id: number;
+  baseSnapshotRevision: number;
+  lanes: LaneCheckpoint[];
+  staged: Readonly<Record<string, UnitResult<object>>>;
+  conflicts: string[];
+  assembled: boolean;
+  phase?: WavePhase;
+  stagedOrder?: string[];
 }
 
 export interface InterpretationRecovery {
@@ -66,6 +130,10 @@ export interface InterpretationRecovery {
   calls: number;
   retries: number;
   active: ActiveInterpretationUnit | null;
+  orchestration?: "serial" | "waves";
+  foundationComplete?: boolean;
+  snapshot?: SnapshotCheckpoint | null;
+  wave?: WaveCheckpoint | null;
 }
 
 export type InterpretationCheckpoint = InterpretationRecovery;
@@ -75,6 +143,34 @@ export interface InterpretationRun {
   units: Readonly<Record<string, UnitResult<object>>>;
   calls: number;
   retries: number;
+  orchestration?: "serial" | "waves";
+  conversationIds?: string[];
+  snapshotRevision?: number;
+  waves?: number;
+}
+
+export type InterpretationDiagnosticKind =
+  | "start"
+  | "retry"
+  | "reject"
+  | "complete"
+  | "checkpoint"
+  | "wave";
+
+export interface InterpretationDiagnostic {
+  kind: InterpretationDiagnosticKind;
+  timestamp: string;
+  unitId: string | null;
+  attempt: number | null;
+  model: string | null;
+  configuredOutputTokens: number | null;
+  errors: string[];
+  repairKind: InterpretationRepairKind | null;
+  snapshotRevision: number | null;
+  snapshotSha256: string | null;
+  wave: number | null;
+  lane: string | null;
+  failureKind: InterpretationFailureKind | null;
 }
 
 export interface RunHooks {
@@ -90,4 +186,6 @@ export interface RunHooks {
   ) => void | Promise<void>;
   onSoftAccept?: (unit: InterpretationCall, attempt: number, warnings: readonly string[]) => void;
   onCheckpoint?: (checkpoint: InterpretationCheckpoint) => void | Promise<void>;
+  onWave?: (wave: WaveCheckpoint) => void | Promise<void>;
+  onDiagnostic?: (event: InterpretationDiagnostic) => void | Promise<void>;
 }

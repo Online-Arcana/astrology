@@ -15,7 +15,7 @@ export const vendorRevisions = {
     version: "2.1.0",
   },
   time: {
-    repository: "js-joda/js-joda",
+    repository: "kitty-crow/ts-joda",
     revision: "554068e7ff8797ba9e72d9e216761dc93c0b0bd1",
     coreVersion: "6.1.0",
     timezoneVersion: "2.25.2",

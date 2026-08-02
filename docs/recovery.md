@@ -1,58 +1,61 @@
 # Temporary job recovery
 
-Long interpretation runs can be detached from a browser or interrupted after some fields have already passed audit. Temporary job recovery preserves enough trusted local state to continue without discarding accepted work or opening another OpenAI conversation.
+Interrupted generation preserves accepted and staged work locally so a restart does not repeat successful interpretations.
 
 ## Recovery ID
 
-Each recoverable job receives eight lowercase hexadecimal characters, for example `7ac91e2f`.
+Each recoverable job receives eight random lowercase hexadecimal characters. The ID is unrelated to the subject, chart fingerprint or OpenAI identifiers.
 
-The ID is cryptographically random. It is not derived from the subject, chart fingerprint or OpenAI conversation ID, so it does not expose chart information.
+Recovery records remain until completion or the configured TTL. Completion deletes the temporary record immediately.
 
-The ID exists only while recovery is useful:
+## Authoritative state
 
-- queued, running, failed or interrupted jobs retain it until the configured job TTL expires
-- successful completion deletes the recovery record immediately
-- completed charts are returned through the normal result path and are not retained under a recovery ID
+`ChartGenerationCheckpoint` stores:
 
-## Stored state
+- runtime and recovery schema versions
+- immutable selected zodiac and ayanamsha
+- deterministic calculation and fingerprint
+- accepted interpretation units and canonical order
+- local canonical snapshot text, revision and SHA-256 identity
+- aggregate calls and retries
+- active foundation unit when applicable
+- current wave, lane assignments and per-lane positions
+- accepted staged results
+- active attempt, correction and failure category
+- wave conflicts and barrier phase
 
-`TemporaryJobStore` writes one private JSON record per ID. A record contains:
+The local snapshot is authoritative. A remote OpenAI file ID is only disposable transport and is cleared during recovery. The verified local snapshot is uploaded again when work resumes.
 
-- the temporary ID
-- current `ChartProgress`
-- the immutable OpenAI conversation ID once established
-- caller-owned recovery state
-- creation, update and expiry timestamps
+Temporary records use owner-only permissions and atomic replacement.
 
-For chart generation, `ChartGenerationCheckpoint` supplies the caller-owned state:
+## Resume validation
 
-- runtime version
-- deterministic calculation and its fingerprint
-- every accepted interpretation unit
-- aggregate call and retry counts
-- the active unit, attempt and narrow audit correction when applicable
+Current recovery requires the same runtime release, calculation fingerprint, selected zodiac and selected ayanamsha. The service rebuilds the snapshot from accepted units and refuses recovery when its SHA-256 identity does not match.
 
-Files are created with owner-only permissions and updates use a temporary file followed by an atomic rename.
+Accepted units and staged units are validated before use. Stale results created against another snapshot revision cannot enter the wave assembly.
 
-## Resume rules
+A lane resumes only its unfinished unit. Accepted earlier units in that lane and successful sibling lanes remain staged.
 
-`ChartGenerationService.resume(...)` requires the same runtime version and verifies the stored calculation fingerprint. Interpretation recovery then:
+## Legacy 0.18 recovery
 
-1. verifies that accepted units form the completed prefix of the fixed plan
-2. re-audits every accepted unit locally
-3. restores cross-field duplicate context in original order
-4. reopens the exact stored OpenAI conversation
-5. resumes the active attempt or the first unfinished field
-6. emits a new checkpoint before and after remote calls and after accepted fields
+`astral-generation-recovery/1.0.0` records are migrated explicitly.
 
-Accepted fields are never sent back to the model merely because the browser disconnected or the host restarted.
+The service reconstructs the birth request, recalculates the selected immutable chart basis, preserves accepted units belonging to that system, converts their old system-prefixed source references and discards the unselected zodiac. The active unfinished selected unit is preserved. Migrated accepted units carry internal provenance identifying the source runtime version.
 
-## Completion lifecycle
+For the existing `a32fb82b` recovery this means preserving accepted tropical work, excluding sidereal work, rebuilding a tropical snapshot and resuming the unfinished sexuality unit under the 0.19 audit and wave runtime.
 
-The host should save each emitted generation checkpoint together with the latest progress snapshot. When final assembly succeeds, it returns the chart to the caller and saves `status: completed`; `TemporaryJobStore.save(...)` responds by deleting the ID and its file.
+## Failure and restart behaviour
 
-Failures remain resumable until their TTL expires. Expired or corrupt records are removed during lookup or `sweep()`.
+Transport, rate-limit, timeout, truncation, schema, audit and coherence failures retain their classification. A host restart reuses local accepted and staged results even when the original OpenAI conversation or uploaded file no longer exists.
+
+New conversations are created from the verified snapshot as necessary. No successful unit is regenerated merely because a remote object expired.
+
+## Progress restoration
+
+Progress is rebuilt from accepted and safely staged weighted units. Stored percentages are not trusted. Retries, rejected drafts and truncation repair attempts do not advance completion.
+
+For interpreted charts the deterministic phase accounts for 1%, accepted interpretation work for 98%, and final validation and assembly for 1%.
 
 ## Browser clients
 
-A browser should retain the eight-character ID while a job is active. Losing an SSE connection is not job failure. The client can reconnect, fetch the persisted progress and either reattach to the active process or request a resume if the host restarted.
+A client should retain the eight-character ID while work is active. Losing a connection is not job failure. The client can fetch persisted progress and request resume after a host restart.
