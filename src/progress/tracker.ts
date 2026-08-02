@@ -1,5 +1,5 @@
 import type { ChartJobStatus, ChartProgress } from "../types/progress.js";
-import type { WorkKind, WorkUnit } from "./work.js";
+import type { WorkKind, WorkPhase, WorkUnit } from "./work.js";
 
 interface Sample {
   kind: WorkKind;
@@ -8,9 +8,27 @@ interface Sample {
 
 const iso = (ms: number): string => new Date(ms).toISOString();
 
+const phasesFor = (units: readonly WorkUnit[]): Map<string, WorkPhase> => {
+  const phases = new Map<string, WorkPhase>();
+  let interpretationSeen = false;
+  for (const unit of units) {
+    const phase = unit.phase ?? (
+      unit.kind === "big" || unit.kind === "small"
+        ? "interpretation"
+        : interpretationSeen
+          ? "final"
+          : "deterministic"
+    );
+    phases.set(unit.id, phase);
+    if (phase === "interpretation") interpretationSeen = true;
+  }
+  return phases;
+};
+
 export class ProgressTracker {
   readonly #jobId: string;
   readonly #units: readonly WorkUnit[];
+  readonly #phases: ReadonlyMap<string, WorkPhase>;
   readonly #started: number;
   readonly #maxAttempts: number;
   readonly #done = new Set<string>();
@@ -26,6 +44,7 @@ export class ProgressTracker {
     if (units.length === 0) throw new Error("Progress requires work units");
     this.#jobId = jobId;
     this.#units = units;
+    this.#phases = phasesFor(units);
     this.#started = startedAtMs;
     this.#maxAttempts = maxAttempts;
   }
@@ -67,7 +86,7 @@ export class ProgressTracker {
   snapshot(nowMs: number): ChartProgress {
     const totalWeight = this.#units.reduce((sum, unit) => sum + unit.weight, 0);
     const doneWeight = this.#units.filter((unit) => this.#done.has(unit.id)).reduce((sum, unit) => sum + unit.weight, 0);
-    const percent = this.#status === "completed" ? 100 : Math.min(99.9, Number(((doneWeight / totalWeight) * 100).toFixed(1)));
+    const percent = this.#status === "completed" ? 100 : this.#percent();
     const eta = this.#eta(totalWeight - doneWeight);
     return {
       jobId: this.#jobId,
@@ -98,6 +117,24 @@ export class ProgressTracker {
       attempt: { current: this.#attempt, maximum: this.#maxAttempts },
       error: this.#error,
     };
+  }
+
+  #percent(): number {
+    const ratio = (phase: WorkPhase): number => {
+      const units = this.#units.filter((unit) => this.#phases.get(unit.id) === phase);
+      if (units.length === 0) return 1;
+      const total = units.reduce((sum, unit) => sum + unit.weight, 0);
+      const done = units.filter((unit) => this.#done.has(unit.id)).reduce((sum, unit) => sum + unit.weight, 0);
+      return total === 0 ? 1 : done / total;
+    };
+    const hasInterpretation = this.#units.some((unit) => this.#phases.get(unit.id) === "interpretation");
+    const hasFinal = this.#units.some((unit) => this.#phases.get(unit.id) === "final");
+    const value = hasInterpretation
+      ? ratio("deterministic") * 1 + ratio("interpretation") * 98 + ratio("final") * 1
+      : hasFinal
+        ? ratio("deterministic") * 99 + ratio("final") * 1
+        : ratio("deterministic") * 100;
+    return Math.min(99.9, Number(value.toFixed(1)));
   }
 
   #eta(remainingWeight: number): number | null {
