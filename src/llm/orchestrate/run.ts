@@ -12,11 +12,18 @@ import type {
   UnitResult,
 } from "./types.js";
 
-const modelFor = (config: Config, kind: InterpretationCall["kind"]): string =>
+const baseModelFor = (config: Config, kind: InterpretationCall["kind"]): string =>
   kind === "big" ? config.openai.bigModel : config.openai.smallModel;
 
-const effortFor = (config: Config, unit: InterpretationCall): string =>
-  unit.effort ?? config.openai.reasoning;
+const modelFor = (config: Config, unit: InterpretationCall, attempt: number): string =>
+  unit.kind === "small" && attempt > 1
+    ? config.openai.bigModel
+    : baseModelFor(config, unit.kind);
+
+const effortFor = (config: Config, unit: InterpretationCall, model: string): string =>
+  unit.kind === "small" && model === config.openai.bigModel
+    ? "low"
+    : unit.effort ?? config.openai.reasoning;
 
 const tokensFor = (config: Config, unit: InterpretationCall): number =>
   Math.min(unit.tokens ?? config.openai.maxOutputTokens, config.openai.maxOutputTokens);
@@ -143,8 +150,6 @@ export const runInterpretation = async (
     if (completed[unit.id] !== undefined) continue;
 
     const resumed = recovered.active?.id === unit.id ? recovered.active : null;
-    const model = modelFor(config, unit.kind);
-    const effort = effortFor(config, unit);
     const tokens = tokensFor(config, unit);
     let accepted: UnitResult<object> | null = null;
     let correction: readonly string[] = [...(resumed?.correction ?? [])];
@@ -152,6 +157,8 @@ export const runInterpretation = async (
     const context = (): UnitContext => ({ calculation, earlier: completed, correction });
 
     for (let attempt = firstAttempt; attempt <= config.chart.maxRetries; attempt += 1) {
+      const model = modelFor(config, unit, attempt);
+      const effort = effortFor(config, unit, model);
       const active: ActiveInterpretationUnit = { id: unit.id, attempt, correction: [...correction] };
       hooks.onStart?.(unit, attempt, model);
       calls += 1;
