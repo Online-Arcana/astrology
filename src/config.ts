@@ -15,6 +15,10 @@ export interface Config {
     ayanamsha: Ayanamsha;
     interpretationMode: Zodiac;
     maxRetries: number;
+    foundationUnits?: number;
+    laneCount?: number;
+    laneUnits?: number;
+    laneContextTokens?: number;
   };
   signing: {
     enabled: boolean;
@@ -30,6 +34,12 @@ const ints = (value: string | undefined, fallback: number, key: string): number 
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed < 1) throw new Error(`${key} must be a positive integer`);
   return parsed;
+};
+
+const bounded = (value: string | undefined, fallback: number, key: string, maximum: number): number => {
+  const selected = ints(value, fallback, key);
+  if (selected > maximum) throw new Error(`${key} must not exceed ${maximum}`);
+  return selected;
 };
 
 const oneOf = <T extends string>(value: string | undefined, fallback: T, values: readonly T[], key: string): T => {
@@ -49,9 +59,7 @@ export const readConfig = (env: Env): Config => {
   const signingEnabled = bool(env["ASTRAL_SIGNING_ENABLED"], false, "ASTRAL_SIGNING_ENABLED");
   const privateKey = env["ASTRAL_ED25519_PRIVATE_KEY"] || null;
   const publicKey = env["ASTRAL_ED25519_PUBLIC_KEY"] || null;
-  if (signingEnabled && (!privateKey || !publicKey)) {
-    throw new Error("Signing requires both Ed25519 keys");
-  }
+  if (signingEnabled && (!privateKey || !publicKey)) throw new Error("Signing requires both Ed25519 keys");
 
   const primaryZodiac = oneOf(
     env["ASTRAL_PRIMARY_ZODIAC"],
@@ -85,6 +93,10 @@ export const readConfig = (env: Env): Config => {
       ayanamsha: oneOf(env["ASTRAL_SIDEREAL_AYANAMSHA"], "lahiri", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const, "ASTRAL_SIDEREAL_AYANAMSHA"),
       interpretationMode,
       maxRetries: ints(env["ASTRAL_MAX_RETRIES"], 3, "ASTRAL_MAX_RETRIES"),
+      foundationUnits: bounded(env["ASTRAL_FOUNDATION_UNITS"], 10, "ASTRAL_FOUNDATION_UNITS", 10),
+      laneCount: bounded(env["ASTRAL_LANE_COUNT"], 4, "ASTRAL_LANE_COUNT", 4),
+      laneUnits: bounded(env["ASTRAL_LANE_UNITS"], 10, "ASTRAL_LANE_UNITS", 10),
+      laneContextTokens: ints(env["ASTRAL_LANE_CONTEXT_TOKENS"], 60_000, "ASTRAL_LANE_CONTEXT_TOKENS"),
     },
     signing: {
       enabled: signingEnabled,
