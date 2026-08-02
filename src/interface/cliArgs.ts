@@ -53,17 +53,22 @@ const choice = <T extends string>(value: string | null, name: string, choices: r
 };
 
 const calculationOptions = (args: readonly string[]): CalculationCommandOptions => {
-  const primaryZodiac = choice(flag(args, "--primary-zodiac"), "--primary-zodiac", ["tropical", "sidereal"] as const);
+  const zodiac = choice(flag(args, "--zodiac"), "--zodiac", ["tropical", "sidereal"] as const);
+  const legacyZodiac = choice(flag(args, "--primary-zodiac"), "--primary-zodiac", ["tropical", "sidereal"] as const);
+  const legacyMode = choice(flag(args, "--interpretation-mode"), "--interpretation-mode", ["tropical", "sidereal"] as const);
+  const selected = zodiac ?? legacyZodiac ?? legacyMode;
+  for (const value of [zodiac, legacyZodiac, legacyMode]) {
+    if (value !== undefined && selected !== undefined && value !== selected) {
+      throw new Error("--zodiac, --primary-zodiac and --interpretation-mode must select the same zodiac");
+    }
+  }
   const ayanamsha = choice(flag(args, "--ayanamsha"), "--ayanamsha", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const);
-  const interpretationMode = choice(
-    flag(args, "--interpretation-mode"),
-    "--interpretation-mode",
-    ["tropical", "sidereal", "both"] as const,
-  );
   const optionOverrides: Partial<CalculationOptions> = {};
-  if (primaryZodiac !== undefined) optionOverrides.primaryZodiac = primaryZodiac;
+  if (selected !== undefined) {
+    optionOverrides.primaryZodiac = selected;
+    optionOverrides.interpretationMode = selected;
+  }
   if (ayanamsha !== undefined) optionOverrides.ayanamsha = ayanamsha;
-  if (interpretationMode !== undefined) optionOverrides.interpretationMode = interpretationMode;
   return {
     input: flag(args, "--input") ?? "-",
     output: flag(args, "--output") ?? "-",
@@ -119,13 +124,11 @@ export const cliHelp = `astral-charts
 
 Commands:
   calculate [--input FILE|-] [--output FILE|-]
-            [--primary-zodiac tropical|sidereal]
+            [--zodiac tropical|sidereal]
             [--ayanamsha lahiri|fagan_bradley|krishnamurti|raman]
-            [--interpretation-mode tropical|sidereal|both]
   generate  [--input FILE|-] [--output FILE|-] [--pretty]
-            [--primary-zodiac tropical|sidereal]
+            [--zodiac tropical|sidereal]
             [--ayanamsha lahiri|fagan_bradley|krishnamurti|raman]
-            [--interpretation-mode tropical|sidereal|both]
   validate  [--input FILE|-] [--output FILE|-] [--trusted FILE]
   serve [--host HOST] [--port PORT] [--body-limit BYTES]
   places continents
@@ -133,4 +136,6 @@ Commands:
   places regions --country CODE
   places cities --country CODE [--region CODE] [--query TEXT]
   places get --id PLACE_ID
+
+Each chart uses one zodiac system. Tropical is the default. Create a separate chart to use another zodiac or sidereal ayanamsha.
 `;
