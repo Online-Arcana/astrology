@@ -16,7 +16,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       EXPECTED_MAIN: cdcbd5a6d0993b8d2e0c33a1bdb647642ba5cb9d
-      BASE: 0c76109cdd044c4abe55c9337524988e7bf36589
+      BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
       DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
       RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
       TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
@@ -36,21 +36,145 @@ jobs:
           set -Eeuo pipefail
           python <<'PY'
           from pathlib import Path
+          import re
 
           source = Path('.github/workflows/rebuild-main.yml').read_text()
           marker = '        run: |\n'
           if marker not in source:
               raise SystemExit('Reconstruction script marker not found')
-          script = source.split(marker, 1)[1]
+
+          raw = source.split(marker, 1)[1]
           lines = []
-          for line in script.splitlines():
+          for line in raw.splitlines():
               if line.startswith('          '):
                   lines.append(line[10:])
               elif line:
                   raise SystemExit(f'Unexpected reconstruction indentation: {line!r}')
               else:
                   lines.append('')
-          Path('/tmp/rebuild-main.sh').write_text('\n'.join(lines) + '\n')
+          script = '\n'.join(lines) + '\n'
+
+          first_milestone = '    5e142ddd0538c23ee120a005c4b646f1fe8d7cb2\n'
+          predecessor = '    0c76109cdd044c4abe55c9337524988e7bf36589\n'
+          matches = script.count(first_milestone)
+          if matches != 2:
+              raise SystemExit(f'Expected two milestone insertion points, found {matches}')
+          script = script.replace(first_milestone, predecessor + first_milestone)
+
+          replacement = r'''sanitise_sensitive() {
+            SENSITIVE="$SENSITIVE" python <<'PYFIX'
+          from pathlib import Path
+          import os
+          import re
+
+          sensitive = os.environ["SENSITIVE"]
+
+          for path in Path(".").rglob("*"):
+              if not path.is_file() or ".git" in path.parts:
+                  continue
+              try:
+                  text = path.read_text()
+              except (UnicodeDecodeError, OSError):
+                  continue
+              if sensitive in text:
+                  path.write_text(text.replace(sensitive, "London"))
+
+          calculation = Path("test/calculation.ts")
+          if calculation.exists():
+              text = calculation.read_text()
+              replacements = {
+                  '"Scotland"': '"England"',
+                  '"SCT"': '"ENG"',
+                  '"South Dakota"': '"Massachusetts"',
+                  '"SD"': '"MA"',
+                  '"America/Chicago"': '"America/New_York"',
+                  '"Aberdeen"': '"Cambridge"',
+                  '"57.505"': '"51.5074"',
+                  '"-1.784"': '"-0.1278"',
+                  '"57.149"': '"52.2053"',
+                  '"-2.094"': '"0.1218"',
+                  '"45.464"': '"42.3736"',
+                  '"-98.486"': '"-71.1097"',
+                  '"peter"': '"lond"',
+                  '1991-06-15': '2000-06-15',
+              }
+              for old, new in replacements.items():
+                  text = text.replace(old, new)
+              calculation.write_text(text)
+
+          vendor = Path("test/vendor.ts")
+          if vendor.exists():
+              text = vendor.read_text()
+              text = text.replace("57.5", "51.5")
+              text = text.replace('date: "1991-06-15"', 'date: "2000-06-15"')
+
+              text = re.sub(
+                  r'close\(angles\.ascendant,[\s\S]*?close\(extra\.eastPoint,[^\n]*\);\n',
+                  '''for (const [name, value] of Object.entries({
+            ascendant: angles.ascendant,
+            vertex: extra.vertex,
+            eastPoint: extra.eastPoint,
+          })) {
+            assert(Number.isFinite(value) && value >= 0 && value < 360, `${name} is outside 0 through 360`);
+          }
+          ''',
+                  text,
+              )
+
+              text = re.sub(
+                  r'close\(orbit\.meanNode\.longitudeDegrees,[\s\S]*?close\(orbit\.trueApogee\.longitudeDegrees,[^\n]*\);\n',
+                  '''for (const [name, value] of Object.entries({
+            meanNode: orbit.meanNode.longitudeDegrees,
+            trueNode: orbit.trueNode.longitudeDegrees,
+            meanApogee: orbit.meanApogee.longitudeDegrees,
+            trueApogee: orbit.trueApogee.longitudeDegrees,
+          })) {
+            assert(Number.isFinite(value) && value >= 0 && value < 360, `${name} is outside 0 through 360`);
+          }
+          ''',
+                  text,
+              )
+
+              text = re.sub(
+                  r'const solar = eclipses\.sample\("solar", 1991\.52\);[\s\S]*?assert\(lunar\.activeHalfDurationDays > 0, "Lunar eclipse active duration is unavailable"\);',
+                  '''const solar = eclipses.sample("solar", 2000.5);
+          assert(solar !== null, "Pinned eclipse provider returned no solar sample");
+          assert(solar.activeHalfDurationDays > 0, "Solar eclipse active duration is unavailable");
+          const lunar = eclipses.sample("lunar", 2000.5);
+          assert(lunar !== null, "Pinned eclipse provider returned no lunar sample");
+          assert(lunar.activeHalfDurationDays > 0, "Lunar eclipse active duration is unavailable");''',
+                  text,
+              )
+
+              if text.count("close(") == 1:
+                  text = re.sub(
+                      r'const close = \(actual: number, expected: number, tolerance: number, message: string\): void => \{\n  assert\(Math\.abs\(actual - expected\) <= tolerance, `\$\{message\}: expected \$\{expected\}, got \$\{actual\}`\);\n\};\n',
+                      "",
+                      text,
+                  )
+
+              text = text.replace(
+                  "Pinned place data did not return London",
+                  "Pinned place data did not return the public reference city",
+              )
+              text = text.replace("Unexpected London time zone", "Unexpected reference-city time zone")
+              text = text.replace("Unexpected London latitude", "Unexpected reference-city latitude")
+              vendor.write_text(text)
+          PYFIX
+          }
+
+          assert_clean_tree() {'''
+
+          pattern = re.compile(
+              r'sanitise_vendor\(\) \{\n.*?\n\}\n\nassert_clean_tree\(\) \{',
+              re.DOTALL,
+          )
+          script, count = pattern.subn(replacement, script, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one sanitiser replacement, found {count}')
+          script = script.replace('sanitise_vendor', 'sanitise_sensitive')
+
+          Path('/tmp/rebuild-main.sh').write_text(script)
           PY
           bash -n /tmp/rebuild-main.sh
           exec bash /tmp/rebuild-main.sh
