@@ -1,12 +1,12 @@
 {
-  "name": "astral-charts",
+  "name": "astrology",
   "version": "0.14.1",
   "description": "Deterministic natal astrology calculation and strictly structured interpretation",
   "type": "module",
   "license": "MIT",
   "private": true,
   "bin": {
-    "astral-charts": "./dist/cli.js"
+    "astrology": "./dist/cli.js"
   },
   "engines": {
     "node": ">=22"

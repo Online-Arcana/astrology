@@ -4,4 +4,4 @@
 
 The source dataset is provided under the Open Database Licence 1.0. The project preserves the upstream repository as a submodule, records its exact revision in calculation provenance and does not copy the complete geographic dataset into `src`.
 
-astral-charts normalises upstream records into its own `PlaceData` contract. Free-text search returns candidates only. Selection remains explicit, and stable IDs retain the source city identifier together with country and region codes.
+astrology normalises upstream records into its own `PlaceData` contract. Free-text search returns candidates only. Selection remains explicit, and stable IDs retain the source city identifier together with country and region codes.

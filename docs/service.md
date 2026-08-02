@@ -61,7 +61,7 @@ The stored representation is `sha256:<lowercase hex>`.
 
 Provenance records:
 
-- astral-charts version
+- astrology version
 - pinned astronomy, place and time provider revisions
 - timezone database version and supported range
 - calculation, aspect, dignity and compatibility profiles
