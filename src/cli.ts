@@ -97,7 +97,7 @@ export const runCli = async (args: readonly string[]): Promise<void> => {
   }
 
   const config = readConfig(process.env);
-  const runtime = await loadApiRuntime(config, "0.18.2");
+  const runtime = await loadApiRuntime(config, "0.19.0");
 
   if (command.kind === "calculate" || command.kind === "generate") {
     const body = calculationBody(
