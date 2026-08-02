@@ -28,9 +28,16 @@ export const progressHooks = (
       tracker.start(unit.id, "interpreting", now(), attempt, model);
       emit(tracker.snapshot(now()));
     },
-    onRetry: () => emit(tracker.snapshot(now())),
+    onRetry: (unit) => {
+      tracker.markRetry(unit.id);
+      emit(tracker.snapshot(now()));
+    },
     onComplete: (result) => {
       tracker.complete(result.id, now());
+      emit(tracker.snapshot(now()));
+    },
+    onWave: (wave) => {
+      tracker.setWave(wave);
       emit(tracker.snapshot(now()));
     },
   };
