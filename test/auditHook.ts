@@ -49,13 +49,14 @@ class FakeClient implements SchemaClient {
   }
 }
 
-let rejected: {
+type Rejection = {
   attempt: number;
   model: string;
   output: object;
   audit: UnitAudit<object>;
-} | null = null;
+};
 
+const rejected: Rejection[] = [];
 let failed = false;
 
 try {
@@ -72,12 +73,12 @@ try {
         candidate,
         audit,
       ) => {
-        rejected = {
+        rejected.push({
           attempt,
           model,
           output: candidate,
           audit,
-        };
+        });
       },
     },
   );
@@ -87,12 +88,15 @@ try {
 }
 
 assert(failed, "failed audit must remain terminal");
-assert(rejected !== null, "rejected output hook must run");
-assert(rejected.attempt === 1, "hook must receive the attempt");
-assert(rejected.model === "gpt-5.4-nano", "hook must receive the routed model");
-assert(rejected.output === output, "hook must receive the exact rejected output");
+assert(rejected.length === 1, "rejected output hook must run exactly once");
+
+const capture = rejected[0];
+assert(capture !== undefined, "rejected output hook must provide a capture");
+assert(capture.attempt === 1, "hook must receive the attempt");
+assert(capture.model === "gpt-5.4-nano", "hook must receive the routed model");
+assert(capture.output === output, "hook must receive the exact rejected output");
 assert(
-  rejected.audit.errors[0] === "diagnostic audit failure",
+  capture.audit.errors[0] === "diagnostic audit failure",
   "hook must receive the exact audit result",
 );
 
