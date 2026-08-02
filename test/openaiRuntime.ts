@@ -230,13 +230,13 @@ await test("fixed plan keeps one ordered conversation and routes fields by cost"
   );
   equal(
     client.models.join(","),
-    "gpt-5.4-nano,gpt-5.4-nano,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
-    "leaf section synthesis and utility model routing",
+    "gpt-5.4-nano,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
+    "leaf retry escalation section synthesis and utility model routing",
   );
   equal(
     client.efforts.join(","),
-    "none,none,low,low,none",
-    "per-field reasoning routing",
+    "none,low,low,low,none",
+    "per-field reasoning and retry escalation",
   );
   equal(
     client.tokens.join(","),
@@ -248,6 +248,7 @@ await test("fixed plan keeps one ordered conversation and routes fields by cost"
   const retryInput = client.inputs[1] as { correction?: { auditFailures?: string[] } };
   const failures = retryInput.correction?.auditFailures ?? [];
   assert(failures.length > 0, "retry must include audit failures");
+  equal(result.run.units["tropical.point.sun"]?.model, "gpt-5.4-mini", "accepted retry model");
   equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
   assert(result.run.units["tropical.point.sun"] !== undefined, "Sun unit retained");
   assert(result.run.units["tropical.life.identityAndPurpose"] !== undefined, "life section retained");
