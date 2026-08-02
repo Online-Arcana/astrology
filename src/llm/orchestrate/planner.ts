@@ -6,16 +6,6 @@ export interface LanePlan {
   estimatedTokens: number;
 }
 
-const priority = (id: string): number => {
-  if (/\.overview$/u.test(id)) return 0;
-  if (/\.big-three\.(?:sun|moon|ascendant)$/u.test(id)) return 1;
-  if (/\.dominant-themes$/u.test(id)) return 2;
-  if (/\.chart-balance$/u.test(id)) return 3;
-  if (/\.pattern\./u.test(id)) return 4;
-  if (/\.life\.(?:identityAndPurpose|emotionalNature|mindAndCommunication)$/u.test(id)) return 5;
-  return 10;
-};
-
 const pending = (
   calls: readonly InterpretationCall[],
   accepted: Readonly<Record<string, UnitResult<object>>>,
@@ -27,11 +17,7 @@ export const foundationPlan = (
   maximum = 10,
 ): InterpretationCall[] => {
   if (!Number.isSafeInteger(maximum) || maximum < 1) throw new Error("Foundation maximum must be a positive integer");
-  return pending(calls, accepted)
-    .map((call, index) => ({ call, index }))
-    .sort((left, right) => priority(left.call.id) - priority(right.call.id) || left.index - right.index)
-    .slice(0, maximum)
-    .map(({ call }) => call);
+  return pending(calls, accepted).slice(0, maximum);
 };
 
 const dependenciesMet = (
