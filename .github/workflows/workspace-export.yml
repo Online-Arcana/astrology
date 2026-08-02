@@ -1,0 +1,36 @@
+name: Workspace export
+
+on:
+  push:
+    branches:
+      - agent/workspace-export
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Fetch every branch and create bundle
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          git bundle create /tmp/astrology.bundle --all
+          git bundle verify /tmp/astrology.bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astrology-workspace-bundle
+          path: /tmp/astrology.bundle
+          if-no-files-found: error
+          retention-days: 1
