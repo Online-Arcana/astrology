@@ -24,11 +24,48 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Fetch every branch and create bundle
+      - name: Fetch complete reconstruction ancestry and create bundle
         shell: bash
         run: |
           set -Eeuo pipefail
           git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+          shas=(
+            d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+            0c76109cdd044c4abe55c9337524988e7bf36589
+            5e142ddd0538c23ee120a005c4b646f1fe8d7cb2
+            8b4275b069b745e991ab29f43b4aa49c826be491
+            e03cf036bc7bc49475cf7cd829f720899f0f5596
+            b73ae8eeee4b328e5877f88e86c000a3d00760ae
+            fb2ea1e1cd22be8dbaeea2f30afded832484c7d7
+            f7c43a39a91214cb1fdade11284a832e9c10f8e5
+            0c41560be1a4558624ea571dad279bf0eff5219d
+            c7537f72a05a5d07605e2f860b1ce0928691df11
+            e503d520fa65b20254ee2992e7d3b1b4caaece92
+            1e3d768dba3297910219f8cdee300fdc8187ba60
+            9d2b5d4ebb2e523a2abd7efd2e762e2c843367f2
+            ba33a7520a821b600087eff23d2e635ab0486413
+            cfdb8875a5fb34fb3907a6e2cada01bcd37e931c
+            1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+            15e6937b0393f92ca521d6e0d172f68fb9aa2965
+            5337e5a4b8f02860fcbe57e5ec3a97942afabce6
+            fe8bd6a400f5319ed1df543413336ab741f2d9b7
+            d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+            b4ed34eaa4ae34b08234c2887a395b6834cc32b6
+            d5919470d9688521a134bcfe247023ef232dc3fc
+            06b80d503d29ee69f94249abbaf7a13e2781d7d7
+            a3e1c342b3f7c8262fb576bbe90079a3ad88d752
+            62b90374898c687e5a091c71a741b230585533d7
+          )
+
+          i=0
+          for sha in "${shas[@]}"; do
+            git fetch --no-tags origin "$sha"
+            git cat-file -e "$sha^{commit}"
+            git update-ref "refs/archive/rebuild-$i" "$sha"
+            i=$((i + 1))
+          done
+
           git bundle create /tmp/astrology.bundle --all
           git bundle verify /tmp/astrology.bundle
 
