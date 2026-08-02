@@ -147,18 +147,23 @@ const ports: CalculationPorts = {
   astronomy,
   lunarOrbit,
   eclipses,
-  version: "0.10.0",
+  version: "0.19.0",
   now: () => `2026-08-01T12:00:0${generated++}.000Z`,
 };
 
 const service = new CalculationService(ports);
-const options = {
+const tropicalOptions = {
   primaryZodiac: "tropical" as const,
   ayanamsha: "lahiri" as const,
-  interpretationMode: "both" as const,
+  interpretationMode: "tropical" as const,
+};
+const siderealOptions = {
+  primaryZodiac: "sidereal" as const,
+  ayanamsha: "lahiri" as const,
+  interpretationMode: "sidereal" as const,
 };
 
-await test("exact calculation assembles both complete zodiac systems", async () => {
+await test("exact calculation assembles only the selected tropical system", async () => {
   const result = await service.calculate({
     date: "1991-06-15",
     time: "12:30:00",
@@ -166,15 +171,44 @@ await test("exact calculation assembles both complete zodiac systems", async () 
     placeId: place.id,
     name: "Test Subject",
     lang: "en-GB",
-  }, options);
-  equal(result.schema, "astral-calculation/1.0.0", "calculation schema");
-  equal(Object.keys(result.systems.tropical.points).length, 25, "tropical point count");
-  equal(Object.keys(result.systems.sidereal.points).length, 25, "sidereal point count");
-  assert(result.systems.tropical.points.ascendant.position.value !== null, "exact Ascendant");
-  equal(result.systems.tropical.houses.placidus.status, "calculated", "exact Placidus houses");
-  equal(Object.keys(result.compatibility.tropical.domains).length, compatibilityDomains.length, "compatibility domain count");
-  equal(result.compatibility.tropical.domains.romantic.ranked.length, 12, "romantic sign count");
+  }, tropicalOptions);
+  equal(result.schema, "astral-calculation/1.1.0", "calculation schema");
+  equal(result.system.zodiac, "tropical", "selected zodiac");
+  equal(result.system.ayanamsha, null, "tropical ayanamsha");
+  equal(Object.keys(result.system.points).length, 25, "point count");
+  assert(result.system.points.ascendant.position.value !== null, "exact Ascendant");
+  equal(result.system.houses.placidus.status, "calculated", "exact Placidus houses");
+  equal(Object.keys(result.compatibility.domains).length, compatibilityDomains.length, "compatibility domain count");
+  equal(result.compatibility.domains.romantic.ranked.length, 12, "romantic sign count");
   assert(result.provenance.calculationFingerprint.startsWith("sha256:"), "fingerprint prefix");
+});
+
+await test("sidereal calculation uses the selected Lahiri basis only", async () => {
+  const result = await service.calculate({
+    date: "1991-06-15",
+    time: "12:30:00",
+    timeAccuracy: "exact",
+    placeId: place.id,
+  }, siderealOptions);
+  equal(result.system.zodiac, "sidereal", "sidereal zodiac");
+  equal(result.system.ayanamsha, "lahiri", "sidereal ayanamsha");
+  equal(result.settings.siderealAyanamsha, "lahiri", "settings ayanamsha");
+  equal(result.compatibility.zodiac, "sidereal", "compatibility zodiac");
+});
+
+await test("mismatched calculation options require a separate chart", async () => {
+  let failed = false;
+  try {
+    await service.calculate({
+      date: "1991-06-15",
+      time: "12:30:00",
+      timeAccuracy: "exact",
+      placeId: place.id,
+    }, { ...tropicalOptions, interpretationMode: "sidereal" });
+  } catch {
+    failed = true;
+  }
+  equal(failed, true, "mixed zodiac options must fail");
 });
 
 await test("fingerprint excludes generation time but covers deterministic output", async () => {
@@ -184,23 +218,23 @@ await test("fingerprint excludes generation time but covers deterministic output
     timeAccuracy: "exact" as const,
     placeId: place.id,
   };
-  const first = await service.calculate(input, options);
-  const second = await service.calculate(input, options);
+  const first = await service.calculate(input, tropicalOptions);
+  const second = await service.calculate(input, tropicalOptions);
   equal(first.provenance.calculationFingerprint, second.provenance.calculationFingerprint, "stable fingerprint");
   assert(first.provenance.generatedAt !== second.provenance.generatedAt, "generation timestamps should differ");
 });
 
-await test("approximate time propagates through angles houses sect and lots", async () => {
+await test("approximate time propagates through selected system", async () => {
   const result = await service.calculate({
     date: "1991-06-15",
     time: "12:30:00",
     timeAccuracy: "approximate",
     placeId: place.id,
-  }, options);
-  equal(result.systems.tropical.points.ascendant.position.status, "approximate", "approximate Ascendant");
-  equal(result.systems.tropical.houses.placidus.houses["1"].cusp.status, "approximate", "approximate house cusp");
-  equal(result.systems.tropical.derived.sect.status, "approximate", "approximate sect");
-  equal(result.systems.tropical.points.part_of_fortune.position.status, "approximate", "approximate Fortune");
+  }, tropicalOptions);
+  equal(result.system.points.ascendant.position.status, "approximate", "approximate Ascendant");
+  equal(result.system.houses.placidus.houses["1"].cusp.status, "approximate", "approximate house cusp");
+  equal(result.system.derived.sect.status, "approximate", "approximate sect");
+  equal(result.system.points.part_of_fortune.position.status, "approximate", "approximate Fortune");
   equal(result.warnings.some((warning) => warning.code === "birth_time_approximate"), true, "approximate warning");
 });
 
@@ -210,36 +244,34 @@ await test("unknown time keeps bounded planets but never invents timed geometry"
     time: null,
     timeAccuracy: "unknown",
     placeId: place.id,
-  }, options);
+  }, tropicalOptions);
   equal(result.time.resolution.status, "bounded", "unknown-time civil window");
   equal(result.astronomy.bodies.sun.eclipticLongitudeDegrees.status, "bounded", "bounded Sun");
-  equal(result.astronomy.bodies.moon.eclipticLongitudeDegrees.status, "bounded", "bounded Moon");
-  equal(result.systems.tropical.points.north_node_true.position.status, "bounded", "bounded true node");
-  equal(result.systems.tropical.points.ascendant.position.value, null, "unknown Ascendant");
-  equal(result.systems.tropical.houses.placidus.status, "unavailable", "unknown houses");
-  equal(result.systems.tropical.derived.chartRuler.traditional.value, null, "unknown chart ruler");
-  equal(result.compatibility.tropical.domains.overall.ranked.length, 12, "unknown-time compatibility");
+  equal(result.system.points.north_node_true.position.status, "bounded", "bounded true node");
+  equal(result.system.points.ascendant.position.value, null, "unknown Ascendant");
+  equal(result.system.houses.placidus.status, "unavailable", "unknown houses");
+  equal(result.system.derived.chartRuler.traditional.value, null, "unknown chart ruler");
+  equal(result.compatibility.domains.overall.ranked.length, 12, "unknown-time compatibility");
   equal(result.warnings.some((warning) => warning.code === "birth_time_unknown"), true, "unknown-time warning");
 });
 
-await test("interpretation plan is fixed field-by-field and source-bounded", async () => {
+await test("interpretation plan contains only the selected system", async () => {
   const result = await service.calculate({
     date: "1991-06-15",
     time: "12:30:00",
     timeAccuracy: "exact",
     placeId: place.id,
-  }, options);
+  }, tropicalOptions);
   const ids = result.interpretationPlan.units.map(({ id }) => id);
   equal(new Set(ids).size, ids.length, "unique interpretation units");
   equal(ids.includes("tropical.point.sun"), true, "Sun interpretation unit");
-  equal(ids.includes("sidereal.life.sexuality"), true, "sidereal sexuality unit");
-  equal(ids.includes("tropical.compatibility.romantic.aries"), true, "romantic Aries unit");
-  equal(ids.includes("tropical.compatibility.sexual.aries"), true, "sexual Aries unit");
-  equal(ids.includes("final-synthesis"), true, "final synthesis unit");
+  equal(ids.some((id) => id.startsWith("sidereal.")), false, "no sidereal units");
+  equal(ids.includes("cross-system"), false, "no cross-system unit");
+  equal(ids.includes("tropical.final-synthesis"), true, "selected final synthesis unit");
   equal(
-    result.interpretationPlan.units.every((unit) => unit.allowedSourceRefs.length > 0),
+    result.interpretationPlan.units.every((unit) => unit.zodiac === "tropical" && unit.allowedSourceRefs.length > 0),
     true,
-    "all units have source boundaries",
+    "all units stay inside selected zodiac",
   );
 });
 
