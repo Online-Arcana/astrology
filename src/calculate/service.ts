@@ -447,7 +447,7 @@ export class CalculationService {
   }
 }
 
-export const loadCalculationPorts = async (version = "0.10.0"): Promise<CalculationPorts> => {
+export const loadCalculationPorts = async (version = "0.19.0"): Promise<CalculationPorts> => {
   const [places, timeResolver, astronomy, lunarOrbit, eclipses] = await Promise.all([
     loadCscCatalogue(),
     loadTimeResolver(),
@@ -468,7 +468,7 @@ export const loadCalculationPorts = async (version = "0.10.0"): Promise<Calculat
 
 export const loadCalculationService = async (
   config: Config,
-  version = "0.10.0",
+  version = "0.19.0",
 ): Promise<{ service: CalculationService; options: CalculationOptions }> => ({
   service: new CalculationService(await loadCalculationPorts(version)),
   options: optionsFromConfig(config),
