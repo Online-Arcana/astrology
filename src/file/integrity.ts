@@ -4,13 +4,13 @@ import { crc32c } from "./crc32c.js";
 import { digest } from "./hash.js";
 
 export interface AstralCore {
-  schema: "astral/1.0.0";
+  schema: "astral/1.1.0";
   "astral-calculation": AstralCalculation;
   "astral-chart": AstralChart;
 }
 
 export const core = (calculation: AstralCalculation, chart: AstralChart): AstralCore => ({
-  schema: "astral/1.0.0",
+  schema: "astral/1.1.0",
   "astral-calculation": calculation,
   "astral-chart": chart,
 });
