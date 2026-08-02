@@ -30,10 +30,10 @@ class OpenAISchemaClient implements SchemaClient {
   readonly #instructions: string;
   readonly #metadata: Record<string, string>;
 
-  constructor(options: OpenAISchemaRuntimeOptions) {
+  constructor(options: OpenAISchemaRuntimeOptions, conversationId?: string) {
     this.#instructions = options.instructions;
     this.#metadata = { ...(options.metadata ?? {}) };
-    this.#client = new OpenAISchema(options.apiKey, bootstrap, undefined, {
+    this.#client = new OpenAISchema(options.apiKey, bootstrap, conversationId, {
       ...(options.base === undefined ? {} : { base: options.base }),
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
       conversation: true,
@@ -66,5 +66,5 @@ export const createOpenAISchemaClientFactory = (
 ): SchemaClientFactory => {
   if (options.apiKey.trim().length === 0) throw new Error("OpenAI API key is required");
   if (options.instructions.trim().length === 0) throw new Error("OpenAI developer instructions are required");
-  return () => new OpenAISchemaClient(options);
+  return (conversationId) => new OpenAISchemaClient(options, conversationId);
 };
