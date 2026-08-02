@@ -38,6 +38,27 @@ const shape = <T extends object>(value: StrictShape<T>): Shape<T> => ({
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const outputText = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(outputText).filter(Boolean).join("\n");
+  if (!record(value)) return "";
+  if (typeof value["text"] === "string") return value["text"];
+  const output = value["output"];
+  if (output !== undefined) return outputText(output);
+  const content = value["content"];
+  if (content !== undefined) return outputText(content);
+  return "";
+};
+
+const responseError = (cause: unknown): { id: string; incomplete: boolean } | null => {
+  if (!record(cause)) return null;
+  const id = cause["responseId"];
+  const status = cause["responseStatus"];
+  return typeof id === "string" && id.length > 0
+    ? { id, incomplete: status === "incomplete" }
+    : null;
+};
+
 class OpenAISchemaClient implements SchemaClient {
   readonly #client: OpenAISchema<Record<string, unknown>>;
   readonly #instructions: string;
@@ -103,18 +124,31 @@ class OpenAISchemaClient implements SchemaClient {
     input: unknown,
     options: Parameters<SchemaClient["run"]>[2],
   ): Promise<T> {
-    return this.#client.run(
-      shape(value),
-      input,
-      {
-        ...options,
-        body: {
-          ...options.body,
-          instructions: this.#instructions,
-          metadata: this.#metadata,
+    try {
+      return await this.#client.run(
+        shape(value),
+        input,
+        {
+          ...options,
+          body: {
+            ...options.body,
+            instructions: this.#instructions,
+            metadata: this.#metadata,
+          },
         },
-      },
-    );
+      );
+    } catch (cause: unknown) {
+      const response = responseError(cause);
+      if (response?.incomplete === true) {
+        try {
+          const partial = outputText(await this.retrieveResponse(response.id));
+          if (partial.length > 0 && record(cause)) cause["rawText"] = partial;
+        } catch {
+          // The original transport failure remains authoritative when retrieval is unavailable.
+        }
+      }
+      throw cause;
+    }
   }
 }
 
