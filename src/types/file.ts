@@ -3,15 +3,15 @@ import type {
   Ayanamsha,
   AstronomyData,
   CompatibilityMatrix,
-  SiderealCalculation,
-  TropicalCalculation,
+  Zodiac,
+  ZodiacCalculation,
 } from "./astro.js";
 import type { AstralChart } from "./chart.js";
 
 export interface CalculationSettings {
-  primaryZodiac: "tropical" | "sidereal";
-  siderealAyanamsha: Ayanamsha;
-  interpretationMode: "tropical" | "sidereal" | "both";
+  primaryZodiac: Zodiac;
+  siderealAyanamsha: Ayanamsha | null;
+  interpretationMode: Zodiac;
   primaryHouseSystem: "placidus";
   polarFallback: "porphyry";
   houseSystems: ["placidus", "whole_sign", "equal", "porphyry"];
@@ -19,14 +19,15 @@ export interface CalculationSettings {
 
 export interface InterpretationUnit {
   id: string;
-  zodiac: "tropical" | "sidereal" | null;
+  zodiac: Zodiac;
   section: string;
   domain: string | null;
   allowedSourceRefs: JsonRef[];
 }
 
 export interface InterpretationPlan {
-  schema: "astral-interpretation-plan/1.0.0";
+  schema: "astral-interpretation-plan/1.1.0";
+  zodiac: Zodiac;
   units: InterpretationUnit[];
 }
 
@@ -57,7 +58,7 @@ export interface CalculationWarning {
 }
 
 export interface AstralCalculation {
-  schema: "astral-calculation/1.0.0";
+  schema: "astral-calculation/1.1.0";
   subject: {
     providedName: string | null;
     language: string;
@@ -68,15 +69,10 @@ export interface AstralCalculation {
   time: TimeData;
   settings: CalculationSettings;
   astronomy: AstronomyData;
-  systems: {
-    tropical: TropicalCalculation;
-    sidereal: SiderealCalculation;
-  };
-  compatibility: {
+  system: ZodiacCalculation;
+  compatibility: CompatibilityMatrix & {
     method: "natal_to_sign_archetype";
     profile: "western_compatibility/1.0.0";
-    tropical: CompatibilityMatrix & { zodiac: "tropical" };
-    sidereal: CompatibilityMatrix & { zodiac: "sidereal" };
   };
   interpretationPlan: InterpretationPlan;
   provenance: CalculationProvenance;
@@ -114,7 +110,7 @@ export interface AstralAuthority {
 }
 
 export interface AstralFile {
-  schema: "astral/1.0.0";
+  schema: "astral/1.1.0";
   "astral-calculation": AstralCalculation;
   "astral-chart": AstralChart;
   crc: AstralCrc;
