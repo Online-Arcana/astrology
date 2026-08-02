@@ -18,7 +18,7 @@ export interface SchemaClient {
   run<T extends object>(shape: StrictShape<T>, input: unknown, options: SchemaCall): Promise<T>;
 }
 
-export type SchemaClientFactory = () => SchemaClient;
+export type SchemaClientFactory = (conversationId?: string) => SchemaClient;
 export type ReasoningEffort = "none" | "low" | "medium" | "high";
 
 export interface UnitContext {
@@ -52,6 +52,22 @@ export interface UnitResult<T extends object> {
   model: string;
 }
 
+export interface ActiveInterpretationUnit {
+  id: string;
+  attempt: number;
+  correction: readonly string[];
+}
+
+export interface InterpretationRecovery {
+  conversationId: string | null;
+  units: Readonly<Record<string, UnitResult<object>>>;
+  calls: number;
+  retries: number;
+  active: ActiveInterpretationUnit | null;
+}
+
+export type InterpretationCheckpoint = InterpretationRecovery;
+
 export interface InterpretationRun {
   conversationId: string;
   units: Readonly<Record<string, UnitResult<object>>>;
@@ -63,4 +79,5 @@ export interface RunHooks {
   onStart?: (unit: InterpretationCall, attempt: number, model: string) => void;
   onComplete?: (result: UnitResult<object>) => void;
   onRetry?: (unit: InterpretationCall, attempt: number, errors: readonly string[]) => void;
+  onCheckpoint?: (checkpoint: InterpretationCheckpoint) => void | Promise<void>;
 }
