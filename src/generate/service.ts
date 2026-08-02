@@ -24,7 +24,7 @@ import type { BirthInput } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
 import type { AstralCalculation, AstralFile } from "../types/file.js";
 
-export const generationRecoverySchema = "astral-generation-recovery/1.0.0" as const;
+export const generationRecoverySchema = "astral-generation-recovery/1.1.0" as const;
 
 export interface GeneratedChart {
   calculation: AstralCalculation;
@@ -82,12 +82,19 @@ const baseDeveloperInstruction = [
   "Return only the requested strict JSON schema.",
 ].join("\n");
 
-const languageInstruction = (calculation: AstralCalculation): string => [
-  `Write all interpretation text in ${calculation.subject.language}.`,
-  "The subject is an adult.",
-  "Astrology may be interpreted as symbolism, tendencies and patterns only.",
-  "Do not add medical, legal, financial, safeguarding or crisis advice.",
-].join("\n");
+const languageInstruction = (calculation: AstralCalculation): string => {
+  const ayanamsha = calculation.settings.siderealAyanamsha;
+  return [
+    `Write all interpretation text in ${calculation.subject.language}.`,
+    "The subject is an adult.",
+    "Astrology may be interpreted as symbolism, tendencies and patterns only.",
+    "Do not add medical, legal, financial, safeguarding or crisis advice.",
+    `Use only the selected ${calculation.system.zodiac} zodiac system.`,
+    ayanamsha === null
+      ? "Do not mention, compare or import sidereal placements or ayanamshas."
+      : `Use only the ${ayanamsha} ayanamsha and never import another ayanamsha or tropical placement.`,
+  ].join("\n");
+};
 
 const recoveryFor = (
   version: string,
@@ -100,6 +107,17 @@ const recoveryFor = (
   calculation,
   interpretation,
 });
+
+const assertRecoveryBasis = (checkpoint: ChartGenerationCheckpoint, config: Config): void => {
+  const settings = checkpoint.calculation.settings;
+  if (settings.primaryZodiac !== config.chart.primaryZodiac || settings.interpretationMode !== config.chart.interpretationMode) {
+    throw new Error("Generation recovery zodiac does not match the runtime chart configuration; create or resume the matching chart instead");
+  }
+  const expectedAyanamsha = settings.primaryZodiac === "sidereal" ? config.chart.ayanamsha : null;
+  if (settings.siderealAyanamsha !== expectedAyanamsha) {
+    throw new Error("Generation recovery ayanamsha does not match the runtime chart configuration; create or resume the matching chart instead");
+  }
+};
 
 export class ChartGenerationService {
   readonly #runtime: GenerationRuntime;
@@ -132,6 +150,7 @@ export class ChartGenerationService {
     if (checkpoint.calculation.provenance.calculationFingerprint !== checkpoint.calculationFingerprint) {
       throw new Error("Generation recovery calculation fingerprint does not match its calculation");
     }
+    assertRecoveryBasis(checkpoint, this.#runtime.config);
     return this.#complete(checkpoint.calculation, hooks, checkpoint.interpretation);
   }
 
@@ -174,7 +193,7 @@ export class ChartGenerationService {
 
 export const loadChartGenerationService = async (
   config: Config,
-  version = "0.18.2",
+  version = "0.19.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata">> = {},
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {
@@ -189,7 +208,8 @@ export const loadChartGenerationService = async (
       service: "astral-charts",
       calculation_fingerprint: value.provenance.calculationFingerprint,
       astral_charts_version: version,
-      interpretation_mode: value.settings.interpretationMode,
+      zodiac: value.system.zodiac,
+      ayanamsha: value.settings.siderealAyanamsha ?? "none",
     },
     ...openai,
   });
