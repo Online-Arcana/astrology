@@ -84,6 +84,9 @@ await test("pinned openai-schema creates one conversation and sends strict schem
   equal(text.format?.type, "json_schema", "strict response format type");
   equal(text.format?.strict, true, "strict response format");
   equal(text.format?.name, "fixture", "response schema name");
+  equal(typeof requests[1]?.body["input"], "string", "structured input encoded as string");
+  const encodedInput = JSON.parse(String(requests[1]?.body["input"])) as { field?: string };
+  equal(encodedInput.field, "fixture", "structured input content preserved");
 });
 
 const exactRef = "#/astral-calculation/source" as JsonRef;
