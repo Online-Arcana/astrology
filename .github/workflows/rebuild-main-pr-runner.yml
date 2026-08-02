@@ -125,60 +125,65 @@ jobs:
           text = text.replace(plan_check, plan_override + plan_check)
 
           gate = 'git submodule sync --recursive'
-          transport_fix = r'''python <<'PYTRANSPORT'
-          from pathlib import Path
-
-          path = Path("src/llm/openaiTransport.ts")
-          text = path.read_text()
-
-          if "createTimeoutMs?: number;" not in text:
-              marker = "  retryAttempts?: number;"
-              if text.count(marker) != 1:
-                  raise SystemExit("Transport option marker not found")
-              text = text.replace(marker, "  createTimeoutMs?: number;\n" + marker)
-
-          if "const createTimeoutMs = positive(" not in text:
-              marker = "  const retryAttempts = positive("
-              block = '''  const createTimeoutMs = positive(
-            options.createTimeoutMs,
-            15 * 60 * 1_000,
-            "OpenAI creation timeout",
-          );
-
-          '''
-              if text.count(marker) != 1:
-                  raise SystemExit("Transport timeout marker not found")
-              text = text.replace(marker, block + marker)
-
-          old = '''      const response = await get(
-            `${responseUrl}/${encodeURIComponent(id)}`,
-            headers,
-            signal,
-            id,
-          );'''
-          new = '''      const response = await get(
-            `${responseUrl}/${encodeURIComponent(id)}`,
-            headers,
-            signal,
-            id,
-            deadline,
-          );'''
-          if old in text:
-              text = text.replace(old, new, 1)
-
-          if text.count("const createTimeoutMs = positive(") != 1:
-              raise SystemExit("Creation timeout is not defined exactly once")
-          if text.count("createTimeoutMs?: number;") != 1:
-              raise SystemExit("Creation timeout option is not defined exactly once")
-          if old in text:
-              raise SystemExit("Polling call still lacks its deadline")
-
-          path.write_text(text)
-          PYTRANSPORT
-          git add src/llm/openaiTransport.ts
-          git commit --amend --no-edit
-
-          '''
+          transport_fix = '\n'.join([
+              "python <<'PYTRANSPORT'",
+              'from pathlib import Path',
+              '',
+              'path = Path("src/llm/openaiTransport.ts")',
+              'text = path.read_text()',
+              '',
+              'if "createTimeoutMs?: number;" not in text:',
+              '    marker = "  retryAttempts?: number;"',
+              '    if text.count(marker) != 1:',
+              '        raise SystemExit("Transport option marker not found")',
+              '    text = text.replace(marker, "  createTimeoutMs?: number;\\n" + marker)',
+              '',
+              'if "const createTimeoutMs = positive(" not in text:',
+              '    marker = "  const retryAttempts = positive("',
+              '    block = (',
+              '        "  const createTimeoutMs = positive(\\n"',
+              '        "    options.createTimeoutMs,\\n"',
+              '        "    15 * 60 * 1_000,\\n"',
+              '        "    \\"OpenAI creation timeout\\",\\n"',
+              '        "  );\\n\\n"',
+              '    )',
+              '    if text.count(marker) != 1:',
+              '        raise SystemExit("Transport timeout marker not found")',
+              '    text = text.replace(marker, block + marker)',
+              '',
+              'old = (',
+              '    "      const response = await get(\\n"',
+              '    "        `${responseUrl}/${encodeURIComponent(id)}`,\\n"',
+              '    "        headers,\\n"',
+              '    "        signal,\\n"',
+              '    "        id,\\n"',
+              '    "      );"',
+              ')',
+              'new = (',
+              '    "      const response = await get(\\n"',
+              '    "        `${responseUrl}/${encodeURIComponent(id)}`,\\n"',
+              '    "        headers,\\n"',
+              '    "        signal,\\n"',
+              '    "        id,\\n"',
+              '    "        deadline,\\n"',
+              '    "      );"',
+              ')',
+              'if old in text:',
+              '    text = text.replace(old, new, 1)',
+              '',
+              'if text.count("const createTimeoutMs = positive(") != 1:',
+              '    raise SystemExit("Creation timeout is not defined exactly once")',
+              'if text.count("createTimeoutMs?: number;") != 1:',
+              '    raise SystemExit("Creation timeout option is not defined exactly once")',
+              'if old in text:',
+              '    raise SystemExit("Polling call still lacks its deadline")',
+              '',
+              'path.write_text(text)',
+              'PYTRANSPORT',
+              'git add src/llm/openaiTransport.ts',
+              'git commit --amend --no-edit',
+              '',
+          ])
           if text.count(gate) != 1:
               raise SystemExit('Validation gate was not found exactly once')
           text = text.replace(gate, transport_fix + gate)
