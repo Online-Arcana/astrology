@@ -13,6 +13,7 @@ import { runInterpretation } from "./run.js";
 import type {
   InterpretationCall,
   InterpretationRun,
+  ReasoningEffort,
   RunHooks,
   SchemaClientFactory,
   UnitResult,
@@ -21,6 +22,7 @@ import type {
 export const promptCatalogue = "astral-prompts/1.0.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.0.0" as const;
 export const nlpAuditProfile = "astral-nlp-audit/1.0.1" as const;
+export const modelRoutingProfile = "astral-model-routing/1.0.0" as const;
 
 export interface PlanInterpretationResult {
   run: InterpretationRun;
@@ -30,6 +32,12 @@ export interface PlanInterpretationResult {
 interface SourceValue {
   ref: JsonRef;
   value: unknown;
+}
+
+interface Route {
+  kind: InterpretationCall["kind"];
+  effort?: ReasoningEffort;
+  tokens: number;
 }
 
 const root = (calculation: AstralCalculation): { "astral-calculation": AstralCalculation } => ({
@@ -79,6 +87,28 @@ const lexicon = (unit: InterpretationUnit): string[] => {
     "strength",
     "tension",
   ].filter((value) => value.length > 2))];
+};
+
+const synth = new Set([
+  "synthesis",
+  "crossSystem",
+  "finalSynthesis",
+]);
+
+const route = (unit: InterpretationUnit): Route => {
+  if (synth.has(unit.section)) {
+    return { kind: "big", tokens: 6_000 };
+  }
+
+  if (
+    unit.section === "overview"
+    || unit.section === "compatibility.overview"
+    || unit.section.startsWith("life.")
+  ) {
+    return { kind: "big", effort: "low", tokens: 3_200 };
+  }
+
+  return { kind: "small", effort: "none", tokens: 1_800 };
 };
 
 const narratives = (value: unknown): string[] => {
@@ -144,7 +174,7 @@ const substantiveCalls = (
     calls.push({
       id: unit.id,
       label: human(unit.id),
-      kind: "big",
+      ...route(unit),
       shape: shapeForUnit(unit),
       allowedSourceRefs: allowed,
       input: ({ correction }) => ({
@@ -194,6 +224,8 @@ const generatedNameCall = (calculation: AstralCalculation): InterpretationCall =
     id: "generated-name",
     label: "Generated chart name",
     kind: "small",
+    effort: "none",
+    tokens: 128,
     shape: strictShape<{ value: string }>(
       "generated_chart_name",
       object({ value: text() }),
