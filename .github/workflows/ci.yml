@@ -32,11 +32,10 @@ jobs:
       - run: npm run test:vendor
 
   rebuild:
-    if: github.event_name == 'pull_request' && github.head_ref == 'agent/run-final' && github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/agent/run-final') || (github.event_name == 'pull_request' && github.head_ref == 'agent/run-final' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
-      EXPECTED_MAIN: ${{ github.event.pull_request.base.sha }}
       BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
       DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
       RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
@@ -57,6 +56,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+
+          export EXPECTED_MAIN="$(git ls-remote origin refs/heads/main | cut -f1)"
 
           gh api \
             "repos/$GITHUB_REPOSITORY/contents/.github/workflows/final-rebuild.yml?ref=agent/final-rebuild" \
@@ -145,4 +146,17 @@ jobs:
           PY
 
           bash -n /tmp/final-rebuild.sh
-          exec bash /tmp/final-rebuild.sh
+
+          set +e
+          bash /tmp/final-rebuild.sh 2>&1 | tee /tmp/final-rebuild.log
+          code=${PIPESTATUS[0]}
+          set -e
+
+          if (( code != 0 )); then
+            git switch -C agent/run-final origin/agent/run-final
+            tail -n 800 /tmp/final-rebuild.log > rebuild-error.txt
+            git add rebuild-error.txt
+            git commit -m "[skip ci] Record reconstruction failure" || true
+            git push origin agent/run-final
+            exit "$code"
+          fi
