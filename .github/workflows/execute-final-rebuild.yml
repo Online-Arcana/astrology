@@ -1,0 +1,122 @@
+name: Execute final history reconstruction
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .rebuild-trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  rebuild:
+    if: github.head_ref == 'agent/final-rebuild' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      EXPECTED_MAIN: ${{ github.event.pull_request.base.sha }}
+      BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+      DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+      RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+      TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Run corrected reconstruction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          python <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/final-rebuild.yml').read_text()
+          marker = '        run: |\n'
+          if source.count(marker) != 1:
+              raise SystemExit('Expected exactly one reconstruction run block')
+
+          raw = source.split(marker, 1)[1]
+          lines = []
+          for line in raw.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line:
+                  raise SystemExit(f'Unexpected reconstruction indentation: {line!r}')
+              else:
+                  lines.append('')
+
+          script = '\n'.join(lines) + '\n'
+
+          replacements = {
+              """old = '''  return {
+  valid: state.errors.length === 0,
+  value: audited,
+  errors: state.errors,
+};
+'''""": """old = '''  return {
+    valid: state.errors.length === 0,
+    value: audited,
+    errors: state.errors,
+  };
+'''""",
+              """new = '''  return {
+  valid: state.errors.length === 0,
+  value: audited,
+  errors: state.errors,
+  soft: state.errors.length > 0
+    && state.errors.every((error) => error.endsWith(\"does not fit its semantic field\")),
+};
+'''""": """new = '''  return {
+    valid: state.errors.length === 0,
+    value: audited,
+    errors: state.errors,
+    soft: state.errors.length > 0
+      && state.errors.every((error) => error.endsWith(\"does not fit its semantic field\")),
+  };
+'''""",
+              """old = '''      audit: (value, { calculation: calculationRoot }) => {
+      const audited = auditStructured(value, calculationRoot, allowed, profile);
+      if (audited.valid) prior.push(...narratives(audited.value));
+      return audited;
+    },
+'''""": """old = '''      audit: (value, { calculation: calculationRoot }) => {
+        const audited = auditStructured(value, calculationRoot, allowed, profile);
+        if (audited.valid) prior.push(...narratives(audited.value));
+        return audited;
+      },
+'''""",
+              """new = '''      audit: (value, { calculation: calculationRoot }) =>
+      auditStructured(value, calculationRoot, allowed, profile),
+    onAccept: (value) => {
+      prior.push(...narratives(value));
+    },
+'''""": """new = '''      audit: (value, { calculation: calculationRoot }) =>
+        auditStructured(value, calculationRoot, allowed, profile),
+      onAccept: (value) => {
+        prior.push(...narratives(value));
+      },
+'''""",
+          }
+
+          for old, new in replacements.items():
+              if script.count(old) != 1:
+                  raise SystemExit('Expected generated transformation block was not found exactly once')
+              script = script.replace(old, new)
+
+          Path('/tmp/final-rebuild.sh').write_text(script)
+          PY
+
+          bash -n /tmp/final-rebuild.sh
+          exec bash /tmp/final-rebuild.sh
