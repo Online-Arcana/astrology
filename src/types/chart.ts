@@ -166,16 +166,6 @@ export interface CompatibilityInterpretation {
   domains: Record<CompatibilityDomain, CompatibilityDomainInterpretation>;
 }
 
-export interface CrossSystemInterpretation {
-  sharedThemes: string[];
-  tropicalEmphasis: string[];
-  siderealEmphasis: string[];
-  apparentContradictions: string[];
-  reconciliations: string[];
-  synthesis: string;
-  sourceRefs: JsonRef[];
-}
-
 export interface FinalSynthesis {
   essence: string;
   definingThemes: string[];
@@ -221,15 +211,11 @@ export interface ChartProvenance {
 }
 
 export interface AstralChart {
-  schema: "astral-chart/1.0.0";
+  schema: "astral-chart/1.1.0";
   subject: FinalSubject;
-  tropical: SystemInterpretation & { zodiac: "tropical" };
-  sidereal: SystemInterpretation & { zodiac: "sidereal" };
-  crossSystem: CrossSystemInterpretation;
-  compatibility: {
-    tropical: CompatibilityInterpretation & { zodiac: "tropical" };
-    sidereal: CompatibilityInterpretation & { zodiac: "sidereal" };
-  };
+  zodiac: Zodiac;
+  system: SystemInterpretation;
+  compatibility: CompatibilityInterpretation;
   finalSynthesis: FinalSynthesis;
   provenance: ChartProvenance;
 }
