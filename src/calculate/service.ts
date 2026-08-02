@@ -31,8 +31,6 @@ import type {
   Ayanamsha,
   AstrologicalPoint,
   AstronomyData,
-  BodyState,
-  HouseSystem,
   LunarPhase,
   PlanetId,
   PointId,
@@ -60,7 +58,7 @@ type TimedStatus = Extract<CalcStatus, "exact" | "approximate" | "bounded">;
 export interface CalculationOptions {
   primaryZodiac: Zodiac;
   ayanamsha: Ayanamsha;
-  interpretationMode: Zodiac | "both";
+  interpretationMode: Zodiac;
 }
 
 export interface CalculationPorts {
@@ -103,8 +101,12 @@ const optionsFromConfig = (config: Config): CalculationOptions => ({
   interpretationMode: config.chart.interpretationMode,
 });
 
-const selectedZodiac = (options: CalculationOptions): Zodiac =>
-  options.interpretationMode === "both" ? options.primaryZodiac : options.interpretationMode;
+const selectedZodiac = (options: CalculationOptions): Zodiac => {
+  if (options.primaryZodiac !== options.interpretationMode) {
+    throw new Error("A chart must use one zodiac system; create a separate chart for the other system");
+  }
+  return options.primaryZodiac;
+};
 
 const timeState = (time: TimeData, astronomy: AstronomyPort): TimedState => {
   if (time.julianEphemerisDay !== null) {
@@ -367,7 +369,8 @@ export class CalculationService {
       astronomy: this.#ports.astronomy,
       lunarOrbit: this.#ports.lunarOrbit,
       eclipses: this.#ports.eclipses,
-      ayanamsha: options.ayanamsha,
+      zodiac,
+      ayanamsha: zodiac === "sidereal" ? options.ayanamsha : null,
     });
 
     const system = zodiacCalculation(
