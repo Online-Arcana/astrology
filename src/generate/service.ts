@@ -112,8 +112,8 @@ const interpretationOrder = (calculation: AstralCalculation): string[] => [
   ...(calculation.subject.providedName === null ? ["generated-name"] : []),
 ];
 
-const expandedWave = (wave: WaveCheckpoint | null | undefined): WaveCheckpoint | null | undefined => {
-  if (wave === null || wave === undefined) return wave;
+const expandedWave = (wave: WaveCheckpoint | null | undefined): WaveCheckpoint | null => {
+  if (wave === null || wave === undefined) return null;
   const phase = wave.assembled
     ? "assembled"
     : wave.lanes.every(({ status }) => status === "complete" || status === "blocked")
