@@ -23,6 +23,7 @@ export interface SchemaClient {
   readonly id: string | undefined;
   run<T extends object>(shape: StrictShape<T>, input: unknown, options: SchemaCall): Promise<T>;
   uploadFile?(name: string, content: string): Promise<UploadedFile>;
+  deleteFile?(id: string): Promise<void>;
   retrieveResponse?(id: string): Promise<unknown>;
 }
 
@@ -56,6 +57,11 @@ export interface UnitAudit<T extends object> {
   soft?: boolean;
 }
 
+export type InterpretationRepairKind =
+  | "truncation_condensation"
+  | "audit_correction"
+  | "coherence_correction";
+
 export interface UnitResult<T extends object> {
   id: string;
   value: T;
@@ -63,7 +69,7 @@ export interface UnitResult<T extends object> {
   model: string;
   provenance?: {
     repairedBy?: string;
-    repairKind?: "truncation_condensation" | "audit_correction" | "coherence_correction";
+    repairKind?: InterpretationRepairKind;
     migratedFromVersion?: string;
   };
 }
@@ -159,9 +165,7 @@ export interface InterpretationDiagnostic {
   model: string | null;
   configuredOutputTokens: number | null;
   errors: string[];
-  repairKind: UnitResult<object>["provenance"] extends infer P
-    ? P extends { repairKind?: infer R } ? R | null : null
-    : null;
+  repairKind: InterpretationRepairKind | null;
   snapshotRevision: number | null;
   snapshotSha256: string | null;
   wave: number | null;
