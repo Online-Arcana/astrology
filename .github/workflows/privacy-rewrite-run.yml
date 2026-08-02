@@ -27,4 +27,9 @@ jobs:
         with:
           node-version: 22
 
-      - run: bash scripts/privacy-rewrite.sh
+      - shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp scripts/privacy-rewrite.sh /tmp/privacy-rewrite.sh
+          rm -f scripts/privacy-rewrite.sh .github/workflows/privacy-rewrite-run.yml
+          bash /tmp/privacy-rewrite.sh
