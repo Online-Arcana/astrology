@@ -1,4 +1,4 @@
-import type { Ayanamsha } from "./types/astro.js";
+import type { Ayanamsha, Zodiac } from "./types/astro.js";
 
 export type Env = Readonly<Record<string, string | undefined>>;
 
@@ -11,9 +11,9 @@ export interface Config {
     maxOutputTokens: number;
   };
   chart: {
-    primaryZodiac: "tropical" | "sidereal";
+    primaryZodiac: Zodiac;
     ayanamsha: Ayanamsha;
-    interpretationMode: "tropical" | "sidereal" | "both";
+    interpretationMode: Zodiac;
     maxRetries: number;
   };
   signing: {
@@ -53,6 +53,25 @@ export const readConfig = (env: Env): Config => {
     throw new Error("Signing requires both Ed25519 keys");
   }
 
+  const primaryZodiac = oneOf(
+    env["ASTRAL_PRIMARY_ZODIAC"],
+    "tropical",
+    ["tropical", "sidereal"] as const,
+    "ASTRAL_PRIMARY_ZODIAC",
+  );
+  if (env["ASTRAL_INTERPRETATION_MODE"] === "both") {
+    throw new Error("ASTRAL_INTERPRETATION_MODE=both is no longer supported; create separate tropical and sidereal charts");
+  }
+  const interpretationMode = oneOf(
+    env["ASTRAL_INTERPRETATION_MODE"],
+    primaryZodiac,
+    ["tropical", "sidereal"] as const,
+    "ASTRAL_INTERPRETATION_MODE",
+  );
+  if (primaryZodiac !== interpretationMode) {
+    throw new Error("ASTRAL_PRIMARY_ZODIAC and ASTRAL_INTERPRETATION_MODE must select the same zodiac");
+  }
+
   return {
     openai: {
       apiKey: env["OPENAI_API_KEY"] ?? "",
@@ -62,9 +81,9 @@ export const readConfig = (env: Env): Config => {
       maxOutputTokens: ints(env["OPENAI_MAX_OUTPUT_TOKENS"], 12000, "OPENAI_MAX_OUTPUT_TOKENS"),
     },
     chart: {
-      primaryZodiac: oneOf(env["ASTRAL_PRIMARY_ZODIAC"], "tropical", ["tropical", "sidereal"] as const, "ASTRAL_PRIMARY_ZODIAC"),
+      primaryZodiac,
       ayanamsha: oneOf(env["ASTRAL_SIDEREAL_AYANAMSHA"], "lahiri", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const, "ASTRAL_SIDEREAL_AYANAMSHA"),
-      interpretationMode: oneOf(env["ASTRAL_INTERPRETATION_MODE"], "both", ["tropical", "sidereal", "both"] as const, "ASTRAL_INTERPRETATION_MODE"),
+      interpretationMode,
       maxRetries: ints(env["ASTRAL_MAX_RETRIES"], 3, "ASTRAL_MAX_RETRIES"),
     },
     signing: {
