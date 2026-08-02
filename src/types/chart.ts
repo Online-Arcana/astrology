@@ -216,7 +216,11 @@ export interface ChartProvenance {
   nlpAuditProfile: string;
   interpretationCalls: number;
   retries: number;
-  sharedConversation: true;
+  sharedConversation: false;
+  orchestration: "bounded_waves";
+  conversationCount: number;
+  waves: number;
+  snapshotRevision: number;
   phases: LlmPhaseProvenance[];
 }
 
