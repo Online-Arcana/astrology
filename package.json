@@ -1,6 +1,6 @@
 {
   "name": "astrology",
-  "version": "0.14.2",
+  "version": "0.14.3",
   "description": "Deterministic natal astrology calculation and strictly structured interpretation",
   "type": "module",
   "license": "MIT",
