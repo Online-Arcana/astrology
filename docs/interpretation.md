@@ -17,6 +17,8 @@ One chart job constructs one `OpenAISchema` instance through the local `SchemaCl
 
 After each call, `astral-charts` verifies that a conversation ID exists and has not changed. A missing or changed ID fails the chart. A later chart job constructs a new client, so conversations cannot be shared between charts.
 
+Calls remain ordered and serial within that conversation. This preserves deterministic field order, lets every accepted field participate in later duplicate checks and avoids concurrent writes racing against shared conversation state.
+
 The conversation ID is runtime state. It is not written into the calculation, interpreted chart or `.astral` file.
 
 ## Responsibility split
@@ -35,7 +37,7 @@ The conversation ID is runtime state. It is not written into the calculation, in
 - the fixed interpretation plan
 - one cohesive schema field per call
 - deterministic input projection
-- model selection
+- model, reasoning and token-budget routing
 - source-reference permissions
 - local deterministic NLP audit
 - safe mechanical repair
@@ -54,10 +56,18 @@ Every `InterpretationCall` has:
 - only the relevant deterministic source objects
 - an explicit set of permitted local JSON references
 - one recursive field audit
+- a bounded model, reasoning and output-token route
 
 The LLM never selects fields, availability, placements, house systems, aspects, dignity, compatibility scores or ranks.
 
-All substantive interpretation fields use `OPENAI_BIG_MODEL`. The small model is restricted to the generated three-word chart-name utility and future non-substantive utilities.
+Routing follows `astral-model-routing/1.0.0`:
+
+- narrow leaf fields use `OPENAI_SMALL_MODEL`, no reasoning and at most 1,800 output tokens
+- chart overviews, compatibility overviews and life sections use `OPENAI_BIG_MODEL`, low reasoning and at most 3,200 output tokens
+- zodiac, cross-system and final syntheses use `OPENAI_BIG_MODEL`, configured reasoning and at most 6,000 output tokens
+- the generated three-word chart name uses `OPENAI_SMALL_MODEL`, no reasoning and at most 128 output tokens
+
+Every route is also capped by `OPENAI_MAX_OUTPUT_TOKENS`, so an operator may impose a stricter global ceiling.
 
 When the subject supplied no name, the utility runs in the same chart conversation after the substantive fields. It must return exactly three hyphenated words. Its temporary result is removed from the interpretation-unit map before strict chart assembly, while its call and retry counts remain in provenance.
 
@@ -87,6 +97,6 @@ A failed audit retries only that interpretation unit. The retry receives the exa
 
 ## Transport options
 
-The adapter passes the configured model, reasoning effort, output-token limit, `store: false`, developer instructions and metadata into `OpenAISchema.run(...)`. The library adds the strict JSON schema and active conversation itself.
+The adapter passes the routed model, reasoning effort, output-token limit, `store: false`, developer instructions and metadata into `OpenAISchema.run(...)`. The library adds the strict JSON schema and active conversation itself.
 
 Ordinary tests use fake clients or an injected fake `fetch`. They verify the real request shape without contacting OpenAI.
