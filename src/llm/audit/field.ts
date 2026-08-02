@@ -145,16 +145,35 @@ const themeTerms = [
   "tema",
 ] as const;
 
+const strengthFrames = [
+  /\b(?:supports?|enables?|allows?|provides?|helps?|favours?|favors?|strengthens?|improves?|grounds?|stabilises?|stabilizes?|builds?|encourages?)\b/u,
+  /\b(?:apoya|permite|proporciona|ayuda|favorece|fortalece|mejora|estabiliza|fomenta)\b/u,
+] as const;
+
+const tensionFrames = [
+  /\b(?:can|could|may|might)\s+(?:become|create|cause|lead to|turn into|produce|intensify|undermine|distort|overwhelm|complicate)\b/u,
+  /\b(?:too|overly|excessive(?:ly)?|without|unless|but|however|yet|risk of|tendency to|hard to|difficulty with|struggle to)\b/u,
+  /\b(?:undermines?|disrupts?|blocks?|strains?|limits?|destabilises?|destabilizes?|overextends?|overreacts?|avoids?|withdraws?)\b/u,
+  /\b(?:puede|podria|podría)\s+(?:volverse|crear|causar|llevar a|producir|intensificar|socavar|distorsionar|abrumar|complicar)\b/u,
+  /\b(?:demasiado|excesivo|excesiva|sin|a menos que|pero|sin embargo|riesgo de|tendencia a|dificultad para)\b/u,
+] as const;
+
 const forbidden = (sentence: string): boolean => forbiddenPatterns.some((pattern) => pattern.test(sentence));
 const boilerplate = (sentence: string): boolean => unwantedExamples.some((example) => cosine(sentence, example) >= 0.72);
 
-const has = (value: string, terms: readonly string[]): boolean => {
+const countTerms = (value: string, terms: readonly string[]): number => {
   const padded = ` ${value} `;
-  return terms.some((term) => {
+  let count = 0;
+  for (const term of terms) {
     const normal = normaliseText(term);
-    return normal.length > 0 && padded.includes(` ${normal} `);
-  });
+    if (normal.length > 0 && padded.includes(` ${normal} `)) count += 1;
+  }
+  return count;
 };
+
+const has = (value: string, terms: readonly string[]): boolean => countTerms(value, terms) > 0;
+const countFrames = (value: string, patterns: readonly RegExp[]): number =>
+  patterns.reduce((count, pattern) => count + (pattern.test(value) ? 1 : 0), 0);
 
 const roleFor = (id: string): SemanticRole | null => {
   const path = normaliseText(id);
@@ -181,11 +200,25 @@ const termsFor = (role: SemanticRole): readonly string[] => {
   }
 };
 
-const oppositeTermsFor = (role: SemanticRole): readonly string[] => {
-  if (role === "strength") return tensionTerms;
-  if (role === "tension") return strengthTerms;
-  return [];
+const framesFor = (role: SemanticRole): readonly RegExp[] => {
+  switch (role) {
+    case "strength":
+      return strengthFrames;
+    case "tension":
+      return tensionFrames;
+    case "theme":
+      return [];
+  }
 };
+
+const oppositeRole = (role: SemanticRole): SemanticRole | null => {
+  if (role === "strength") return "tension";
+  if (role === "tension") return "strength";
+  return null;
+};
+
+const roleScore = (value: string, role: SemanticRole): number =>
+  countTerms(value, termsFor(role)) + countFrames(value, framesFor(role));
 
 const clean = (value: string): { value: string; repaired: boolean; removed: boolean } => {
   let repaired = false;
@@ -232,9 +265,10 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
     const role = roleFor(profile.id);
     const grounded = profile.lexicon.length === 0 || has(normal, profile.lexicon);
     if (role === "strength" || role === "tension") {
-      const fits = has(normal, termsFor(role));
-      const opposite = has(normal, oppositeTermsFor(role));
-      if (opposite && !fits) {
+      const opposite = oppositeRole(role);
+      const fitScore = roleScore(normal, role);
+      const oppositeScore = opposite === null ? 0 : roleScore(normal, opposite);
+      if (fitScore === 0 && oppositeScore >= 3) {
         const expected = role === "strength" ? "a strength" : "a tension";
         issues.push({
           code: "irrelevant",
