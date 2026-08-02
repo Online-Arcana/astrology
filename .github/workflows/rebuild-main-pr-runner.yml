@@ -1,0 +1,61 @@
+name: Run corrected main history rebuild
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.head_ref == 'agent/rebuild-main-0.18.0' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: cdcbd5a6d0993b8d2e0c33a1bdb647642ba5cb9d
+      BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+      DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+      RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+      TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Run corrected reconstruction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/rebuild-main-pr.yml').read_text()
+          marker = '        run: |\n'
+          if marker not in source:
+              raise SystemExit('Trigger script marker not found')
+          raw = source.split(marker, 1)[1]
+          lines = []
+          for line in raw.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line:
+                  raise SystemExit(f'Unexpected trigger indentation: {line!r}')
+              else:
+                  lines.append('')
+          script = '\n'.join(lines) + '\n'
+          old = 'script, count = pattern.subn(replacement, script, count=1)'
+          new = 'script, count = pattern.subn(lambda _match: replacement, script, count=1)'
+          if script.count(old) != 1:
+              raise SystemExit('Regex replacement call was not found exactly once')
+          Path('/tmp/rebuild-trigger.sh').write_text(script.replace(old, new))
+          PY
+          bash -n /tmp/rebuild-trigger.sh
+          exec bash /tmp/rebuild-trigger.sh
