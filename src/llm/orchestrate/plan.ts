@@ -4,6 +4,7 @@ import { resolveRef, refsValid } from "../../ref/resolve.js";
 import type { JsonRef } from "../../types/base.js";
 import type { Section } from "../../types/chart.js";
 import type { AstralCalculation, InterpretationUnit } from "../../types/file.js";
+import type { NarrativeEntry } from "../audit/field.js";
 import { auditStructured } from "../audit/structured.js";
 import type { FieldProfile } from "../audit/field.js";
 import { fieldProfiles } from "../audit/profiles.js";
@@ -21,10 +22,10 @@ import type {
   UnitResult,
 } from "./types.js";
 
-export const promptCatalogue = "astral-prompts/1.2.0" as const;
+export const promptCatalogue = "astral-prompts/1.3.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.1.0" as const;
-export const nlpAuditProfile = "astral-nlp-audit/1.0.4" as const;
-export const modelRoutingProfile = "astral-model-routing/1.0.1" as const;
+export const nlpAuditProfile = "astral-nlp-audit/1.1.0" as const;
+export const modelRoutingProfile = "astral-model-routing/1.1.0" as const;
 
 export interface PlanInterpretationResult {
   run: InterpretationRun;
@@ -50,9 +51,7 @@ const useful = (calculation: AstralCalculation, ref: JsonRef): boolean =>
   refsValid(root(calculation), [ref], new Set([ref]));
 
 const sources = (calculation: AstralCalculation, refs: readonly JsonRef[]): SourceValue[] =>
-  refs
-    .filter((ref) => useful(calculation, ref))
-    .map((ref) => ({ ref, value: resolveRef(root(calculation), ref) }));
+  refs.filter((ref) => useful(calculation, ref)).map((ref) => ({ ref, value: resolveRef(root(calculation), ref) }));
 
 const human = (value: string): string => value
   .replaceAll(/([a-z])([A-Z])/gu, "$1 $2")
@@ -73,9 +72,7 @@ const task = (unit: InterpretationUnit): string => {
   ].join("\n"));
 };
 
-const correctionInstruction = (
-  unit: InterpretationUnit,
-): string => {
+const correctionInstruction = (unit: InterpretationUnit): string => {
   const lines = [
     "Correct only this interpretation unit and return the same strict schema.",
     "Copy every sourceRefs value exactly from permittedSourceRefs.",
@@ -85,6 +82,7 @@ const correctionInstruction = (
     "Do not begin narrative sentences with a planet, sign, house, aspect, placement or calculation label.",
     "Keep every narrative property semantically distinct.",
     "Do not repeat or lightly paraphrase the summary, detail or another property.",
+    "Complete every required property and finish every sentence and list entry.",
     `Use only the selected ${unit.zodiac} zodiac system.`,
   ];
 
@@ -106,48 +104,41 @@ const lexicon = (unit: InterpretationUnit): string[] => {
   const specific = human(`${unit.section} ${unit.domain ?? ""} ${unit.zodiac}`).toLowerCase().split(" ");
   return [...new Set([
     ...specific,
-    "astrology",
-    "chart",
-    "planet",
-    "sign",
-    "house",
-    "aspect",
-    "relationship",
-    "compatibility",
-    "theme",
-    "pattern",
-    "strength",
-    "tension",
+    "astrology", "chart", "planet", "sign", "house", "aspect", "relationship", "compatibility",
+    "theme", "pattern", "strength", "tension",
   ].filter((value) => value.length > 2))];
 };
 
-const synth = new Set([
-  "synthesis",
-  "finalSynthesis",
-]);
+const synth = new Set(["synthesis", "finalSynthesis"]);
 
 const route = (unit: InterpretationUnit): Route => {
-  if (synth.has(unit.section)) {
-    return { kind: "big", tokens: 6_000 };
-  }
-
-  if (
-    unit.section === "overview"
-    || unit.section === "compatibility.overview"
-    || unit.section.startsWith("life.")
-  ) {
+  if (synth.has(unit.section)) return { kind: "big", tokens: 6_000 };
+  if (unit.section === "overview" || unit.section === "compatibility.overview" || unit.section.startsWith("life.")) {
     return { kind: "big", effort: "low", tokens: 3_200 };
   }
-
   return { kind: "small", effort: "none", tokens: 1_800 };
 };
 
-const narratives = (value: unknown): string[] => {
-  if (typeof value === "string") return value.length >= 60 && !value.startsWith("#/") ? [value] : [];
-  if (Array.isArray(value)) return value.flatMap(narratives);
-  if (value !== null && typeof value === "object") return Object.values(value).flatMap(narratives);
-  return [];
+const narrativeEntries = (
+  value: unknown,
+  path: string,
+  key: string | null = null,
+): NarrativeEntry[] => {
+  if (key === "sourceRefs") return [];
+  if (typeof value === "string") return value.length >= 60 && !value.startsWith("#/") ? [{ path, value }] : [];
+  if (value === null || typeof value !== "object") return [];
+  if (Array.isArray(value)) return value.flatMap((item, index) => narrativeEntries(item, `${path}[${index}]`));
+  return Object.entries(value as Record<string, unknown>)
+    .flatMap(([childKey, child]) => narrativeEntries(child, `${path}.${childKey}`, childKey));
 };
+
+const acceptedNarratives = (earlier: Readonly<Record<string, unknown>>): NarrativeEntry[] =>
+  Object.entries(earlier).flatMap(([id, raw]) => {
+    const value = typeof raw === "object" && raw !== null && "value" in raw
+      ? (raw as { value: unknown }).value
+      : raw;
+    return narrativeEntries(value, id);
+  });
 
 const genericUnavailable = (unit: InterpretationUnit): UnitResult<object> => {
   const value: Section = {
@@ -163,63 +154,48 @@ const genericUnavailable = (unit: InterpretationUnit): UnitResult<object> => {
   return { id: unit.id, value, attempts: 1, model: "deterministic" };
 };
 
-const syntheticAllowed = (unit: InterpretationUnit): boolean =>
-  ![
-    "life.romance",
-    "life.sexuality",
-    "life.careerAndVocation",
-    "life.moneyAndMaterialSecurity",
-    "synthesis",
-    "compatibility.overview",
-    "compatibility.sign",
-    "finalSynthesis",
-  ].includes(unit.section);
+const syntheticAllowed = (unit: InterpretationUnit): boolean => ![
+  "life.romance",
+  "life.sexuality",
+  "life.careerAndVocation",
+  "life.moneyAndMaterialSecurity",
+  "synthesis",
+  "compatibility.overview",
+  "compatibility.sign",
+  "finalSynthesis",
+].includes(unit.section);
 
 const substantiveCalls = (
   calculation: AstralCalculation,
 ): { calls: InterpretationCall[]; synthetic: Record<string, UnitResult<object>> } => {
   const calls: InterpretationCall[] = [];
   const synthetic: Record<string, UnitResult<object>> = {};
-  const prior: string[] = [];
 
   for (const unit of calculation.interpretationPlan.units) {
     const unitSources = sources(calculation, unit.allowedSourceRefs);
     if (unitSources.length === 0) {
-      if (!syntheticAllowed(unit)) {
-        throw new Error(`Interpretation unit ${unit.id} has no available deterministic source`);
-      }
+      if (!syntheticAllowed(unit)) throw new Error(`Interpretation unit ${unit.id} has no available deterministic source`);
       synthetic[unit.id] = genericUnavailable(unit);
       continue;
     }
 
     const allowed = new Set(unitSources.map(({ ref }) => ref));
-    const specialistKey =
-      unit.section === "life.romance"
-        ? "romance"
-        : unit.section === "life.sexuality"
-          ? "sexuality"
-          : unit.section === "life.careerAndVocation"
-            ? "career"
-            : unit.section === "life.moneyAndMaterialSecurity"
-              ? "money"
-              : null;
-
+    const specialistKey = unit.section === "life.romance"
+      ? "romance"
+      : unit.section === "life.sexuality"
+        ? "sexuality"
+        : unit.section === "life.careerAndVocation"
+          ? "career"
+          : unit.section === "life.moneyAndMaterialSecurity"
+            ? "money"
+            : null;
     const specialist = specialistKey === null ? null : fieldProfiles[specialistKey] ?? null;
-
     const profile: FieldProfile = {
       id: unit.id,
-      lexicon: [
-        ...new Set([
-          ...lexicon(unit),
-          ...(specialist?.lexicon ?? []),
-        ]),
-      ],
+      lexicon: [...new Set([...lexicon(unit), ...(specialist?.lexicon ?? [])])],
       minLength: 2,
       maxLength: 4_000,
-      priorFields: prior,
-      ...(specialist?.fieldLexicons === undefined
-        ? {}
-        : { fieldLexicons: specialist.fieldLexicons }),
+      ...(specialist?.fieldLexicons === undefined ? {} : { fieldLexicons: specialist.fieldLexicons }),
     };
 
     calls.push({
@@ -231,29 +207,23 @@ const substantiveCalls = (
       input: ({ correction }) => ({
         instructions: task(unit),
         deterministicData: {
-          unit: {
-            id: unit.id,
-            zodiac: unit.zodiac,
-            section: unit.section,
-            domain: unit.domain,
-          },
+          unit: { id: unit.id, zodiac: unit.zodiac, section: unit.section, domain: unit.domain },
           sources: unitSources,
         },
         permittedSourceRefs: [...allowed],
-        ...(correction.length === 0
-          ? {}
-          : {
-              correction: {
-                instruction: correctionInstruction(unit),
-                auditFailures: correction,
-              },
-            }),
+        ...(correction.length === 0 ? {} : {
+          correction: {
+            instruction: correctionInstruction(unit),
+            auditFailures: correction,
+          },
+        }),
       }),
-      audit: (value, { calculation: calculationRoot }) =>
-        auditStructured(value, calculationRoot, allowed, profile),
-      onAccept: (value) => {
-        prior.push(...narratives(value));
-      },
+      audit: (value, context) => auditStructured(
+        value,
+        context.calculation,
+        allowed,
+        { ...profile, priorFields: acceptedNarratives(context.earlier) },
+      ),
     });
   }
 
@@ -338,9 +308,7 @@ export const runInterpretationPlan = async (
   const raw = await runInterpretation(root(calculation), prepared.calls, config, createClient, hooks, recovery);
   const generated = raw.units["generated-name"]?.value as { value?: unknown } | undefined;
   const generatedName = calculation.subject.providedName === null
-    ? typeof generated?.value === "string"
-      ? generated.value
-      : null
+    ? typeof generated?.value === "string" ? generated.value : null
     : null;
   if (calculation.subject.providedName === null && generatedName === null) {
     throw new Error("Interpretation did not produce the required generated chart name");
@@ -353,8 +321,5 @@ export const runInterpretationPlan = async (
     units[unit.id] = value;
   }
 
-  return {
-    run: { ...raw, units },
-    generatedName,
-  };
+  return { run: { ...raw, units }, generatedName };
 };
