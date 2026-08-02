@@ -6,6 +6,7 @@ export interface NarrativeEntry {
   value: string;
 }
 
+export type PriorNarrative = NarrativeEntry | string;
 export type DuplicateKind = "exact" | "near";
 
 export interface DuplicateMatch {
@@ -14,6 +15,9 @@ export interface DuplicateMatch {
   threshold: number;
   kind: DuplicateKind;
 }
+
+const entry = (value: PriorNarrative, index: number): NarrativeEntry =>
+  typeof value === "string" ? { path: `prior[${index}]`, value } : value;
 
 const words = (value: string): Set<string> => new Set(
   normaliseText(withoutInternalReferences(value))
@@ -34,14 +38,15 @@ export const normaliseNarrative = (value: string): string =>
 export const duplicateMatch = (
   value: string,
   path: string,
-  prior: readonly NarrativeEntry[],
+  prior: readonly PriorNarrative[],
 ): DuplicateMatch | null => {
   const normal = normaliseNarrative(value);
   if (normal.length < 60) return null;
   const currentWords = words(value);
   let best: DuplicateMatch | null = null;
 
-  for (const candidate of prior) {
+  for (const [index, raw] of prior.entries()) {
+    const candidate = entry(raw, index);
     if (candidate.path === path) continue;
     const candidateNormal = normaliseNarrative(candidate.value);
     if (candidateNormal.length < 60) continue;
