@@ -1,0 +1,29 @@
+name: Export repository bundle
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    if: github.head_ref == 'agent/export-bundle'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: false
+      - name: Fetch every branch
+        run: git fetch --force origin '+refs/heads/*:refs/remotes/origin/*'
+      - name: Create bundle
+        run: git bundle create astrology.bundle --all
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astrology-git-bundle
+          path: astrology.bundle
+          if-no-files-found: error
+          retention-days: 1
