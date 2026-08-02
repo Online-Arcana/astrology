@@ -54,7 +54,77 @@ jobs:
               else:
                   lines.append('')
 
-          Path('/tmp/final-rebuild.sh').write_text('\n'.join(lines) + '\n')
+          script = '\n'.join(lines) + '\n'
+
+          structured_old = """old = '''  return {
+  valid: state.errors.length === 0,
+  value: audited,
+  errors: state.errors,
+};
+'''"""
+          structured_fixed = """old = '''  return {
+    valid: state.errors.length === 0,
+    value: audited,
+    errors: state.errors,
+  };
+'''"""
+          if script.count(structured_old) != 1:
+              raise SystemExit('Generated structured-audit source block was not found exactly once')
+          script = script.replace(structured_old, structured_fixed)
+
+          structured_new = """new = '''  return {
+  valid: state.errors.length === 0,
+  value: audited,
+  errors: state.errors,
+  soft: state.errors.length > 0
+    && state.errors.every((error) => error.endsWith(\"does not fit its semantic field\")),
+};
+'''"""
+          structured_new_fixed = """new = '''  return {
+    valid: state.errors.length === 0,
+    value: audited,
+    errors: state.errors,
+    soft: state.errors.length > 0
+      && state.errors.every((error) => error.endsWith(\"does not fit its semantic field\")),
+  };
+'''"""
+          if script.count(structured_new) != 1:
+              raise SystemExit('Generated structured-audit replacement block was not found exactly once')
+          script = script.replace(structured_new, structured_new_fixed)
+
+          plan_old = """old = '''      audit: (value, { calculation: calculationRoot }) => {
+      const audited = auditStructured(value, calculationRoot, allowed, profile);
+      if (audited.valid) prior.push(...narratives(audited.value));
+      return audited;
+    },
+'''"""
+          plan_fixed = """old = '''      audit: (value, { calculation: calculationRoot }) => {
+        const audited = auditStructured(value, calculationRoot, allowed, profile);
+        if (audited.valid) prior.push(...narratives(audited.value));
+        return audited;
+      },
+'''"""
+          if script.count(plan_old) != 1:
+              raise SystemExit('Generated interpretation-plan source block was not found exactly once')
+          script = script.replace(plan_old, plan_fixed)
+
+          plan_new = """new = '''      audit: (value, { calculation: calculationRoot }) =>
+      auditStructured(value, calculationRoot, allowed, profile),
+    onAccept: (value) => {
+      prior.push(...narratives(value));
+    },
+'''"""
+          plan_new_fixed = """new = '''      audit: (value, { calculation: calculationRoot }) =>
+        auditStructured(value, calculationRoot, allowed, profile),
+      onAccept: (value) => {
+        prior.push(...narratives(value));
+      },
+'''"""
+          if script.count(plan_new) != 1:
+              raise SystemExit('Generated interpretation-plan replacement block was not found exactly once')
+          script = script.replace(plan_new, plan_new_fixed)
+
+          Path('/tmp/final-rebuild.sh').write_text(script)
           PY
           bash -n /tmp/final-rebuild.sh
           exec bash /tmp/final-rebuild.sh
