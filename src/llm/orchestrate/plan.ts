@@ -12,6 +12,7 @@ import { sectionPrompt } from "./prompt.js";
 import { runInterpretation } from "./run.js";
 import type {
   InterpretationCall,
+  InterpretationRecovery,
   InterpretationRun,
   ReasoningEffort,
   RunHooks,
@@ -281,11 +282,12 @@ export const runInterpretationPlan = async (
   config: Config,
   createClient: SchemaClientFactory,
   hooks: RunHooks = {},
+  recovery: InterpretationRecovery | null = null,
 ): Promise<PlanInterpretationResult> => {
   const prepared = interpretationCalls(calculation);
   if (prepared.calls.length === 0) throw new Error("Interpretation plan contains no callable units");
 
-  const raw = await runInterpretation(root(calculation), prepared.calls, config, createClient, hooks);
+  const raw = await runInterpretation(root(calculation), prepared.calls, config, createClient, hooks, recovery);
   const generated = raw.units["generated-name"]?.value as { value?: unknown } | undefined;
   const generatedName = calculation.subject.providedName === null
     ? typeof generated?.value === "string"
