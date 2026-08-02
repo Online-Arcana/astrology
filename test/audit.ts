@@ -34,6 +34,22 @@ test("tension entries do not require a literal generic chart keyword", () => {
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
+test("a tension may describe how a strength becomes difficult", () => {
+  const result = auditField(
+    "Confidence and initiative can become excessive, creating pressure to act before everyone else is ready.",
+    profile("tropical.aspect.imum_coeli_sun_trine.tensions[1]"),
+  );
+  assert(result.valid, result.issues.map(({ message }) => message).join("; "));
+});
+
+test("a strength may describe constructive use of pressure", () => {
+  const result = auditField(
+    "Pressure and conflict can sharpen insight when discipline supports a calm and effective response.",
+    profile("tropical.aspect.imum_coeli_sun_trine.strengths[1]"),
+  );
+  assert(result.valid, result.issues.map(({ message }) => message).join("; "));
+});
+
 test("an obvious tension placed in strengths is rejected", () => {
   const result = auditField(
     "Persistent conflict and instability create pressure that repeatedly undermines otherwise workable decisions.",
