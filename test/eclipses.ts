@@ -105,13 +105,16 @@ const exactTime: TimeData = {
   },
 };
 
+const provider = new FakeEclipses({ solar: solarEvent, lunar: lunarEvent });
+
 await test("solar eclipse at birth uses the provider active window", () => {
   const result = calculateEclipses({
     time: exactTime,
     astronomy,
     lunarOrbit,
-    eclipses: new FakeEclipses({ solar: solarEvent, lunar: lunarEvent }),
-    ayanamsha: "lahiri",
+    eclipses: provider,
+    zodiac: "tropical",
+    ayanamsha: null,
   });
   equal(result.atBirth.value?.kind, "solar", "natal eclipse kind");
   equal(result.atBirth.value?.type, "total", "natal eclipse type");
@@ -120,22 +123,43 @@ await test("solar eclipse at birth uses the provider active window", () => {
   close(result.atBirth.value?.sunMoonAngleDegrees ?? -1, 0.2, 1e-9, "solar eclipse angle");
 });
 
-await test("latest prenatal solar and lunar eclipses remain separate", () => {
+await test("tropical chart stores only tropical prenatal positions", () => {
   const result = calculateEclipses({
     time: exactTime,
     astronomy,
     lunarOrbit,
-    eclipses: new FakeEclipses({ solar: solarEvent, lunar: lunarEvent }),
-    ayanamsha: "lahiri",
+    eclipses: provider,
+    zodiac: "tropical",
+    ayanamsha: null,
   });
   close(result.prenatalSolar.value?.daysBeforeBirth ?? -1, 0.05, 1e-9, "solar days before birth");
   close(result.prenatalLunar.value?.daysBeforeBirth ?? -1, 10, 1e-9, "lunar days before birth");
-  equal(result.prenatalSolar.value?.node, "north", "solar node");
-  equal(result.prenatalLunar.value?.node, "south", "lunar node");
-  equal(result.prenatalSolar.value?.tropicalPosition.sign, "cancer", "solar tropical sign");
-  equal(result.prenatalLunar.value?.tropicalPosition.sign, "capricorn", "lunar tropical sign");
+  equal(result.prenatalSolar.value?.zodiac, "tropical", "solar position zodiac");
+  equal(result.prenatalSolar.value?.position.sign, "cancer", "solar tropical sign");
+  equal(result.prenatalLunar.value?.position.sign, "capricorn", "lunar tropical sign");
+});
+
+await test("sidereal chart stores only its selected ayanamsha position", () => {
+  const tropical = calculateEclipses({
+    time: exactTime,
+    astronomy,
+    lunarOrbit,
+    eclipses: provider,
+    zodiac: "tropical",
+    ayanamsha: null,
+  });
+  const sidereal = calculateEclipses({
+    time: exactTime,
+    astronomy,
+    lunarOrbit,
+    eclipses: provider,
+    zodiac: "sidereal",
+    ayanamsha: "lahiri",
+  });
+  equal(sidereal.prenatalSolar.value?.zodiac, "sidereal", "sidereal position zodiac");
+  equal(sidereal.prenatalSolar.value?.ayanamsha, "lahiri", "sidereal position ayanamsha");
   equal(
-    result.prenatalSolar.value?.siderealPosition.longitudeDegrees === result.prenatalSolar.value?.tropicalPosition.longitudeDegrees,
+    sidereal.prenatalSolar.value?.position.longitudeDegrees === tropical.prenatalSolar.value?.position.longitudeDegrees,
     false,
     "sidereal eclipse position must shift independently",
   );
@@ -156,6 +180,7 @@ await test("lunar eclipse birth coincidence uses calculated penumbral duration",
     astronomy,
     lunarOrbit,
     eclipses: new FakeEclipses({ solar: farSolar, lunar: nearLunar }),
+    zodiac: "sidereal",
     ayanamsha: "raman",
   });
   equal(result.atBirth.value?.kind, "lunar", "lunar natal eclipse kind");
@@ -177,7 +202,8 @@ await test("unknown birth time never invents eclipse timing", () => {
     time: unknown,
     astronomy,
     lunarOrbit,
-    eclipses: new FakeEclipses({ solar: solarEvent, lunar: lunarEvent }),
+    eclipses: provider,
+    zodiac: "sidereal",
     ayanamsha: "fagan_bradley",
   });
   equal(result.atBirth.value, null, "unknown natal eclipse");
