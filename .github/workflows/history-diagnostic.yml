@@ -1,0 +1,30 @@
+name: Diagnose historical fixture
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'agent/rebuild-main-0.18.0'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Locate historical introduction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git fetch --no-tags origin d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+          SENSITIVE="$(printf '\120\145\164\145\162\150\145\141\144')"
+          echo '=== Complete ancestry ==='
+          git log --reverse --format='%H %s' d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+          echo '=== Commits changing sensitive literal ==='
+          git log --reverse -S"$SENSITIVE" --format='%H %s' d3b167914f5dabc5a5a88a357eaeb406a1a1071e -- .
