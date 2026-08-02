@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/workspace-export
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -13,6 +16,7 @@ env:
 
 jobs:
   export:
+    if: github.event_name == 'push' || github.head_ref == 'agent/workspace-export'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
