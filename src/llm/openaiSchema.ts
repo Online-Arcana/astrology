@@ -55,7 +55,6 @@ class OpenAISchemaClient implements SchemaClient {
       ...(options.transport ?? {}),
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
     });
-
     this.#client = new OpenAISchema(
       options.apiKey,
       bootstrap,
@@ -88,6 +87,15 @@ class OpenAISchemaClient implements SchemaClient {
       throw new Error("OpenAI snapshot upload did not return a file id");
     }
     return { id: value["id"], name, purpose: "user_data" };
+  }
+
+  async retrieveResponse(id: string): Promise<unknown> {
+    const response = await this.#fetcher(`${this.#base}/responses/${encodeURIComponent(id)}`, {
+      method: "GET",
+      headers: { authorization: `Bearer ${this.#apiKey}` },
+    });
+    if (!response.ok) throw new Error(`OpenAI response retrieval failed with HTTP ${response.status}`);
+    return response.json() as Promise<unknown>;
   }
 
   async run<T extends object>(
