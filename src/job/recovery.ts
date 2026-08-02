@@ -140,6 +140,10 @@ export class TemporaryJobStore<T> {
 
     const current = await this.get(id, nowMs);
     if (current === null) throw new Error(`Temporary job ${id} does not exist or has expired`);
+    if (current.conversationId !== null && conversationId !== current.conversationId) {
+      throw new Error("Temporary job conversation ID cannot change once established");
+    }
+
     const record = this.#record(id, conversationId, progress, state, Date.parse(current.createdAt), nowMs);
     await this.#replace(record);
     return record;
