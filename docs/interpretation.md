@@ -21,6 +21,19 @@ Calls remain ordered and serial within that conversation. This preserves determi
 
 The conversation ID is runtime state. It is not written into the calculation, interpreted chart or `.astral` file.
 
+## Interrupted runs
+
+Interpretation can emit an `InterpretationCheckpoint` before and after remote calls and after each accepted field. It contains:
+
+- the established conversation ID
+- accepted field results
+- total call and retry counts
+- the active field, attempt and narrow audit correction
+
+Recovery must contain a completed prefix of the fixed plan. Every recovered field is re-audited in its original order, rebuilding cross-field duplicate context before generation continues. The `SchemaClientFactory` then reopens the stored conversation ID and starts at the active attempt or first unfinished field.
+
+`ChartGenerationCheckpoint` combines this state with the deterministic calculation, calculation fingerprint and exact runtime version. See [Temporary job recovery](recovery.md) for storage and lifecycle rules.
+
 ## Responsibility split
 
 `openai-schema` owns:
@@ -31,6 +44,7 @@ The conversation ID is runtime state. It is not written into the calculation, in
 - changing the strict JSON schema between fields
 - extracting and parsing structured JSON output
 - serialising queued calls on the same client
+- reopening an explicitly supplied conversation ID
 
 `astral-charts` owns:
 
@@ -42,6 +56,7 @@ The conversation ID is runtime state. It is not written into the calculation, in
 - local deterministic NLP audit
 - safe mechanical repair
 - narrow field retry
+- checkpoint validation and resume order
 - progress and final chart assembly
 
 There is no duplicate Responses API implementation in `astral-charts`.
@@ -97,6 +112,6 @@ A failed audit retries only that interpretation unit. The retry receives the exa
 
 ## Transport options
 
-The adapter passes the routed model, reasoning effort, output-token limit, `store: false`, developer instructions and metadata into `OpenAISchema.run(...)`. The library adds the strict JSON schema and active conversation itself.
+The adapter passes the routed model, reasoning effort, output-token limit, `store: false`, developer instructions and metadata into `OpenAISchema.run(...)`. The library adds the strict JSON schema and active or recovered conversation itself.
 
 Ordinary tests use fake clients or an injected fake `fetch`. They verify the real request shape without contacting OpenAI.
