@@ -102,7 +102,10 @@ export interface LaneCheckpoint {
   active: ActiveInterpretationUnit | null;
   status: LaneStatus;
   failureKind: InterpretationFailureKind | null;
+  position?: number;
 }
+
+export type WavePhase = "running" | "barrier" | "assembled";
 
 export interface WaveCheckpoint {
   id: number;
@@ -111,6 +114,8 @@ export interface WaveCheckpoint {
   staged: Readonly<Record<string, UnitResult<object>>>;
   conflicts: string[];
   assembled: boolean;
+  phase?: WavePhase;
+  stagedOrder?: string[];
 }
 
 export interface InterpretationRecovery {
