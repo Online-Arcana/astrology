@@ -143,6 +143,32 @@ export interface InterpretationRun {
   waves?: number;
 }
 
+export type InterpretationDiagnosticKind =
+  | "start"
+  | "retry"
+  | "reject"
+  | "complete"
+  | "checkpoint"
+  | "wave";
+
+export interface InterpretationDiagnostic {
+  kind: InterpretationDiagnosticKind;
+  timestamp: string;
+  unitId: string | null;
+  attempt: number | null;
+  model: string | null;
+  configuredOutputTokens: number | null;
+  errors: string[];
+  repairKind: UnitResult<object>["provenance"] extends infer P
+    ? P extends { repairKind?: infer R } ? R | null : null
+    : null;
+  snapshotRevision: number | null;
+  snapshotSha256: string | null;
+  wave: number | null;
+  lane: string | null;
+  failureKind: InterpretationFailureKind | null;
+}
+
 export interface RunHooks {
   onStart?: (unit: InterpretationCall, attempt: number, model: string) => void;
   onComplete?: (result: UnitResult<object>) => void;
@@ -157,4 +183,5 @@ export interface RunHooks {
   onSoftAccept?: (unit: InterpretationCall, attempt: number, warnings: readonly string[]) => void;
   onCheckpoint?: (checkpoint: InterpretationCheckpoint) => void | Promise<void>;
   onWave?: (wave: WaveCheckpoint) => void | Promise<void>;
+  onDiagnostic?: (event: InterpretationDiagnostic) => void | Promise<void>;
 }
