@@ -171,6 +171,18 @@ class FakeClient implements SchemaClient {
         sourceRefs: [exactRef],
       } as T;
     }
+    if (shape.name === "tropical_life_identityAndPurpose") {
+      return {
+        status: "written",
+        title: "Identity and purpose",
+        summary: "This life theme favours deliberate choices that give personal identity a clear and constructive direction.",
+        detail: "Purpose develops through sustained commitments rather than isolated displays, allowing ambition to mature into dependable contribution.",
+        themes: ["Purpose shaped through conscious commitment"],
+        strengths: ["A durable sense of personal direction"],
+        tensions: ["Pressure to prove identity through constant action"],
+        sourceRefs: [exactRef],
+      } as T;
+    }
     this.#sunAttempts += 1;
     if (this.#sunAttempts === 1) {
       return {
