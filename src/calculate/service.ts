@@ -37,8 +37,6 @@ import type {
   PlanetId,
   PointId,
   PointMap,
-  SiderealCalculation,
-  TropicalCalculation,
   Zodiac,
   ZodiacCalculation,
 } from "../types/astro.js";
@@ -48,7 +46,7 @@ import { ayanamshaDegrees } from "../zodiac/ayanamsha.js";
 import { buildPoints } from "../zodiac/points.js";
 import { buildInterpretationPlan } from "./plan.js";
 
-export const calculationProfile = "western_natal/1.0.0" as const;
+export const calculationProfile = "western_natal/1.1.0" as const;
 
 const planets = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"] as const satisfies readonly PlanetId[];
 const pointIds = [
@@ -60,9 +58,9 @@ const pointIds = [
 type TimedStatus = Extract<CalcStatus, "exact" | "approximate" | "bounded">;
 
 export interface CalculationOptions {
-  primaryZodiac: "tropical" | "sidereal";
+  primaryZodiac: Zodiac;
   ayanamsha: Ayanamsha;
-  interpretationMode: "tropical" | "sidereal" | "both";
+  interpretationMode: Zodiac | "both";
 }
 
 export interface CalculationPorts {
@@ -104,6 +102,9 @@ const optionsFromConfig = (config: Config): CalculationOptions => ({
   ayanamsha: config.chart.ayanamsha,
   interpretationMode: config.chart.interpretationMode,
 });
+
+const selectedZodiac = (options: CalculationOptions): Zodiac =>
+  options.interpretationMode === "both" ? options.primaryZodiac : options.interpretationMode;
 
 const timeState = (time: TimeData, astronomy: AstronomyPort): TimedState => {
   if (time.julianEphemerisDay !== null) {
@@ -283,8 +284,7 @@ const zodiacCalculation = (
 const warnings = (
   input: BirthInput,
   time: TimeData,
-  tropical: ZodiacCalculation,
-  sidereal: ZodiacCalculation,
+  system: ZodiacCalculation,
 ): CalculationWarning[] => {
   const result: CalculationWarning[] = [];
   if (input.timeAccuracy === "unknown") {
@@ -307,14 +307,12 @@ const warnings = (
       sourceRefs: [ref("astral-calculation/time/resolution")],
     });
   }
-  for (const [zodiac, system] of [["tropical", tropical], ["sidereal", sidereal]] as const) {
-    if (system.houses.placidus.status === "fallback") {
-      result.push({
-        code: `polar_placidus_fallback_${zodiac}`,
-        message: `${zodiac} Placidus houses failed at the supplied latitude; the explicitly labelled Porphyry fallback is retained.`,
-        sourceRefs: [ref(`astral-calculation/systems/${zodiac}/houses/placidus`)],
-      });
-    }
+  if (system.houses.placidus.status === "fallback") {
+    result.push({
+      code: `polar_placidus_fallback_${system.zodiac}`,
+      message: `${system.zodiac} Placidus houses failed at the supplied latitude; the explicitly labelled Porphyry fallback is retained.`,
+      sourceRefs: [ref("astral-calculation/system/houses/placidus")],
+    });
   }
   return result;
 };
@@ -330,6 +328,7 @@ export class CalculationService {
   }
 
   async calculate(input: BirthInput, options: CalculationOptions): Promise<AstralCalculation> {
+    const zodiac = selectedZodiac(options);
     const place = await this.#ports.places.get(input.placeId);
     const time = resolveBirthTime(input, place.timeZone, this.#ports.timeResolver, this.#ports.astronomy);
     const timed = timeState(time, this.#ports.astronomy);
@@ -348,24 +347,19 @@ export class CalculationService {
     );
     const lots = calculateLots(astronomy, angles.core, sect);
     const orbit = this.#ports.lunarOrbit.sample(timed.julianEphemerisDay);
-    const siderealDegrees = ayanamshaDegrees(timed.julianEphemerisDay, options.ayanamsha);
-    const siderealCalc = calculated(siderealDegrees, timed.status, timed.reason);
-    const tropicalHouses = houseState(
-      "tropical",
+    const ayanamshaValue = zodiac === "sidereal"
+      ? ayanamshaDegrees(timed.julianEphemerisDay, options.ayanamsha)
+      : 0;
+    const ayanamshaCalc = zodiac === "sidereal"
+      ? calculated(ayanamshaValue, timed.status, timed.reason)
+      : calculated(0, "exact", "none");
+    const houses = houseState(
+      zodiac,
       angles.core,
       this.#ports.astronomy,
       time,
       place.latitude,
-      0,
-      timed,
-    );
-    const siderealHouses = houseState(
-      "sidereal",
-      angles.core,
-      this.#ports.astronomy,
-      time,
-      place.latitude,
-      siderealDegrees,
+      ayanamshaValue,
       timed,
     );
     const eclipseValues = calculateEclipses({
@@ -376,55 +370,39 @@ export class CalculationService {
       ayanamsha: options.ayanamsha,
     });
 
-    const tropical = zodiacCalculation(
-      "tropical",
+    const system = zodiacCalculation(
+      zodiac,
       options.ayanamsha,
-      0,
-      calculated(0, "exact", "none"),
+      ayanamshaValue,
+      ayanamshaCalc,
       astronomy,
       orbit,
       angles.core,
       angles.auxiliary,
-      tropicalHouses,
+      houses,
       sect,
       lots,
       timed,
       eclipseValues,
-    ) as TropicalCalculation;
-    const sidereal = zodiacCalculation(
-      "sidereal",
-      options.ayanamsha,
-      siderealDegrees,
-      siderealCalc,
-      astronomy,
-      orbit,
-      angles.core,
-      angles.auxiliary,
-      siderealHouses,
-      sect,
-      lots,
-      timed,
-      eclipseValues,
-    ) as SiderealCalculation;
+    );
 
     const compatibility = {
       method: "natal_to_sign_archetype" as const,
       profile: compatibilityProfile,
-      tropical: calculateCompatibility("tropical", tropical.points) as ReturnType<typeof calculateCompatibility> & { zodiac: "tropical" },
-      sidereal: calculateCompatibility("sidereal", sidereal.points) as ReturnType<typeof calculateCompatibility> & { zodiac: "sidereal" },
+      ...calculateCompatibility(zodiac, system.points),
     };
-    const interpretationPlan: InterpretationPlan = buildInterpretationPlan(tropical, sidereal);
-    const warningValues = warnings(input, time, tropical, sidereal);
+    const interpretationPlan: InterpretationPlan = buildInterpretationPlan(system);
+    const warningValues = warnings(input, time, system);
     const settings = {
-      primaryZodiac: options.primaryZodiac,
-      siderealAyanamsha: options.ayanamsha,
-      interpretationMode: options.interpretationMode,
+      primaryZodiac: zodiac,
+      siderealAyanamsha: zodiac === "sidereal" ? options.ayanamsha : null,
+      interpretationMode: zodiac,
       primaryHouseSystem: "placidus" as const,
       polarFallback: "porphyry" as const,
       houseSystems: ["placidus", "whole_sign", "equal", "porphyry"] as ["placidus", "whole_sign", "equal", "porphyry"],
     };
     const core = {
-      schema: "astral-calculation/1.0.0" as const,
+      schema: "astral-calculation/1.1.0" as const,
       subject: {
         providedName: input.name?.trim() || null,
         language: input.lang?.trim() || "en",
@@ -435,7 +413,7 @@ export class CalculationService {
       time,
       settings,
       astronomy,
-      systems: { tropical, sidereal },
+      system,
       compatibility,
       interpretationPlan,
       warnings: warningValues,
