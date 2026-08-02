@@ -1,3 +1,4 @@
+import { auditCompletion } from "../src/llm/audit/completion.js";
 import { auditField, type FieldProfile } from "../src/llm/audit/field.js";
 import { auditStructured } from "../src/llm/audit/structured.js";
 import { shapeForUnit } from "../src/llm/schema/chart.js";
@@ -22,45 +23,49 @@ const test = (name: string, run: () => void): void => {
   console.log(`ok ${passed} - ${name}`);
 };
 
-test("strength entries do not require a literal generic chart keyword", () => {
+test("strength entries accept direct human meaning without chart keywords", () => {
   const result = auditField(
-    "A calm capacity to hold competing priorities together without losing direction or confidence.",
+    "You can hold competing priorities together without losing direction or confidence.",
     profile("tropical.overview.strengths[1]"),
   );
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
-test("tension entries do not require a literal generic chart keyword", () => {
+test("tension entries accept direct human meaning without chart keywords", () => {
   const result = auditField(
-    "Impatience with slower processes can create avoidable friction when careful pacing would work better.",
+    "You can become impatient with slower processes, creating avoidable friction when careful pacing would work better.",
     profile("tropical.overview.tensions[1]"),
   );
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
-test("theme entries may be concise semantic labels without artificial role keywords", () => {
+test("theme entries may use concise direct semantic language", () => {
   const result = auditField(
-    "Emotional memory shaping instinctive reactions to familiar people and places.",
+    "Your emotional memory shapes instinctive reactions to familiar people and places.",
     profile("tropical.point.moon.themes[2]"),
   );
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
-test("theme exemption does not disable summary relevance checks", () => {
+test("strong evidence for a neighbouring field remains a hard failure", () => {
   const result = auditField(
-    "Cooking pasta slowly on a rainy afternoon makes the kitchen feel comfortably warm.",
-    profile("tropical.point.moon.summary"),
+    "You discuss needs openly, name boundaries directly and clarify misunderstandings through explicit conversation.",
+    {
+      ...profile("tropical.life.sexuality.preferredPace"),
+      semanticField: "preferredPace",
+      fieldLexicons: {
+        preferredPace: ["pace", "slow", "fast", "gradual"],
+        sexualCommunication: ["discuss", "openly", "boundaries", "conversation", "clarify"],
+      },
+    },
   );
-  assert(!result.valid, "irrelevant summary must still fail semantic audit");
-  assert(
-    result.issues.some(({ code }) => code === "irrelevant"),
-    "irrelevant summary must report semantic irrelevance",
-  );
+  assert(!result.valid, "clear neighbouring-field content must fail");
+  assert(result.issues.some(({ code }) => code === "irrelevant"), "wrong field must report semantic irrelevance");
 });
 
 test("a tension may describe how a strength becomes difficult", () => {
   const result = auditField(
-    "Confidence and initiative can become excessive, creating pressure to act before everyone else is ready.",
+    "Your confidence and initiative can become excessive, creating pressure to act before everyone else is ready.",
     profile("tropical.aspect.imum_coeli_sun_trine.tensions[1]"),
   );
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
@@ -68,7 +73,7 @@ test("a tension may describe how a strength becomes difficult", () => {
 
 test("a strength may describe constructive use of pressure", () => {
   const result = auditField(
-    "Pressure and conflict can sharpen insight when discipline supports a calm and effective response.",
+    "You can turn pressure and conflict into sharper insight when discipline supports a calm and effective response.",
     profile("tropical.aspect.imum_coeli_sun_trine.strengths[1]"),
   );
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
@@ -76,26 +81,20 @@ test("a strength may describe constructive use of pressure", () => {
 
 test("an obvious tension placed in strengths is rejected", () => {
   const result = auditField(
-    "Persistent conflict and instability create pressure that repeatedly undermines otherwise workable decisions.",
+    "You face persistent conflict and instability that create pressure and repeatedly undermine workable decisions.",
     profile("tropical.overview.strengths[2]"),
   );
   assert(!result.valid, "opposite-role strength entry must fail");
-  assert(
-    result.issues.some(({ code }) => code === "irrelevant"),
-    "opposite-role strength entry must report semantic irrelevance",
-  );
+  assert(result.issues.some(({ code }) => code === "irrelevant"), "opposite role must report irrelevance");
 });
 
 test("an obvious strength placed in tensions is rejected", () => {
   const result = auditField(
-    "Reliable discipline and confidence provide a stable capacity for clear and effective action.",
+    "Your reliable discipline and confidence provide a stable capacity for clear and effective action.",
     profile("tropical.overview.tensions[2]"),
   );
   assert(!result.valid, "opposite-role tension entry must fail");
-  assert(
-    result.issues.some(({ code }) => code === "irrelevant"),
-    "opposite-role tension entry must report semantic irrelevance",
-  );
+  assert(result.issues.some(({ code }) => code === "irrelevant"), "opposite role must report irrelevance");
 });
 
 test("process narration remains rejected", () => {
@@ -106,43 +105,65 @@ test("process narration remains rejected", () => {
   assert(!result.valid, "process narration must still fail");
 });
 
-test("structured audit applies a romance subfield lexicon", () => {
+test("technical placement-led prose is rejected", () => {
+  const result = auditField(
+    "The Virgo Moon in the eighth house points to a mind that notices hidden psychological layers.",
+    profile("tropical.life.mindAndCommunication.detail"),
+  );
+  assert(!result.valid, "technical opening must fail");
+  assert(result.issues.some(({ code }) => code === "technical_opening"), "technical opening code");
+});
+
+test("internal source references are rejected outside sourceRefs", () => {
+  const result = auditField(
+    "Your emotional intensity deepens trust [#/astral-calculation/system/points/moon].",
+    profile("tropical.life.emotionalNature.detail"),
+  );
+  assert(!result.valid, "reference leakage must fail");
+  assert(result.issues.some(({ code }) => code === "reference_leakage"), "reference leakage code");
+});
+
+test("path-aware duplicate diagnostics name the matched field and score", () => {
+  const value = "You build trust slowly and protect emotional privacy until another person proves consistently reliable.";
+  const result = auditField(value, {
+    ...profile("tropical.life.sexuality.detail"),
+    priorFields: [{ path: "tropical.life.romance.detail", value }],
+  });
+  assert(!result.valid, "exact cross-field duplicate must fail");
+  assert(
+    result.issues.some(({ message }) => message.includes("tropical.life.romance.detail") && message.includes("score 1.0000")),
+    "duplicate diagnostic must include path and score",
+  );
+});
+
+test("structured audit applies a specialised subfield lexicon", () => {
   const result = auditStructured(
-    {
-      affectionStyle:
-        "Warm touch and steady reassurance make care tangible without demanding constant closeness.",
-    },
+    { affectionStyle: "You make care tangible through warm touch and steady reassurance without demanding constant closeness." },
     {},
     new Set<JsonRef>(),
     {
       id: "tropical.life.romance",
       lexicon: ["romance"],
       fieldLexicons: {
-        affectionStyle: [
-          "warm",
-          "touch",
-          "reassurance",
-          "care",
-          "closeness",
-        ],
+        affectionStyle: ["warm", "touch", "reassurance", "care", "closeness"],
       },
       minLength: 2,
       maxLength: 4_000,
     },
   );
+  assert(result.valid, result.errors.join("; "));
+});
 
-  assert(
-    result.valid,
-    result.errors.join("; "),
-  );
+test("completion audit catches unfinished narrative text", () => {
+  const issues = auditCompletion({ detail: "You seek depth and trust because" }, "tropical.life.sexuality");
+  assert(issues.some(({ code }) => code === "dangling_clause"), "dangling clause must be detected");
 });
 
 test("interpretation schemas enumerate only permitted source references", () => {
   const permitted = [
-    "#/astral-calculation/systems/tropical/points/venus",
-    "#/astral-calculation/systems/tropical/houses/7",
+    "#/astral-calculation/system/points/venus",
+    "#/astral-calculation/system/houses/placidus/houses/7",
   ] as const satisfies readonly JsonRef[];
-
   const unit: InterpretationUnit = {
     id: "tropical.life.romance",
     zodiac: "tropical",
@@ -150,33 +171,12 @@ test("interpretation schemas enumerate only permitted source references", () => 
     domain: null,
     allowedSourceRefs: [...permitted],
   };
-
-  const shape = shapeForUnit(
-    unit,
-    permitted,
-  );
-
+  const shape = shapeForUnit(unit, permitted);
   const schema = shape.schema as {
-    properties?: Record<
-      string,
-      {
-        items?: {
-          enum?: readonly string[];
-        };
-      }
-    >;
+    properties?: Record<string, { items?: { enum?: readonly string[] } }>;
   };
-
-  const actual =
-    schema.properties?.["sourceRefs"]
-      ?.items
-      ?.enum;
-
-  assert(
-    JSON.stringify(actual)
-      === JSON.stringify(permitted),
-    "sourceRefs must use the exact permitted-reference enum",
-  );
+  const actual = schema.properties?.["sourceRefs"]?.items?.enum;
+  assert(JSON.stringify(actual) === JSON.stringify(permitted), "sourceRefs must use the exact permitted-reference enum");
 });
 
 console.log(`1..${passed}`);
