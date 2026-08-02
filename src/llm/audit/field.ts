@@ -189,6 +189,9 @@ const roleFor = (id: string): SemanticRole | null => {
   return null;
 };
 
+const isThemeLabel = (id: string): boolean =>
+  /themes?\[\d+\]$/u.test(id.toLocaleLowerCase("en-GB"));
+
 const termsFor = (role: SemanticRole): readonly string[] => {
   switch (role) {
     case "strength":
@@ -276,8 +279,11 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
           repairable: false,
         });
       }
-    } else if (role !== "theme" && !grounded) {
-      issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
+    } else {
+      const roleFit = role === null ? false : has(normal, termsFor(role));
+      if (!isThemeLabel(profile.id) && !grounded && !roleFit) {
+        issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
+      }
     }
   }
 
