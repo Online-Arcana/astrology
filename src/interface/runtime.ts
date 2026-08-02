@@ -6,7 +6,7 @@ import type { ApiRuntime } from "./api.js";
 
 export const loadApiRuntime = async (
   config: Config,
-  version = "0.16.0",
+  version = "0.16.3",
 ): Promise<ApiRuntime> => {
   const [{ service, options }, places] = await Promise.all([
     loadCalculationService(config, version),

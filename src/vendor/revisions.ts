@@ -6,8 +6,8 @@ export const vendorRevisions = {
   },
   openaiSchema: {
     repository: "kitty-crow/openai-schema",
-    revision: "5b40996d537536d3685fb9c613a335f736a473f2",
-    version: "1.0.0",
+    revision: "b2de9ce96fac43025ac92d805d3407f4dffa32f9",
+    version: "1.0.1",
   },
   places: {
     repository: "dr5hn/countrystatecity-npm",
