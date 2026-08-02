@@ -25,7 +25,6 @@ import {
   compatibilityDomain,
   parseCareerInterpretation,
   parseCompatibilityOverview,
-  parseCrossSystem,
   parseFinalSynthesis,
   parseMoneyInterpretation,
   parseRomanticInterpretation,
@@ -182,9 +181,9 @@ const houses = (values: Reader, zodiac: Zodiac): HouseMap<Section> => {
 const system = (
   calculation: AstralCalculation,
   values: Reader,
-  zodiac: Zodiac,
 ): SystemInterpretation => {
-  const deterministic = calculation.systems[zodiac];
+  const zodiac = calculation.system.zodiac;
+  const deterministic = calculation.system;
   return {
     zodiac,
     overview: section(values, `${zodiac}.overview`),
@@ -275,9 +274,6 @@ export const assembleChart = (
   options: ChartAssemblyOptions,
 ): AstralChart => {
   const values = reader(calculation, run);
-  if (!calculation.interpretationPlan.units.some(({ id }) => id === "cross-system")) {
-    throw new Error("Interpretation plan is missing cross-system");
-  }
   if (!calculation.interpretationPlan.units.some(({ id }) => id === "final-synthesis")) {
     throw new Error("Interpretation plan is missing final-synthesis");
   }
@@ -285,21 +281,18 @@ export const assembleChart = (
     const result = values.result(unit.id);
     return {
       id: unit.id,
-      schema: options.unitSchemas?.[unit.id] ?? "astral-interpretation-unit/1.0.0",
+      schema: options.unitSchemas?.[unit.id] ?? "astral-interpretation-unit/1.1.0",
       model: result.model,
       attempts: result.attempts,
     };
   });
+  const zodiac = calculation.system.zodiac;
   return {
-    schema: "astral-chart/1.0.0",
+    schema: "astral-chart/1.1.0",
     subject: subject(calculation, options.generatedName),
-    tropical: system(calculation, values, "tropical") as SystemInterpretation & { zodiac: "tropical" },
-    sidereal: system(calculation, values, "sidereal") as SystemInterpretation & { zodiac: "sidereal" },
-    crossSystem: values.value("cross-system", parseCrossSystem),
-    compatibility: {
-      tropical: compatibility(values, "tropical") as CompatibilityInterpretation & { zodiac: "tropical" },
-      sidereal: compatibility(values, "sidereal") as CompatibilityInterpretation & { zodiac: "sidereal" },
-    },
+    zodiac,
+    system: system(calculation, values),
+    compatibility: compatibility(values, zodiac),
     finalSynthesis: values.value("final-synthesis", parseFinalSynthesis),
     provenance: {
       generatedAt: options.generatedAt,
