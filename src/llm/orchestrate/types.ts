@@ -19,6 +19,7 @@ export interface SchemaClient {
 }
 
 export type SchemaClientFactory = () => SchemaClient;
+export type ReasoningEffort = "none" | "low" | "medium" | "high";
 
 export interface UnitContext {
   calculation: unknown;
@@ -30,6 +31,8 @@ export interface InterpretationCall {
   id: string;
   label: string;
   kind: Extract<WorkKind, "big" | "small">;
+  effort?: ReasoningEffort;
+  tokens?: number;
   shape: StrictShape<object>;
   allowedSourceRefs: ReadonlySet<JsonRef>;
   input(context: UnitContext): unknown;
