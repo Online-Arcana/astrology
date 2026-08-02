@@ -93,10 +93,11 @@ const restore = (
       correction: [],
     };
     const audited = unit.audit(result.value, context);
-    if (!audited.valid) {
+    if (!audited.valid && audited.soft !== true) {
       throw new Error(`Recovered interpretation unit ${unit.id} failed audit: ${audited.errors.join("; ")}`);
     }
     completed[unit.id] = { ...result, value: audited.value };
+    unit.onAccept?.(audited.value);
   }
 
   const pending = units.find(({ id }) => completed[id] === undefined) ?? null;
@@ -185,9 +186,15 @@ export const runInterpretation = async (
       await checkpoint(active);
 
       const audited = unit.audit(output, context());
-      if (audited.valid) {
+      const softAccepted = !audited.valid
+        && audited.soft === true
+        && attempt >= config.chart.maxRetries;
+
+      if (audited.valid || softAccepted) {
         accepted = { id: unit.id, value: audited.value, attempts: attempt, model };
         completed[unit.id] = accepted;
+        unit.onAccept?.(audited.value);
+        if (softAccepted) hooks.onSoftAccept?.(unit, attempt, audited.errors);
         hooks.onComplete?.(accepted);
         await checkpoint(null);
         break;

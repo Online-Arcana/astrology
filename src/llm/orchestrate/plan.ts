@@ -199,10 +199,10 @@ const substantiveCalls = (
               },
             }),
       }),
-      audit: (value, { calculation: calculationRoot }) => {
-        const audited = auditStructured(value, calculationRoot, allowed, profile);
-        if (audited.valid) prior.push(...narratives(audited.value));
-        return audited;
+      audit: (value, { calculation: calculationRoot }) =>
+        auditStructured(value, calculationRoot, allowed, profile),
+      onAccept: (value) => {
+        prior.push(...narratives(value));
       },
     });
   }

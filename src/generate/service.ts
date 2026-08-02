@@ -174,7 +174,7 @@ export class ChartGenerationService {
 
 export const loadChartGenerationService = async (
   config: Config,
-  version = "0.16.0",
+  version = "0.18.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata">> = {},
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {

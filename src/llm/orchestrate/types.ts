@@ -37,12 +37,14 @@ export interface InterpretationCall {
   allowedSourceRefs: ReadonlySet<JsonRef>;
   input(context: UnitContext): unknown;
   audit(value: object, context: UnitContext): UnitAudit<object>;
+  onAccept?: (value: object) => void;
 }
 
 export interface UnitAudit<T extends object> {
   valid: boolean;
   value: T;
   errors: string[];
+  soft?: boolean;
 }
 
 export interface UnitResult<T extends object> {
@@ -79,5 +81,6 @@ export interface RunHooks {
   onStart?: (unit: InterpretationCall, attempt: number, model: string) => void;
   onComplete?: (result: UnitResult<object>) => void;
   onRetry?: (unit: InterpretationCall, attempt: number, errors: readonly string[]) => void;
+  onSoftAccept?: (unit: InterpretationCall, attempt: number, warnings: readonly string[]) => void;
   onCheckpoint?: (checkpoint: InterpretationCheckpoint) => void | Promise<void>;
 }

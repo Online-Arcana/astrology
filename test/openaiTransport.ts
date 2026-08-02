@@ -318,3 +318,67 @@ test(
     );
   },
 );
+
+test(
+  "background creation retries transport failure with one idempotency key",
+  async () => {
+    let posts = 0;
+    let polls = 0;
+    const idempotency: string[] = [];
+    const requestIds: string[] = [];
+
+    const fake: typeof fetch = async (
+      _input,
+      init,
+    ) => {
+      if (init?.method === "POST") {
+        posts += 1;
+        const headers = new Headers(init.headers);
+        idempotency.push(headers.get("idempotency-key") ?? "");
+        requestIds.push(headers.get("x-client-request-id") ?? "");
+
+        if (posts === 1) {
+          throw new TypeError("fetch failed");
+        }
+
+        return response({
+          id: "resp_creation_retry",
+          status: "queued",
+        });
+      }
+
+      polls += 1;
+      return response({
+        id: "resp_creation_retry",
+        status: "completed",
+        output_text: JSON.stringify({ value: "ok" }),
+      });
+    };
+
+    const fetcher = createOpenAITransport({
+      fetch: fake,
+      pollIntervalMs: 1,
+      pollTimeoutMs: 1_000,
+      createTimeoutMs: 1_000,
+      retryAttempts: 2,
+      retryDelayMs: 1,
+    });
+
+    const result = await fetcher(
+      "https://example.invalid/v1/responses",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ model: "gpt-test" }),
+      },
+    );
+
+    assert.equal(posts, 2);
+    assert.equal(polls, 1);
+    assert.ok(idempotency[0]);
+    assert.equal(idempotency[0], idempotency[1]);
+    assert.ok(requestIds[0]);
+    assert.equal(requestIds[0], requestIds[1]);
+    assert.equal((await result.json() as Dict)["status"], "completed");
+  },
+);

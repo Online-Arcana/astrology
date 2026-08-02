@@ -116,3 +116,9 @@ A failed audit retries only that interpretation unit. The retry receives the exa
 The adapter passes the routed model, reasoning effort, output-token limit, `store: false`, developer instructions and metadata into `OpenAISchema.run(...)`. The library adds the strict JSON schema and active or recovered conversation itself.
 
 Ordinary tests use fake clients or an injected fake `fetch`. They verify the real request shape without contacting OpenAI.
+
+## Resilient transport and audit continuation
+
+Responses are created in background mode with stable request and idempotency identifiers. Transient creation failures retry for up to fifteen minutes. Once a response ID exists, polling survives transient network errors and HTTP 408, 425, 429, 500, 502, 503 and 504 responses until the two-hour response deadline. The existing abort signal remains authoritative.
+
+A generic semantic-fit miss retries the same field once in the same chart conversation. If the corrected output still fails only that broad lexical heuristic, the structurally valid, source-grounded field is accepted with a warning so one weak heuristic cannot terminate a long chart. Process narration, placeholders, invalid references, structural errors, forbidden formatting and cross-field duplication remain terminal.

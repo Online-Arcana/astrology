@@ -13,6 +13,7 @@ export interface OpenAITransportOptions {
   background?: boolean;
   pollIntervalMs?: number;
   pollTimeoutMs?: number;
+  createTimeoutMs?: number;
   retryAttempts?: number;
   retryDelayMs?: number;
 }
@@ -307,8 +308,14 @@ export const createOpenAITransport = (
 
   const pollTimeoutMs = positive(
     options.pollTimeoutMs,
-    30 * 60 * 1_000,
+    2 * 60 * 60 * 1_000,
     "OpenAI poll timeout",
+  );
+
+  const createTimeoutMs = positive(
+    options.createTimeoutMs,
+    15 * 60 * 1_000,
+    "OpenAI creation timeout",
   );
 
   const retryAttempts = positive(
@@ -328,14 +335,29 @@ export const createOpenAITransport = (
     headers: Headers,
     signal: AbortSignal | undefined,
     id: string,
+    deadline: number,
   ): Promise<Response> => {
+    let attempt = 0;
     let last: unknown = null;
 
-    for (
-      let attempt = 1;
-      attempt <= retryAttempts;
-      attempt += 1
-    ) {
+    for (;;) {
+      const remaining = deadline - Date.now();
+
+      if (remaining <= 0) {
+        throw new OpenAITransportError(
+          `OpenAI response ${id} could not be polled before its deadline`,
+          id,
+          null,
+          last,
+        );
+      }
+
+      attempt += 1;
+      const delay = Math.min(
+        30_000,
+        retryDelayMs * 2 ** Math.min(attempt - 1, retryAttempts - 1),
+      );
+
       try {
         const response = await fetcher(url, {
           method: "GET",
@@ -345,52 +367,24 @@ export const createOpenAITransport = (
             : { signal }),
         });
 
-        if (
-          !transient.has(response.status)
-          || attempt === retryAttempts
-        ) {
+        if (!transient.has(response.status)) {
           return response;
         }
 
-        const wait =
-          retryAfterMs(response)
-          ?? Math.min(
-            30_000,
-            retryDelayMs * 2 ** (attempt - 1),
-          );
-
+        const wait = retryAfterMs(response) ?? delay;
         await response.body?.cancel();
-        await pause(wait, signal);
-      } catch (cause: unknown) {
-        if (signal?.aborted) throw abortError(signal);
-
-        last = cause;
-
-        if (attempt === retryAttempts) {
-          throw new OpenAITransportError(
-            `OpenAI response ${id} could not be polled after ${retryAttempts} attempts`,
-            id,
-            null,
-            cause,
-          );
-        }
-
         await pause(
-          Math.min(
-            30_000,
-            retryDelayMs * 2 ** (attempt - 1),
-          ),
+          Math.min(wait, Math.max(1, deadline - Date.now())),
           signal,
         );
+      } catch (cause: unknown) {
+        if (signal?.aborted) throw abortError(signal);
+        last = cause;
+        const wait = Math.min(delay, deadline - Date.now());
+        if (wait <= 0) continue;
+        await pause(wait, signal);
       }
     }
-
-    throw new OpenAITransportError(
-      `OpenAI response ${id} could not be polled`,
-      id,
-      null,
-      last,
-    );
   };
 
   const poll = async (
@@ -422,6 +416,7 @@ export const createOpenAITransport = (
         headers,
         signal,
         id,
+        deadline,
       );
 
       if (!response.ok) {
@@ -515,11 +510,16 @@ export const createOpenAITransport = (
       ),
     );
 
-    if (
-      !headers.has("x-client-request-id")
-    ) {
+    if (!headers.has("x-client-request-id")) {
       headers.set(
         "x-client-request-id",
+        globalThis.crypto.randomUUID(),
+      );
+    }
+
+    if (!headers.has("idempotency-key")) {
+      headers.set(
+        "idempotency-key",
         globalThis.crypto.randomUUID(),
       );
     }
@@ -532,14 +532,67 @@ export const createOpenAITransport = (
           : undefined
       );
 
-    const response = await fetcher(input, {
-      ...init,
-      headers,
-      body: JSON.stringify({
-        ...body,
-        background: true,
-      }),
-    });
+    const createDeadline = Date.now() + createTimeoutMs;
+    let createAttempt = 0;
+    let response: Response | null = null;
+    let createCause: unknown = null;
+
+    for (;;) {
+      const remaining = createDeadline - Date.now();
+
+      if (remaining <= 0) {
+        throw new OpenAITransportError(
+          `OpenAI response creation did not finish within ${createTimeoutMs} ms`,
+          null,
+          null,
+          createCause,
+        );
+      }
+
+      createAttempt += 1;
+      const delay = Math.min(
+        30_000,
+        retryDelayMs * 2 ** Math.min(createAttempt - 1, retryAttempts - 1),
+      );
+
+      try {
+        const created = await fetcher(input, {
+          ...init,
+          headers,
+          body: JSON.stringify({
+            ...body,
+            background: true,
+          }),
+        });
+
+        if (!transient.has(created.status)) {
+          response = created;
+          break;
+        }
+
+        const wait = retryAfterMs(created) ?? delay;
+        await created.body?.cancel();
+        await pause(
+          Math.min(wait, Math.max(1, createDeadline - Date.now())),
+          signal,
+        );
+      } catch (cause: unknown) {
+        if (signal?.aborted) throw abortError(signal);
+        createCause = cause;
+        const wait = Math.min(delay, createDeadline - Date.now());
+        if (wait <= 0) continue;
+        await pause(wait, signal);
+      }
+    }
+
+    if (response === null) {
+      throw new OpenAITransportError(
+        "OpenAI response creation ended without a response",
+        null,
+        null,
+        createCause,
+      );
+    }
 
     if (!response.ok) return response;
 
