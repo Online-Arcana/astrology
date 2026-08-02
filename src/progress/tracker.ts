@@ -49,6 +49,14 @@ export class ProgressTracker {
     this.#maxAttempts = maxAttempts;
   }
 
+  restoreAccepted(ids: readonly string[]): void {
+    for (const id of ids) {
+      const unit = this.#units.find((candidate) => candidate.id === id);
+      if (unit === undefined) throw new Error(`Unknown recovered work unit: ${id}`);
+      this.#done.add(id);
+    }
+  }
+
   start(id: string, status: ChartJobStatus, nowMs: number, attempt = 1, modelName: string | null = null): void {
     const unit = this.#units.find((candidate) => candidate.id === id);
     if (!unit) throw new Error(`Unknown work unit: ${id}`);
