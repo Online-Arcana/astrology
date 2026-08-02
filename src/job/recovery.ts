@@ -136,10 +136,6 @@ export class TemporaryJobStore<T> {
     nowMs = Date.now(),
   ): Promise<TemporaryJobRecord<T> | null> {
     this.#assertId(id);
-    if (progress.status === "completed") {
-      await this.delete(id);
-      return null;
-    }
     if (conversationId !== null && conversationId.length === 0) {
       throw new Error("Temporary job conversation ID cannot be empty");
     }
@@ -148,6 +144,10 @@ export class TemporaryJobStore<T> {
     if (current === null) throw new Error(`Temporary job ${id} does not exist or has expired`);
     if (current.conversationId !== null && conversationId !== current.conversationId) {
       throw new Error("Temporary job conversation ID cannot change once established");
+    }
+    if (progress.status === "completed") {
+      await this.delete(id);
+      return null;
     }
 
     const record = this.#record(id, conversationId, progress, state, Date.parse(current.createdAt), nowMs);
