@@ -81,6 +81,13 @@ export interface RunHooks {
   onStart?: (unit: InterpretationCall, attempt: number, model: string) => void;
   onComplete?: (result: UnitResult<object>) => void;
   onRetry?: (unit: InterpretationCall, attempt: number, errors: readonly string[]) => void;
+  onReject?: (
+    unit: InterpretationCall,
+    attempt: number,
+    model: string,
+    output: object,
+    audit: UnitAudit<object>,
+  ) => void | Promise<void>;
   onSoftAccept?: (unit: InterpretationCall, attempt: number, warnings: readonly string[]) => void;
   onCheckpoint?: (checkpoint: InterpretationCheckpoint) => void | Promise<void>;
 }
