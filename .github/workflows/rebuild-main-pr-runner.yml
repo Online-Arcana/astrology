@@ -1,0 +1,204 @@
+name: Reconstruct and publish main
+
+on:
+  push:
+    branches:
+      - agent/rebuild-main-0.18.0
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: cdcbd5a6d0993b8d2e0c33a1bdb647642ba5cb9d
+      BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+      DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+      RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+      TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Reconstruct, validate and publish
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          python <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/rebuild-main-pr.yml').read_text()
+          marker = '        run: |\n'
+          raw = source.split(marker, 1)[1]
+          lines = []
+          for line in raw.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line:
+                  raise SystemExit(f'Unexpected trigger indentation: {line!r}')
+              else:
+                  lines.append('')
+
+          script = '\n'.join(lines) + '\n'
+          script = script.replace(
+              'script, count = pattern.subn(replacement, script, count=1)',
+              'script, count = pattern.subn(lambda _match: replacement, script, count=1)',
+          )
+          script = script.replace('exec bash /tmp/rebuild-main.sh', 'exit 0')
+          Path('/tmp/rebuild-trigger.sh').write_text(script)
+          PY
+
+          bash -n /tmp/rebuild-trigger.sh
+          bash /tmp/rebuild-trigger.sh
+
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/rebuild-main.sh')
+          text = path.read_text()
+          text = text.replace(
+              'if ! git diff --quiet -- test/vendor.ts; then',
+              'if ! git diff --quiet; then',
+          )
+          text = text.replace('git add test/vendor.ts', 'git add -A')
+
+          marker = '  elif [[ "$sha" == fe8bd6a400f5319ed1df543413336ab741f2d9b7 ]]; then\n'
+          rename = '\n'.join([
+              '  elif [[ "$sha" == 15e6937b0393f92ca521d6e0d172f68fb9aa2965 ]]; then',
+              "    python <<'PYRENAME'",
+              'from pathlib import Path',
+              'import json',
+              '',
+              'for file in Path(".").rglob("*"):',
+              '    if not file.is_file() or ".git" in file.parts:',
+              '        continue',
+              '    try:',
+              '        value = file.read_text()',
+              '    except (UnicodeDecodeError, OSError):',
+              '        continue',
+              '    value = value.replace("kitty-crow/astral-charts", "kitty-crow/astrology")',
+              '    value = value.replace("astral-charts", "astrology")',
+              '    file.write_text(value)',
+              '',
+              'package = Path("package.json")',
+              'data = json.loads(package.read_text())',
+              'data["name"] = "astrology"',
+              'data["bin"] = {"astrology": "./dist/cli.js"}',
+              'package.write_text(json.dumps(data, indent=2) + "\\n")',
+              'PYRENAME',
+              '    git add -A',
+              '    commit_sanitised "$sha" "rename project to astrology" "Adopt the final repository, package and CLI identity throughout runtime configuration and documentation."',
+              '',
+          ])
+          if 'elif [[ "$sha" == 15e6937b0393f92ca521d6e0d172f68fb9aa2965 ]]; then' not in text:
+              if text.count(marker) != 1:
+                  raise SystemExit('Places milestone marker was not found exactly once')
+              text = text.replace(marker, rename + marker)
+
+          structured_check = 'if old not in text:\n    raise SystemExit("Structured-audit return block not found")'
+          structured_override = '\n'.join([
+              "old = '  return {\\n    valid: state.errors.length === 0,\\n    value: audited,\\n    errors: state.errors,\\n  };\\n'",
+              "new = '  return {\\n    valid: state.errors.length === 0,\\n    value: audited,\\n    errors: state.errors,\\n    soft: state.errors.length > 0\\n      && state.errors.every((error) => error.endsWith(\"does not fit its semantic field\")),\\n  };\\n'",
+              '',
+          ])
+          if 'soft: state.errors.length > 0' not in text:
+              if text.count(structured_check) != 1:
+                  raise SystemExit('Structured-audit guard was not found exactly once')
+              text = text.replace(structured_check, structured_override + structured_check)
+
+          plan_check = 'if old not in text:\n    raise SystemExit("Interpretation-plan audit block not found")'
+          plan_override = '\n'.join([
+              "old = '      audit: (value, { calculation: calculationRoot }) => {\\n        const audited = auditStructured(value, calculationRoot, allowed, profile);\\n        if (audited.valid) prior.push(...narratives(audited.value));\\n        return audited;\\n      },\\n'",
+              "new = '      audit: (value, { calculation: calculationRoot }) =>\\n        auditStructured(value, calculationRoot, allowed, profile),\\n      onAccept: (value) => {\\n        prior.push(...narratives(value));\\n      },\\n'",
+              '',
+          ])
+          if 'onAccept: (value) => {' not in text:
+              if text.count(plan_check) != 1:
+                  raise SystemExit('Interpretation-plan guard was not found exactly once')
+              text = text.replace(plan_check, plan_override + plan_check)
+
+          gate = 'git submodule sync --recursive'
+          transport_fix = '\n'.join([
+              "python <<'PYTRANSPORT'",
+              'from pathlib import Path',
+              '',
+              'path = Path("src/llm/openaiTransport.ts")',
+              'text = path.read_text()',
+              '',
+              'if "createTimeoutMs?: number;" not in text:',
+              '    marker = "  retryAttempts?: number;"',
+              '    if text.count(marker) != 1:',
+              '        raise SystemExit("Transport option marker not found")',
+              '    text = text.replace(marker, "  createTimeoutMs?: number;\\n" + marker)',
+              '',
+              'if "const createTimeoutMs = positive(" not in text:',
+              '    marker = "  const retryAttempts = positive("',
+              '    block = (',
+              '        "  const createTimeoutMs = positive(\\n"',
+              '        "    options.createTimeoutMs,\\n"',
+              '        "    15 * 60 * 1_000,\\n"',
+              '        "    \\"OpenAI creation timeout\\",\\n"',
+              '        "  );\\n\\n"',
+              '    )',
+              '    if text.count(marker) != 1:',
+              '        raise SystemExit("Transport timeout marker not found")',
+              '    text = text.replace(marker, block + marker)',
+              '',
+              'old = (',
+              '    "      const response = await get(\\n"',
+              '    "        `${responseUrl}/${encodeURIComponent(id)}`,\\n"',
+              '    "        headers,\\n"',
+              '    "        signal,\\n"',
+              '    "        id,\\n"',
+              '    "      );"',
+              ')',
+              'new = (',
+              '    "      const response = await get(\\n"',
+              '    "        `${responseUrl}/${encodeURIComponent(id)}`,\\n"',
+              '    "        headers,\\n"',
+              '    "        signal,\\n"',
+              '    "        id,\\n"',
+              '    "        deadline,\\n"',
+              '    "      );"',
+              ')',
+              'if old in text:',
+              '    text = text.replace(old, new, 1)',
+              '',
+              'if text.count("const createTimeoutMs = positive(") != 1:',
+              '    raise SystemExit("Creation timeout is not defined exactly once")',
+              'if text.count("createTimeoutMs?: number;") != 1:',
+              '    raise SystemExit("Creation timeout option is not defined exactly once")',
+              'if old in text:',
+              '    raise SystemExit("Polling call still lacks its deadline")',
+              '',
+              'path.write_text(text)',
+              'PYTRANSPORT',
+              'git add src/llm/openaiTransport.ts',
+              'git commit --amend --no-edit',
+              '',
+          ])
+          if 'PYTRANSPORT' not in text:
+              if text.count(gate) != 1:
+                  raise SystemExit('Validation gate was not found exactly once')
+              text = text.replace(gate, transport_fix + gate)
+
+          path.write_text(text)
+          PY
+
+          bash -n /tmp/rebuild-main.sh
+          remote_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [[ "$remote_main" != "$EXPECTED_MAIN" ]]; then
+            echo "Reconstruction already complete (main has moved to ${remote_main})"
+            exit 0
+          fi
+          exec bash /tmp/rebuild-main.sh

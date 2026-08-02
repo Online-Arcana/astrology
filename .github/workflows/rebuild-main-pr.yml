@@ -1,0 +1,69 @@
+name: Reconstruct and publish main
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.head_ref == 'agent/rebuild-main-0.18.0' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: cdcbd5a6d0993b8d2e0c33a1bdb647642ba5cb9d
+      BASE: d3b167914f5dabc5a5a88a357eaeb406a1a1071e
+      DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+      RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+      TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Run corrected reconstruction
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          git show b9d74dd39c1c2a745959760e75bd04c662c3dc84:.github/workflows/rebuild-main-pr.yml \
+            > /tmp/rebuild-main-pr.yml
+
+          python <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/rebuild-main-pr-runner.yml').read_text()
+          marker = '        run: |\n'
+          if marker not in source:
+              raise SystemExit('Corrected runner block not found')
+
+          raw = source.split(marker, 1)[1]
+          lines = []
+          for line in raw.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line:
+                  raise SystemExit(f'Unexpected runner indentation: {line!r}')
+              else:
+                  lines.append('')
+
+          script = '\n'.join(lines) + '\n'
+          script = script.replace(
+              "Path('.github/workflows/rebuild-main-pr.yml')",
+              "Path('/tmp/rebuild-main-pr.yml')",
+          )
+          script = script.replace("marker = '    elif [[", "marker = '  elif [[")
+          Path('/tmp/rebuild-runner.sh').write_text(script)
+          PY
+
+          bash -n /tmp/rebuild-runner.sh
+          exec bash /tmp/rebuild-runner.sh
