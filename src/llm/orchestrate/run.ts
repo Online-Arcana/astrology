@@ -12,6 +12,12 @@ import type {
 const modelFor = (config: Config, kind: InterpretationCall["kind"]): string =>
   kind === "big" ? config.openai.bigModel : config.openai.smallModel;
 
+const effortFor = (config: Config, unit: InterpretationCall): string =>
+  unit.effort ?? config.openai.reasoning;
+
+const tokensFor = (config: Config, unit: InterpretationCall): number =>
+  Math.min(unit.tokens ?? config.openai.maxOutputTokens, config.openai.maxOutputTokens);
+
 const assertConversation = (client: SchemaClient, expected: string | null): string => {
   const id = client.id;
   if (!id) throw new Error("openai-schema did not establish a chart conversation ID");
@@ -37,6 +43,8 @@ export const runInterpretation = async (
 
   for (const unit of units) {
     const model = modelFor(config, unit.kind);
+    const effort = effortFor(config, unit);
+    const tokens = tokensFor(config, unit);
     let accepted: UnitResult<object> | null = null;
     let correction: readonly string[] = [];
     const context = (): UnitContext => ({ calculation, earlier: completed, correction });
@@ -48,8 +56,8 @@ export const runInterpretation = async (
         body: {
           model,
           store: false,
-          reasoning: { effort: config.openai.reasoning },
-          max_output_tokens: config.openai.maxOutputTokens,
+          reasoning: { effort },
+          max_output_tokens: tokens,
         },
         retries: 0,
       });
