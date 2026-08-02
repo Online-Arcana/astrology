@@ -315,7 +315,6 @@ export const runInterpretation = async (
   const limiter = new AdaptiveLimiter(config.chart.laneCount ?? 4);
   const order = calls.map(({ id }) => id);
   let foundationComplete = recovered.foundationComplete ?? false;
-  let snapshot: InterpretationSnapshot | null = null;
   let snapshotState: SnapshotCheckpoint | null = recovered.snapshot ?? null;
   let currentWave: WaveCheckpoint | null = recovered.wave ?? null;
   let waveNumber = currentWave?.id ?? 0;
@@ -335,14 +334,16 @@ export const runInterpretation = async (
       snapshot: snapshotState,
       wave: currentWave,
     };
-    checkpointTail = checkpointTail.then(() => hooks.onCheckpoint?.(value));
+    checkpointTail = checkpointTail.then(async () => { await hooks.onCheckpoint?.(value); });
     await checkpointTail;
   };
 
   if (!foundationComplete) {
     const maximum = config.chart.foundationUnits ?? 10;
     const remainingFoundation = Math.max(0, maximum - Object.keys(completed).length);
-    const foundation = foundationPlan(calls, completed, Math.max(1, remainingFoundation));
+    const foundation = remainingFoundation === 0
+      ? []
+      : foundationPlan(calls, completed, remainingFoundation);
     const client = createClient(primaryConversationId ?? undefined);
     let contextTokens = 0;
     for (const unit of foundation) {
@@ -372,7 +373,7 @@ export const runInterpretation = async (
     await checkpoint(null);
   }
 
-  snapshot = await buildSnapshot(calculation, completed, order, snapshotState?.revision ?? 0);
+  let snapshot = await buildSnapshot(calculation, completed, order, snapshotState?.revision ?? 0);
   snapshotState = {
     revision: snapshot.revision,
     sha256: snapshot.sha256,
@@ -394,10 +395,11 @@ export const runInterpretation = async (
     const uploader = createClient();
     let remoteFileId = snapshotState.remoteFileId;
     if (remoteFileId === null && uploader.uploadFile !== undefined) {
-      const uploaded = await limiter.run(() => uploader.uploadFile?.(
+      const upload = uploader.uploadFile.bind(uploader);
+      const uploaded = await limiter.run(() => upload(
         `astral-snapshot-${snapshot.revision}.json`,
-        snapshotText(snapshot as InterpretationSnapshot),
-      ) as Promise<{ id: string }>);
+        snapshotText(snapshot),
+      ));
       remoteFileId = uploaded.id;
       snapshotState = { ...snapshotState, remoteFileId };
     }
@@ -558,7 +560,7 @@ export const runInterpretation = async (
     retries: counters.retries,
     orchestration: "waves",
     conversationIds,
-    snapshotRevision: snapshot?.revision ?? 0,
+    snapshotRevision: snapshot.revision,
     waves: waveNumber,
   };
 };
