@@ -1,0 +1,8 @@
+.env
+node_modules/
+dist/
+.test/
+coverage/
+*.astral
+*.log
+.DS_Store

@@ -1,0 +1,38 @@
+{
+  "name": "astrology",
+  "version": "0.14.3",
+  "description": "Deterministic natal astrology calculation and strictly structured interpretation",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "astrology": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js && node .test/test/geometry.js && node .test/test/points.js && node .test/test/dignity.js && node .test/test/derived.js && node .test/test/patterns.js && node .test/test/eclipses.js && node .test/test/compatibility.js && node .test/test/service.js && node .test/test/interfaces.js && node .test/test/chartFile.js && node .test/test/openaiRuntime.js",
+    "test:vendor": "tsc -p tsconfig.test.json && node .test/test/vendor.js",
+    "ci": "npm run check && npm run test && npm run build",
+    "start": "node dist/cli.js serve",
+    "vendor:astronomia": "npm --prefix vendor/astronomia install && npm --prefix vendor/astronomia run build",
+    "vendor:places": "npm --prefix vendor/places ci --ignore-scripts && npm --prefix vendor/places run build --workspace=@countrystatecity/countries",
+    "vendor:time": "npm --prefix vendor/time install && npm --prefix vendor/time/packages/core run build-dist && npm --prefix vendor/time/packages/timezone run build-dist",
+    "vendor:schema": "npm --prefix vendor/openai-schema install && npm --prefix vendor/openai-schema run build",
+    "vendor:build": "npm run vendor:astronomia && npm run vendor:places && npm run vendor:time && npm run vendor:schema"
+  },
+  "dependencies": {
+    "@countrystatecity/countries": "file:vendor/places/packages/countries",
+    "@js-joda/core": "file:vendor/time/packages/core",
+    "@js-joda/timezone": "file:vendor/time/packages/timezone",
+    "astronomia": "file:vendor/astronomia",
+    "openai-schema": "file:vendor/openai-schema"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3"
+  }
+}
