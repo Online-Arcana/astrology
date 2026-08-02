@@ -48,18 +48,21 @@ const birth = (value: unknown): BirthInput => {
 };
 
 const selectedZodiac = (raw: Record<string, unknown>, defaults: CalculationOptions): Zodiac => {
-  const candidates = [
+  const supplied: Array<readonly [string, unknown]> = [];
+  for (const [name, value] of [
     ["options.zodiac", raw["zodiac"]],
     ["options.primaryZodiac", raw["primaryZodiac"]],
     ["options.interpretationMode", raw["interpretationMode"]],
-  ] as const;
-  const supplied = candidates.filter((entry): entry is readonly [string, unknown] => entry[1] !== undefined);
+  ] as const) {
+    if (value !== undefined) supplied.push([name, value]);
+  }
   if (supplied.some(([, value]) => value === "both")) {
     throw new Error("A chart cannot contain both zodiac systems; create separate tropical and sidereal charts");
   }
-  const selected = supplied.length === 0
+  const first = supplied[0];
+  const selected = first === undefined
     ? defaults.primaryZodiac
-    : oneOf(supplied[0]?.[1], supplied[0]?.[0] ?? "options.zodiac", ["tropical", "sidereal"] as const);
+    : oneOf(first[1], first[0], ["tropical", "sidereal"] as const);
   for (const [name, value] of supplied.slice(1)) {
     if (oneOf(value, name, ["tropical", "sidereal"] as const) !== selected) {
       throw new Error("options.zodiac, options.primaryZodiac and options.interpretationMode must select the same zodiac");
