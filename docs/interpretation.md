@@ -75,12 +75,13 @@ Every `InterpretationCall` has:
 
 The LLM never selects fields, availability, placements, house systems, aspects, dignity, compatibility scores or ranks.
 
-Routing follows `astral-model-routing/1.0.0`:
+Routing follows `astral-model-routing/1.0.1`:
 
-- narrow leaf fields use `OPENAI_SMALL_MODEL`, no reasoning and at most 1,800 output tokens
+- narrow leaf fields begin on `OPENAI_SMALL_MODEL`, no reasoning and at most 1,800 output tokens
+- an audited retry for a narrow field escalates to `OPENAI_BIG_MODEL` with low reasoning while keeping the same field schema, correction and conversation
 - chart overviews, compatibility overviews and life sections use `OPENAI_BIG_MODEL`, low reasoning and at most 3,200 output tokens
 - zodiac, cross-system and final syntheses use `OPENAI_BIG_MODEL`, configured reasoning and at most 6,000 output tokens
-- the generated three-word chart name uses `OPENAI_SMALL_MODEL`, no reasoning and at most 128 output tokens
+- the generated three-word chart name uses `OPENAI_SMALL_MODEL`, no reasoning and at most 128 output tokens unless it itself requires an audited retry
 
 Every route is also capped by `OPENAI_MAX_OUTPUT_TOKENS`, so an operator may impose a stricter global ceiling.
 
@@ -108,7 +109,7 @@ Audit checks include:
 - local source-reference resolution
 - source-reference permission and deterministic availability
 
-A failed audit retries only that interpretation unit. The retry receives the exact audit failures and must return the same strict schema. Broad parse retries inside `openai-schema` remain disabled so semantic retry scope stays under host control.
+A failed audit retries only that interpretation unit. The retry receives the exact audit failures and must return the same strict schema. Narrow fields escalate from nano to mini after the first failed audit rather than spending every attempt on the cheaper model. Broad parse retries inside `openai-schema` remain disabled so semantic retry scope stays under host control.
 
 ## Transport options
 
