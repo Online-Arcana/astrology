@@ -64,6 +64,7 @@ export interface UnitResult<T extends object> {
   provenance?: {
     repairedBy?: string;
     repairKind?: "truncation_condensation" | "audit_correction" | "coherence_correction";
+    migratedFromVersion?: string;
   };
 }
 
@@ -88,6 +89,7 @@ export interface SnapshotCheckpoint {
   sha256: string;
   remoteFileId: string | null;
   acceptedOrder: string[];
+  localSnapshot?: string;
 }
 
 export type LaneStatus = "pending" | "running" | "blocked" | "complete" | "failed";
