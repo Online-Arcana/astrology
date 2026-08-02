@@ -42,6 +42,18 @@ test("theme entries may be concise semantic labels without artificial role keywo
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
+test("theme exemption does not disable summary relevance checks", () => {
+  const result = auditField(
+    "Cooking pasta slowly on a rainy afternoon makes the kitchen feel comfortably warm.",
+    profile("tropical.point.moon.summary"),
+  );
+  assert(!result.valid, "irrelevant summary must still fail semantic audit");
+  assert(
+    result.issues.some(({ code }) => code === "irrelevant"),
+    "irrelevant summary must report semantic irrelevance",
+  );
+});
+
 test("a tension may describe how a strength becomes difficult", () => {
   const result = auditField(
     "Confidence and initiative can become excessive, creating pressure to act before everyone else is ready.",
