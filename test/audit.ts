@@ -1,4 +1,8 @@
 import { auditField, type FieldProfile } from "../src/llm/audit/field.js";
+import { auditStructured } from "../src/llm/audit/structured.js";
+import { shapeForUnit } from "../src/llm/schema/chart.js";
+import type { JsonRef } from "../src/types/base.js";
+import type { InterpretationUnit } from "../src/types/file.js";
 
 const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) throw new Error(message);
@@ -100,6 +104,79 @@ test("process narration remains rejected", () => {
     profile("tropical.overview.strengths[3]"),
   );
   assert(!result.valid, "process narration must still fail");
+});
+
+test("structured audit applies a romance subfield lexicon", () => {
+  const result = auditStructured(
+    {
+      affectionStyle:
+        "Warm touch and steady reassurance make care tangible without demanding constant closeness.",
+    },
+    {},
+    new Set<JsonRef>(),
+    {
+      id: "tropical.life.romance",
+      lexicon: ["romance"],
+      fieldLexicons: {
+        affectionStyle: [
+          "warm",
+          "touch",
+          "reassurance",
+          "care",
+          "closeness",
+        ],
+      },
+      minLength: 2,
+      maxLength: 4_000,
+    },
+  );
+
+  assert(
+    result.valid,
+    result.errors.join("; "),
+  );
+});
+
+test("interpretation schemas enumerate only permitted source references", () => {
+  const permitted = [
+    "#/astral-calculation/systems/tropical/points/venus",
+    "#/astral-calculation/systems/tropical/houses/7",
+  ] as const satisfies readonly JsonRef[];
+
+  const unit: InterpretationUnit = {
+    id: "tropical.life.romance",
+    zodiac: "tropical",
+    section: "life.romance",
+    domain: null,
+    allowedSourceRefs: [...permitted],
+  };
+
+  const shape = shapeForUnit(
+    unit,
+    permitted,
+  );
+
+  const schema = shape.schema as {
+    properties?: Record<
+      string,
+      {
+        items?: {
+          enum?: readonly string[];
+        };
+      }
+    >;
+  };
+
+  const actual =
+    schema.properties?.["sourceRefs"]
+      ?.items
+      ?.enum;
+
+  assert(
+    JSON.stringify(actual)
+      === JSON.stringify(permitted),
+    "sourceRefs must use the exact permitted-reference enum",
+  );
 });
 
 console.log(`1..${passed}`);

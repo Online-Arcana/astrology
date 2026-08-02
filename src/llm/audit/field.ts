@@ -23,6 +23,7 @@ export interface FieldProfile {
   minLength?: number;
   maxLength?: number;
   priorFields?: readonly string[];
+  fieldLexicons?: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface FieldAudit {

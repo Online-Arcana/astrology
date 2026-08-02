@@ -1,6 +1,6 @@
 {
   "name": "astrology",
-  "version": "0.18.0",
+  "version": "0.18.1",
   "description": "Library for astrology calculations, chart geometry, and interpretation",
   "type": "module",
   "license": "MIT",

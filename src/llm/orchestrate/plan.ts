@@ -6,6 +6,7 @@ import type { Section } from "../../types/chart.js";
 import type { AstralCalculation, InterpretationUnit } from "../../types/file.js";
 import { auditStructured } from "../audit/structured.js";
 import type { FieldProfile } from "../audit/field.js";
+import { fieldProfiles } from "../audit/profiles.js";
 import { object, strictShape, text } from "../schema/build.js";
 import { shapeForUnit } from "../schema/chart.js";
 import { sectionPrompt } from "./prompt.js";
@@ -22,7 +23,7 @@ import type {
 
 export const promptCatalogue = "astral-prompts/1.0.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.0.0" as const;
-export const nlpAuditProfile = "astral-nlp-audit/1.0.3" as const;
+export const nlpAuditProfile = "astral-nlp-audit/1.0.4" as const;
 export const modelRoutingProfile = "astral-model-routing/1.0.1" as const;
 
 export interface PlanInterpretationResult {
@@ -69,6 +70,31 @@ const task = (unit: InterpretationUnit): string => {
     "Use only sourceRefs supplied in the source list and cite the exact local JSON references used.",
     "Do not infer unavailable calculations, add extra fields or merge this field with another interpretation field.",
   ].join("\n"));
+};
+
+const correctionInstruction = (
+  unit: InterpretationUnit,
+): string => {
+  const lines = [
+    "Correct only this interpretation unit and return the same strict schema.",
+    "Copy every sourceRefs value exactly from permittedSourceRefs.",
+    "Never invent, shorten, translate, normalise or alter a source reference.",
+    "Keep every narrative property semantically distinct.",
+    "Do not repeat or lightly paraphrase the summary, detail or another property.",
+  ];
+
+  if (unit.section === "life.romance") {
+    lines.push(
+      "summary must give the concise overall romantic pattern.",
+      "detail must explain the pattern without repeating the summary.",
+      "affectionStyle must describe how warmth, care or affection is expressed.",
+      "courtshipStyle must describe pursuit, attraction or early romantic approach.",
+      "attachmentNeeds must describe emotional security, closeness, autonomy or reassurance needs.",
+      "commitmentPattern must describe durability, loyalty, exclusivity or independence in commitment.",
+    );
+  }
+
+  return lines.join("\n");
 };
 
 const lexicon = (unit: InterpretationUnit): string[] => {
@@ -164,19 +190,46 @@ const substantiveCalls = (
     }
 
     const allowed = new Set(unitSources.map(({ ref }) => ref));
+    const specialistKey =
+      unit.section === "life.romance"
+        ? "romance"
+        : unit.section === "life.sexuality"
+          ? "sexuality"
+          : unit.section === "life.careerAndVocation"
+            ? "career"
+            : unit.section === "life.moneyAndMaterialSecurity"
+              ? "money"
+              : null;
+
+    const specialist =
+      specialistKey === null
+        ? null
+        : fieldProfiles[specialistKey] ?? null;
+
     const profile: FieldProfile = {
       id: unit.id,
-      lexicon: lexicon(unit),
+      lexicon: [
+        ...new Set([
+          ...lexicon(unit),
+          ...(specialist?.lexicon ?? []),
+        ]),
+      ],
       minLength: 2,
       maxLength: 4_000,
       priorFields: prior,
+      ...(specialist?.fieldLexicons === undefined
+        ? {}
+        : {
+            fieldLexicons:
+              specialist.fieldLexicons,
+          }),
     };
 
     calls.push({
       id: unit.id,
       label: human(unit.id),
       ...route(unit),
-      shape: shapeForUnit(unit),
+      shape: shapeForUnit(unit, [...allowed]),
       allowedSourceRefs: allowed,
       input: ({ correction }) => ({
         instructions: task(unit),
@@ -194,7 +247,7 @@ const substantiveCalls = (
           ? {}
           : {
               correction: {
-                instruction: "Correct only this field and return the same strict schema.",
+                instruction: correctionInstruction(unit),
                 auditFailures: correction,
               },
             }),

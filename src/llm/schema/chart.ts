@@ -11,28 +11,55 @@ import {
   parseSystemSynthesis,
 } from "../../chart/parse.js";
 import type { Sign } from "../../types/astro.js";
+import type { JsonRef } from "../../types/base.js";
 import type { InterpretationUnit } from "../../types/file.js";
 import { signs } from "../../zodiac/position.js";
 import type { StrictShape } from "../orchestrate/types.js";
-import { list, literal, nullableText, object, strictShape, text, type Schema } from "./build.js";
+import {
+  list,
+  literal,
+  nullableText,
+  object,
+  strictShape,
+  text,
+  textEnum,
+  type Schema,
+} from "./build.js";
 
-const sectionProperties: Record<string, Schema> = {
-  status: { type: "string", enum: ["written", "unavailable", "not_applicable"] },
+const refs = (
+  allowed: readonly JsonRef[],
+): Schema => list(textEnum(allowed), 1);
+
+const sectionProperties = (
+  allowed: readonly JsonRef[],
+): Record<string, Schema> => ({
+  status: {
+    type: "string",
+    enum: ["written", "unavailable", "not_applicable"],
+  },
   title: text(),
   summary: nullableText(),
   detail: nullableText(),
   themes: list(text()),
   strengths: list(text()),
   tensions: list(text()),
-  sourceRefs: list(text(), 1),
-};
+  sourceRefs: refs(allowed),
+});
 
-const section = object(sectionProperties);
-const sectionShape = (name: string): StrictShape<object> =>
-  strictShape(name, section, parseStrictSection) as StrictShape<object>;
+const sectionShape = (
+  name: string,
+  allowed: readonly JsonRef[],
+): StrictShape<object> =>
+  strictShape(
+    name,
+    object(sectionProperties(allowed)),
+    parseStrictSection,
+  ) as StrictShape<object>;
 
-const romance = object({
-  ...sectionProperties,
+const romance = (
+  allowed: readonly JsonRef[],
+): Schema => object({
+  ...sectionProperties(allowed),
   affectionStyle: nullableText(),
   courtshipStyle: nullableText(),
   attachmentNeeds: nullableText(),
@@ -42,8 +69,10 @@ const romance = object({
   commitmentPattern: nullableText(),
 });
 
-const sexuality = object({
-  ...sectionProperties,
+const sexuality = (
+  allowed: readonly JsonRef[],
+): Schema => object({
+  ...sectionProperties(allowed),
   desireStyle: nullableText(),
   libidoPattern: nullableText(),
   initiationStyle: nullableText(),
@@ -60,8 +89,10 @@ const sexuality = object({
   likelyFrustrations: list(text()),
 });
 
-const career = object({
-  ...sectionProperties,
+const career = (
+  allowed: readonly JsonRef[],
+): Schema => object({
+  ...sectionProperties(allowed),
   vocationalThemes: list(text()),
   suitableFields: list(text()),
   preferredWorkEnvironment: nullableText(),
@@ -73,8 +104,10 @@ const career = object({
   careerRisks: list(text()),
 });
 
-const money = object({
-  ...sectionProperties,
+const money = (
+  allowed: readonly JsonRef[],
+): Schema => object({
+  ...sectionProperties(allowed),
   earningStyle: nullableText(),
   spendingStyle: nullableText(),
   securityNeeds: nullableText(),
@@ -83,21 +116,28 @@ const money = object({
   financialBlindSpots: list(text()),
 });
 
-const synthesis = object({
+const synthesis = (
+  allowed: readonly JsonRef[],
+): Schema => object({
   centralThemes: list(text()),
   contradictions: list(text()),
   gifts: list(text()),
   growthEdges: list(text()),
   narrative: text(),
-  sourceRefs: list(text(), 1),
+  sourceRefs: refs(allowed),
 });
 
-const compatibilityOverview = object({
+const compatibilityOverview = (
+  allowed: readonly JsonRef[],
+): Schema => object({
   overview: text(),
-  sourceRefs: list(text(), 1),
+  sourceRefs: refs(allowed),
 });
 
-const signCompatibility = (sign: Sign): Schema => object({
+const signCompatibility = (
+  sign: Sign,
+  allowed: readonly JsonRef[],
+): Schema => object({
   sign: literal(sign),
   summary: text(),
   dynamic: text(),
@@ -106,20 +146,24 @@ const signCompatibility = (sign: Sign): Schema => object({
   attraction: nullableText(),
   sustainability: nullableText(),
   bestExpression: text(),
-  sourceRefs: list(text(), 1),
+  sourceRefs: refs(allowed),
 });
 
-const crossSystem = object({
+const crossSystem = (
+  allowed: readonly JsonRef[],
+): Schema => object({
   sharedThemes: list(text()),
   tropicalEmphasis: list(text()),
   siderealEmphasis: list(text()),
   apparentContradictions: list(text()),
   reconciliations: list(text()),
   synthesis: text(),
-  sourceRefs: list(text(), 1),
+  sourceRefs: refs(allowed),
 });
 
-const finalSynthesis = object({
+const finalSynthesis = (
+  allowed: readonly JsonRef[],
+): Schema => object({
   essence: text(),
   definingThemes: list(text()),
   strongestAssets: list(text()),
@@ -131,41 +175,100 @@ const finalSynthesis = object({
   moneyPattern: text(),
   developmentalArc: text(),
   closingPortrait: text(),
-  sourceRefs: list(text(), 1),
+  sourceRefs: refs(allowed),
 });
 
-const safeName = (id: string): string => id.replaceAll(/[^A-Za-z0-9_-]/gu, "_").slice(0, 64);
+const safeName = (
+  id: string,
+): string => id
+  .replaceAll(/[^A-Za-z0-9_-]/gu, "_")
+  .slice(0, 64);
 
-const expectedSign = (id: string): Sign => {
+const expectedSign = (
+  id: string,
+): Sign => {
   const value = id.split(".").at(-1);
-  if (!value || !signs.includes(value as Sign)) throw new Error(`Compatibility unit ${id} has no valid sign`);
+  if (!value || !signs.includes(value as Sign)) {
+    throw new Error(
+      `Compatibility unit ${id} has no valid sign`,
+    );
+  }
   return value as Sign;
 };
 
-export const shapeForUnit = (unit: InterpretationUnit): StrictShape<object> => {
+export const shapeForUnit = (
+  unit: InterpretationUnit,
+  allowedSourceRefs: readonly JsonRef[] = unit.allowedSourceRefs,
+): StrictShape<object> => {
   const name = safeName(unit.id);
+
   switch (unit.section) {
     case "life.romance":
-      return strictShape(name, romance, parseRomanticInterpretation) as StrictShape<object>;
+      return strictShape(
+        name,
+        romance(allowedSourceRefs),
+        parseRomanticInterpretation,
+      ) as StrictShape<object>;
+
     case "life.sexuality":
-      return strictShape(name, sexuality, parseSexualInterpretation) as StrictShape<object>;
+      return strictShape(
+        name,
+        sexuality(allowedSourceRefs),
+        parseSexualInterpretation,
+      ) as StrictShape<object>;
+
     case "life.careerAndVocation":
-      return strictShape(name, career, parseCareerInterpretation) as StrictShape<object>;
+      return strictShape(
+        name,
+        career(allowedSourceRefs),
+        parseCareerInterpretation,
+      ) as StrictShape<object>;
+
     case "life.moneyAndMaterialSecurity":
-      return strictShape(name, money, parseMoneyInterpretation) as StrictShape<object>;
+      return strictShape(
+        name,
+        money(allowedSourceRefs),
+        parseMoneyInterpretation,
+      ) as StrictShape<object>;
+
     case "synthesis":
-      return strictShape(name, synthesis, parseSystemSynthesis) as StrictShape<object>;
+      return strictShape(
+        name,
+        synthesis(allowedSourceRefs),
+        parseSystemSynthesis,
+      ) as StrictShape<object>;
+
     case "compatibility.overview":
-      return strictShape(name, compatibilityOverview, parseCompatibilityOverview) as StrictShape<object>;
+      return strictShape(
+        name,
+        compatibilityOverview(allowedSourceRefs),
+        parseCompatibilityOverview,
+      ) as StrictShape<object>;
+
     case "compatibility.sign": {
       const sign = expectedSign(unit.id);
-      return strictShape(name, signCompatibility(sign), (value) => parseSignCompatibility(value, sign)) as StrictShape<object>;
+      return strictShape(
+        name,
+        signCompatibility(sign, allowedSourceRefs),
+        (value) => parseSignCompatibility(value, sign),
+      ) as StrictShape<object>;
     }
+
     case "crossSystem":
-      return strictShape(name, crossSystem, parseCrossSystem) as StrictShape<object>;
+      return strictShape(
+        name,
+        crossSystem(allowedSourceRefs),
+        parseCrossSystem,
+      ) as StrictShape<object>;
+
     case "finalSynthesis":
-      return strictShape(name, finalSynthesis, parseFinalSynthesis) as StrictShape<object>;
+      return strictShape(
+        name,
+        finalSynthesis(allowedSourceRefs),
+        parseFinalSynthesis,
+      ) as StrictShape<object>;
+
     default:
-      return sectionShape(name);
+      return sectionShape(name, allowedSourceRefs);
   }
 };
