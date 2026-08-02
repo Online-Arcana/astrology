@@ -36,7 +36,7 @@ jobs:
           set -Eeuo pipefail
 
           git show b9d74dd39c1c2a745959760e75bd04c662c3dc84:.github/workflows/rebuild-main-pr.yml \
-            > .github/workflows/rebuild-main-pr.yml
+            > /tmp/rebuild-main-pr.yml
 
           python <<'PY'
           from pathlib import Path
@@ -57,6 +57,10 @@ jobs:
                   lines.append('')
 
           script = '\n'.join(lines) + '\n'
+          script = script.replace(
+              "Path('.github/workflows/rebuild-main-pr.yml')",
+              "Path('/tmp/rebuild-main-pr.yml')",
+          )
           script = script.replace("marker = '    elif [[", "marker = '  elif [[")
           Path('/tmp/rebuild-runner.sh').write_text(script)
           PY
