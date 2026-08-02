@@ -157,15 +157,23 @@ export const runInterpretation = async (
       calls += 1;
       await checkpoint(active);
 
-      const output = await client.run(unit.shape, unit.input(context()), {
-        body: {
-          model,
-          store: false,
-          reasoning: { effort },
-          max_output_tokens: tokens,
-        },
-        retries: 0,
-      });
+      let output: object;
+      try {
+        output = await client.run(unit.shape, unit.input(context()), {
+          body: {
+            model,
+            store: false,
+            reasoning: { effort },
+            max_output_tokens: tokens,
+          },
+          retries: 0,
+        });
+      } catch (cause: unknown) {
+        if (client.id !== undefined) conversationId = assertConversation(client, conversationId);
+        await checkpoint(active);
+        throw cause;
+      }
+
       conversationId = assertConversation(client, conversationId);
       await checkpoint(active);
 
