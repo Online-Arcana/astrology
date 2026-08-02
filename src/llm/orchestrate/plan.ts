@@ -21,7 +21,7 @@ import type {
   UnitResult,
 } from "./types.js";
 
-export const promptCatalogue = "astral-prompts/1.1.0" as const;
+export const promptCatalogue = "astral-prompts/1.2.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.1.0" as const;
 export const nlpAuditProfile = "astral-nlp-audit/1.0.4" as const;
 export const modelRoutingProfile = "astral-model-routing/1.0.1" as const;
@@ -63,11 +63,12 @@ const human = (value: string): string => value
 const task = (unit: InterpretationUnit): string => {
   const subject = human(unit.section);
   const domain = unit.domain ? ` within the ${human(unit.domain)} compatibility domain` : "";
-  const system = ` for the ${unit.zodiac} zodiac system`;
   return sectionPrompt([
-    `Write only the final ${subject} interpretation${system}${domain}.`,
+    `Write only the final ${subject} interpretation for the selected ${unit.zodiac} zodiac system${domain}.`,
     "Treat the supplied source objects as fixed facts.",
-    "Use only sourceRefs supplied in the source list and cite the exact local JSON references used.",
+    "Use only references supplied in permittedSourceRefs.",
+    "Put exact local JSON references exclusively in sourceRefs; never include a #/ path or source reference in narrative prose.",
+    "Do not mention, compare or import the unselected zodiac system or another ayanamsha.",
     "Do not infer unavailable calculations, add extra fields or merge this field with another interpretation field.",
   ].join("\n"));
 };
@@ -79,8 +80,12 @@ const correctionInstruction = (
     "Correct only this interpretation unit and return the same strict schema.",
     "Copy every sourceRefs value exactly from permittedSourceRefs.",
     "Never invent, shorten, translate, normalise or alter a source reference.",
+    "Never place a source reference or internal JSON path inside narrative prose.",
+    "Write directly to the person using you and your, and lead with human meaning rather than chart mechanics.",
+    "Do not begin narrative sentences with a planet, sign, house, aspect, placement or calculation label.",
     "Keep every narrative property semantically distinct.",
     "Do not repeat or lightly paraphrase the summary, detail or another property.",
+    `Use only the selected ${unit.zodiac} zodiac system.`,
   ];
 
   if (unit.section === "life.romance") {
@@ -255,14 +260,14 @@ const substantiveCalls = (
   return { calls, synthetic };
 };
 
-const nameRefs = (calculation: AstralCalculation): readonly JsonRef[] => [
+const nameRefs = [
   "#/astral-calculation/provenance/calculationFingerprint",
   "#/astral-calculation/system/derived/dominantPlanets",
   "#/astral-calculation/system/derived/dominantSigns",
 ] as const satisfies readonly JsonRef[];
 
 const generatedNameCall = (calculation: AstralCalculation): InterpretationCall => {
-  const available = sources(calculation, nameRefs(calculation));
+  const available = sources(calculation, nameRefs);
   const allowed = new Set(available.map(({ ref }) => ref));
   return {
     id: "generated-name",
