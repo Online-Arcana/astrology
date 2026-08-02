@@ -13,16 +13,36 @@ import {
   runInterpretationPlan,
   structuredOutputCatalogue,
 } from "../llm/orchestrate/plan.js";
-import type { InterpretationRun, SchemaClientFactory } from "../llm/orchestrate/types.js";
+import type {
+  InterpretationCheckpoint,
+  InterpretationRecovery,
+  InterpretationRun,
+  RunHooks,
+  SchemaClientFactory,
+} from "../llm/orchestrate/types.js";
 import type { BirthInput } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
 import type { AstralCalculation, AstralFile } from "../types/file.js";
+
+export const generationRecoverySchema = "astral-generation-recovery/1.0.0" as const;
 
 export interface GeneratedChart {
   calculation: AstralCalculation;
   interpretation: InterpretationRun;
   chart: AstralChart;
   file: AstralFile;
+}
+
+export interface ChartGenerationCheckpoint {
+  schema: typeof generationRecoverySchema;
+  version: string;
+  calculationFingerprint: string;
+  calculation: AstralCalculation;
+  interpretation: InterpretationCheckpoint;
+}
+
+export interface GenerationHooks extends Omit<RunHooks, "onCheckpoint"> {
+  onCheckpoint?: (checkpoint: ChartGenerationCheckpoint) => void | Promise<void>;
 }
 
 export type ChartSchemaFactory = (calculation: AstralCalculation) => SchemaClientFactory;
@@ -69,6 +89,18 @@ const languageInstruction = (calculation: AstralCalculation): string => [
   "Do not add medical, legal, financial, safeguarding or crisis advice.",
 ].join("\n");
 
+const recoveryFor = (
+  version: string,
+  calculation: AstralCalculation,
+  interpretation: InterpretationCheckpoint,
+): ChartGenerationCheckpoint => ({
+  schema: generationRecoverySchema,
+  version,
+  calculationFingerprint: calculation.provenance.calculationFingerprint,
+  calculation,
+  interpretation,
+});
+
 export class ChartGenerationService {
   readonly #runtime: GenerationRuntime;
 
@@ -79,12 +111,50 @@ export class ChartGenerationService {
   async generate(
     birth: BirthInput,
     options: CalculationOptions = optionsFromConfig(this.#runtime.config),
+    hooks: GenerationHooks = {},
   ): Promise<GeneratedChart> {
     const calculation = await this.#runtime.calculation.calculate(birth, options);
+    return this.#complete(calculation, hooks, null);
+  }
+
+  async resume(
+    checkpoint: ChartGenerationCheckpoint,
+    hooks: GenerationHooks = {},
+  ): Promise<GeneratedChart> {
+    if (checkpoint.schema !== generationRecoverySchema) {
+      throw new Error("Generation recovery schema is unsupported");
+    }
+    if (checkpoint.version !== this.#runtime.version) {
+      throw new Error(
+        `Generation recovery version ${checkpoint.version} does not match runtime ${this.#runtime.version}`,
+      );
+    }
+    if (checkpoint.calculation.provenance.calculationFingerprint !== checkpoint.calculationFingerprint) {
+      throw new Error("Generation recovery calculation fingerprint does not match its calculation");
+    }
+    return this.#complete(checkpoint.calculation, hooks, checkpoint.interpretation);
+  }
+
+  async #complete(
+    calculation: AstralCalculation,
+    hooks: GenerationHooks,
+    recovery: InterpretationRecovery | null,
+  ): Promise<GeneratedChart> {
+    const { onCheckpoint, ...runHooks } = hooks;
     const interpreted = await runInterpretationPlan(
       calculation,
       this.#runtime.config,
       this.#runtime.schemaFactory(calculation),
+      {
+        ...runHooks,
+        ...(onCheckpoint === undefined
+          ? {}
+          : {
+              onCheckpoint: (checkpoint: InterpretationCheckpoint) =>
+                onCheckpoint(recoveryFor(this.#runtime.version, calculation, checkpoint)),
+            }),
+      },
+      recovery,
     );
     const generatedAt = this.#runtime.now();
     const chart = assembleChart(calculation, interpreted.run, {
@@ -104,7 +174,7 @@ export class ChartGenerationService {
 
 export const loadChartGenerationService = async (
   config: Config,
-  version = "0.13.0",
+  version = "0.16.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata">> = {},
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {
