@@ -32,4 +32,23 @@ jobs:
           set -Eeuo pipefail
           cp scripts/privacy-rewrite.sh /tmp/privacy-rewrite.sh
           rm -f scripts/privacy-rewrite.sh .github/workflows/privacy-rewrite-run.yml
+          python <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/privacy-rewrite.sh')
+          text = path.read_text(encoding='utf-8')
+          old = '''for old, new in replacements.items():
+              text = text.replace(old, new)
+          path.write_text(text, encoding="utf-8")
+
+          path = Path("test/geometry.ts")'''
+          new = '''for old, new in replacements.items():
+              text = text.replace(old, new)
+          text = text.replace("Aberdeen", "Cambridge")
+          path.write_text(text, encoding="utf-8")
+
+          path = Path("test/geometry.ts")'''
+          if old not in text:
+              raise SystemExit('privacy runner patch point not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           bash /tmp/privacy-rewrite.sh
