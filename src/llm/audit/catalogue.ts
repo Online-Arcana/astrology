@@ -1,4 +1,4 @@
-export const auditProfile = "nlp-audit/1.0.1" as const;
+export const auditProfile = "nlp-audit/1.0.2" as const;
 
 export const forbiddenPatterns: readonly RegExp[] = [
   /\bas an ai\b/iu,
