@@ -1,5 +1,13 @@
 import { OpenAISchema, type Shape } from "openai-schema";
-import type { SchemaClient, SchemaClientFactory, StrictShape } from "./orchestrate/types.js";
+import {
+  createOpenAITransport,
+  type OpenAITransportOptions,
+} from "./openaiTransport.js";
+import type {
+  SchemaClient,
+  SchemaClientFactory,
+  StrictShape,
+} from "./orchestrate/types.js";
 
 export interface OpenAISchemaRuntimeOptions {
   apiKey: string;
@@ -7,9 +15,15 @@ export interface OpenAISchemaRuntimeOptions {
   metadata?: Record<string, string>;
   base?: string;
   fetch?: typeof fetch;
+  transport?: Omit<
+    OpenAITransportOptions,
+    "fetch"
+  >;
 }
 
-const bootstrap: Shape<Record<string, unknown>> = {
+const bootstrap: Shape<
+  Record<string, unknown>
+> = {
   name: "astral_bootstrap",
   schema: {
     type: "object",
@@ -19,26 +33,55 @@ const bootstrap: Shape<Record<string, unknown>> = {
   },
 };
 
-const shape = <T extends object>(value: StrictShape<T>): Shape<T> => ({
+const shape = <T extends object>(
+  value: StrictShape<T>,
+): Shape<T> => ({
   name: value.name,
   schema: value.schema,
-  ...(value.parse === undefined ? {} : { parse: value.parse }),
+  ...(value.parse === undefined
+    ? {}
+    : { parse: value.parse }),
 });
 
-class OpenAISchemaClient implements SchemaClient {
-  readonly #client: OpenAISchema<Record<string, unknown>>;
+class OpenAISchemaClient
+implements SchemaClient {
+  readonly #client: OpenAISchema<
+    Record<string, unknown>
+  >;
+
   readonly #instructions: string;
   readonly #metadata: Record<string, string>;
 
-  constructor(options: OpenAISchemaRuntimeOptions, conversationId?: string) {
+  constructor(
+    options: OpenAISchemaRuntimeOptions,
+    conversationId?: string,
+  ) {
     this.#instructions = options.instructions;
-    this.#metadata = { ...(options.metadata ?? {}) };
-    this.#client = new OpenAISchema(options.apiKey, bootstrap, conversationId, {
-      ...(options.base === undefined ? {} : { base: options.base }),
-      ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
-      conversation: true,
-      name: "astral_bootstrap",
+    this.#metadata = {
+      ...(options.metadata ?? {}),
+    };
+
+    const fetcher = createOpenAITransport({
+      ...(options.transport ?? {}),
+      ...(options.fetch === undefined
+        ? {}
+        : { fetch: options.fetch }),
     });
+
+    this.#client = new OpenAISchema(
+      options.apiKey,
+      bootstrap,
+      conversationId,
+      {
+        ...(options.base === undefined
+          ? {}
+          : { base: options.base }),
+
+        fetch: fetcher,
+        conversation: true,
+        name: "astral_bootstrap",
+      },
+    );
   }
 
   get id(): string | undefined {
@@ -48,23 +91,43 @@ class OpenAISchemaClient implements SchemaClient {
   async run<T extends object>(
     value: StrictShape<T>,
     input: unknown,
-    options: Parameters<SchemaClient["run"]>[2],
+    options: Parameters<
+      SchemaClient["run"]
+    >[2],
   ): Promise<T> {
-    return this.#client.run(shape(value), input, {
-      ...options,
-      body: {
-        ...options.body,
-        instructions: this.#instructions,
-        metadata: this.#metadata,
+    return this.#client.run(
+      shape(value),
+      input,
+      {
+        ...options,
+        body: {
+          ...options.body,
+          instructions: this.#instructions,
+          metadata: this.#metadata,
+        },
       },
-    });
+    );
   }
 }
 
 export const createOpenAISchemaClientFactory = (
   options: OpenAISchemaRuntimeOptions,
 ): SchemaClientFactory => {
-  if (options.apiKey.trim().length === 0) throw new Error("OpenAI API key is required");
-  if (options.instructions.trim().length === 0) throw new Error("OpenAI developer instructions are required");
-  return (conversationId) => new OpenAISchemaClient(options, conversationId);
+  if (options.apiKey.trim().length === 0) {
+    throw new Error(
+      "OpenAI API key is required",
+    );
+  }
+
+  if (options.instructions.trim().length === 0) {
+    throw new Error(
+      "OpenAI developer instructions are required",
+    );
+  }
+
+  return (conversationId) =>
+    new OpenAISchemaClient(
+      options,
+      conversationId,
+    );
 };
