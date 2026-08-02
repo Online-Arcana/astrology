@@ -103,6 +103,30 @@ jobs:
           if text.count(marker) != 1:
               raise SystemExit('Places milestone marker was not found exactly once')
           text = text.replace(marker, rename + marker)
+
+          structured_check = 'if old not in text:\n    raise SystemExit("Structured-audit return block not found")'
+          structured_override = '\n'.join([
+              "old = '  return {\\n    valid: state.errors.length === 0,\\n    value: audited,\\n    errors: state.errors,\\n  };\\n'",
+              "new = '  return {\\n    valid: state.errors.length === 0,\\n    value: audited,\\n    errors: state.errors,\\n    soft: state.errors.length > 0\\n      && state.errors.every((error) => error.endsWith(\"does not fit its semantic field\")),\\n  };\\n'",
+              '',
+          ])
+          if text.count(structured_check) != 1:
+              raise SystemExit('Structured-audit guard was not found exactly once')
+          text = text.replace(
+              structured_check,
+              structured_override + structured_check,
+          )
+
+          plan_check = 'if old not in text:\n    raise SystemExit("Interpretation-plan audit block not found")'
+          plan_override = '\n'.join([
+              "old = '      audit: (value, { calculation: calculationRoot }) => {\\n        const audited = auditStructured(value, calculationRoot, allowed, profile);\\n        if (audited.valid) prior.push(...narratives(audited.value));\\n        return audited;\\n      },\\n'",
+              "new = '      audit: (value, { calculation: calculationRoot }) =>\\n        auditStructured(value, calculationRoot, allowed, profile),\\n      onAccept: (value) => {\\n        prior.push(...narratives(value));\\n      },\\n'",
+              '',
+          ])
+          if text.count(plan_check) != 1:
+              raise SystemExit('Interpretation-plan guard was not found exactly once')
+          text = text.replace(plan_check, plan_override + plan_check)
+
           path.write_text(text)
           PY
 
