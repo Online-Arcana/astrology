@@ -6,6 +6,12 @@ import {
 import { assembleChart } from "../chart/assemble.js";
 import type { Config } from "../config.js";
 import { assembleAstralFile } from "../file/document.js";
+import {
+  legacyBirthInput,
+  legacyGenerationRecoverySchema,
+  migrateLegacyInterpretation,
+  type LegacyGenerationCheckpoint,
+} from "./migration.js";
 import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
 import {
   nlpAuditProfile,
@@ -42,6 +48,8 @@ export interface ChartGenerationCheckpoint {
   calculation: AstralCalculation;
   interpretation: InterpretationCheckpoint;
 }
+
+export type ResumableChartGenerationCheckpoint = ChartGenerationCheckpoint | LegacyGenerationCheckpoint;
 
 export interface GenerationHooks extends Omit<RunHooks, "onCheckpoint"> {
   onCheckpoint?: (checkpoint: ChartGenerationCheckpoint) => void | Promise<void>;
@@ -210,9 +218,17 @@ export class ChartGenerationService {
   }
 
   async resume(
-    checkpoint: ChartGenerationCheckpoint,
+    checkpoint: ResumableChartGenerationCheckpoint,
     hooks: GenerationHooks = {},
   ): Promise<GeneratedChart> {
+    if (checkpoint.schema === legacyGenerationRecoverySchema) {
+      const calculation = await this.#runtime.calculation.calculate(
+        legacyBirthInput(checkpoint),
+        optionsFromConfig(this.#runtime.config),
+      );
+      const recovery = migrateLegacyInterpretation(checkpoint, calculation);
+      return this.#complete(calculation, hooks, recovery);
+    }
     if (checkpoint.schema !== generationRecoverySchema) {
       throw new Error("Generation recovery schema is unsupported");
     }
