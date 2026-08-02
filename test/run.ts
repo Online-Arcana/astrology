@@ -129,9 +129,9 @@ test("compatibility ranking is deterministic and complete", () => {
   equal(ranked.signs.pisces.relation, "compatible", "level mapping");
 });
 
-test("NLP audit removes process narration but preserves astrology", () => {
+test("NLP audit removes process narration but preserves interpretation", () => {
   const result = auditField(
-    "I will analyse the supplied JSON. Mars and Venus describe a direct desire style with strong erotic pace and clear initiation.",
+    "I will analyse the supplied JSON. You tend to approach desire directly, with a strong pace and clear initiation.",
     fieldProfiles["sexuality"]!,
   );
   ok(result.valid, "repaired field should be valid");
@@ -140,10 +140,10 @@ test("NLP audit removes process narration but preserves astrology", () => {
 });
 
 test("NLP audit rejects cross-field duplication and audits arrays item by item", () => {
-  const prior = "Saturn and the Midheaven favour patient career ambition, structured authority and durable professional achievement.";
+  const prior = "You build career ambition patiently, handle authority with structure and pursue durable professional achievement.";
   const result = auditField(prior, { ...fieldProfiles["career"]!, priorFields: [prior] });
   ok(!result.valid, "near duplicate must fail");
-  const list = auditList(["Venus supports affectionate courtship.", "Venus supports affectionate courtship."], fieldProfiles["romance"]!);
+  const list = auditList(["You show affection through steady courtship.", "You show affection through steady courtship."], fieldProfiles["romance"]!);
   ok(list.issues.some((issue) => issue.code === "duplicate"), "duplicate list item");
 });
 
@@ -155,17 +155,17 @@ test("JSON references must resolve and remain in the permitted set", () => {
   ok(!refsValid(root, [ref], new Set()), "disallowed reference");
 });
 
-test("interpretation reuses one conversation, retries narrowly and routes models", async () => {
+test("interpretation reuses one bounded conversation, retries narrowly and routes models", async () => {
   const ref = "#/systems/tropical/points/mars" as const;
   const calculation = { systems: { tropical: { points: { mars: { status: "exact", value: 17 } } } } };
   const bad = {
-    status: "written", title: "Sexuality", summary: "I will analyse the supplied JSON.", detail: "Mars describes desire.",
-    themes: ["Mars desire"], strengths: ["Direct erotic initiative"], tensions: ["Impatience in intimacy"], sourceRefs: [ref],
+    status: "written", title: "Sexuality", summary: "I will analyse the supplied JSON.", detail: "You experience desire directly.",
+    themes: ["You favour direct desire."], strengths: ["You initiate clearly."], tensions: ["You can become impatient."], sourceRefs: [ref],
   };
   const good = {
-    status: "written", title: "Sexuality", summary: "Mars gives desire a direct and initiating quality.",
-    detail: "Erotic pace is active, candid and responsive to clear mutual attraction.",
-    themes: ["Direct Mars desire"], strengths: ["Clear erotic initiative"], tensions: ["Impatience with hesitant intimacy"], sourceRefs: [ref],
+    status: "written", title: "Sexuality", summary: "You experience desire with a direct and initiating quality.",
+    detail: "Your erotic pace is active, candid and responsive to clear mutual attraction.",
+    themes: ["You favour direct desire."], strengths: ["You show clear erotic initiative."], tensions: ["You can become impatient with hesitant intimacy."], sourceRefs: [ref],
   };
   const name = { value: "Martian-desire-pioneer" };
   const seenModels: string[] = [];
@@ -210,7 +210,7 @@ test("interpretation reuses one conversation, retries narrowly and routes models
     readConfig({ ASTRAL_MAX_RETRIES: "2" }),
     () => new FakeClient(),
   );
-  equal(result.conversationId, "conv_chart_one", "shared conversation");
+  equal(result.conversationId, "conv_chart_one", "foundation conversation");
   equal(result.calls, 3, "call count");
   equal(result.retries, 1, "narrow retry count");
   equal(result.units["tropical-sexuality"]?.attempts, 2, "section attempts");
