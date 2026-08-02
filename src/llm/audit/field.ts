@@ -276,11 +276,8 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
           repairable: false,
         });
       }
-    } else {
-      const roleFit = role === null ? false : has(normal, termsFor(role));
-      if (!grounded && !roleFit) {
-        issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
-      }
+    } else if (role !== "theme" && !grounded) {
+      issues.push({ code: "irrelevant", message: `${profile.id} does not fit its semantic field`, repairable: false });
     }
   }
 
