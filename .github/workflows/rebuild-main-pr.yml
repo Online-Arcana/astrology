@@ -1,0 +1,56 @@
+name: Trigger main history rebuild
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    if: github.head_ref == 'agent/rebuild-main-0.18.0' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXPECTED_MAIN: cdcbd5a6d0993b8d2e0c33a1bdb647642ba5cb9d
+      BASE: 0c76109cdd044c4abe55c9337524988e7bf36589
+      DOCS: 1caa96aa77b83e72a752bdd38cf0fbde31572cc5
+      RECOVERY: d0dd6a9d8f1fc431754c41c38bdcf513bb7caaff
+      TRANSPORT: b4ed34eaa4ae34b08234c2887a395b6834cc32b6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Execute reviewed reconstruction script
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/rebuild-main.yml').read_text()
+          marker = '        run: |\n'
+          if marker not in source:
+              raise SystemExit('Reconstruction script marker not found')
+          script = source.split(marker, 1)[1]
+          lines = []
+          for line in script.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line:
+                  raise SystemExit(f'Unexpected reconstruction indentation: {line!r}')
+              else:
+                  lines.append('')
+          Path('/tmp/rebuild-main.sh').write_text('\n'.join(lines) + '\n')
+          PY
+          bash -n /tmp/rebuild-main.sh
+          exec bash /tmp/rebuild-main.sh
