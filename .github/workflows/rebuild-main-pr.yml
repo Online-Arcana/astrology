@@ -61,7 +61,7 @@ jobs:
               raise SystemExit(f'Expected two milestone insertion points, found {matches}')
           script = script.replace(first_milestone, predecessor + first_milestone)
 
-          replacement = r'''sanitise_sensitive() {
+          replacement = r"""sanitise_sensitive() {
             SENSITIVE="$SENSITIVE" python <<'PYFIX'
           from pathlib import Path
           import os
@@ -163,7 +163,7 @@ jobs:
           PYFIX
           }
 
-          assert_clean_tree() {'''
+          assert_clean_tree() {"""
 
           pattern = re.compile(
               r'sanitise_vendor\(\) \{\n.*?\n\}\n\nassert_clean_tree\(\) \{',
