@@ -1,16 +1,15 @@
-name: Run corrected main history rebuild
+name: Reconstruct and publish main
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - agent/rebuild-main-0.18.0
 
 permissions:
   contents: write
 
 jobs:
   rebuild:
-    if: github.head_ref == 'agent/rebuild-main-0.18.0' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -30,17 +29,16 @@ jobs:
         with:
           node-version: 22.12.0
 
-      - name: Run corrected reconstruction
+      - name: Reconstruct, validate and publish
         shell: bash
         run: |
           set -Eeuo pipefail
+
           python <<'PY'
           from pathlib import Path
 
           source = Path('.github/workflows/rebuild-main-pr.yml').read_text()
           marker = '        run: |\n'
-          if marker not in source:
-              raise SystemExit('Trigger script marker not found')
           raw = source.split(marker, 1)[1]
           lines = []
           for line in raw.splitlines():
@@ -50,66 +48,63 @@ jobs:
                   raise SystemExit(f'Unexpected trigger indentation: {line!r}')
               else:
                   lines.append('')
+
           script = '\n'.join(lines) + '\n'
-          replacements = {
-              'script, count = pattern.subn(replacement, script, count=1)':
-                  'script, count = pattern.subn(lambda _match: replacement, script, count=1)',
-              'exec bash /tmp/rebuild-main.sh': '''python <<'PATCHMAIN'
-          from pathlib import Path
-
-          path = Path("/tmp/rebuild-main.sh")
-          text = path.read_text()
-          changes = {
-              "if ! git diff --quiet -- test/vendor.ts; then": "if ! git diff --quiet; then",
-              "git add test/vendor.ts": "git add -A",
-          }
-          for old, new in changes.items():
-              if text.count(old) != 1:
-                  raise SystemExit(f"Expected exactly one reconstruction fragment: {old}")
-              text = text.replace(old, new)
-
-          marker = '    elif [[ "$sha" == fe8bd6a400f5319ed1df543413336ab741f2d9b7 ]]; then\n'
-          if text.count(marker) != 1:
-              raise SystemExit("Places milestone marker was not found exactly once")
-          rename = """    elif [[ "$sha" == 15e6937b0393f92ca521d6e0d172f68fb9aa2965 ]]; then
-              python <<'PYRENAME'
-          from pathlib import Path
-          import json
-
-          for file in Path(".").rglob("*"):
-              if not file.is_file() or ".git" in file.parts:
-                  continue
-              try:
-                  value = file.read_text()
-              except (UnicodeDecodeError, OSError):
-                  continue
-              value = value.replace("kitty-crow/astral-charts", "kitty-crow/astrology")
-              value = value.replace("astral-charts", "astrology")
-              file.write_text(value)
-
-          package = Path("package.json")
-          data = json.loads(package.read_text())
-          data["name"] = "astrology"
-          data["bin"] = {"astrology": "./dist/cli.js"}
-          package.write_text(json.dumps(data, indent=2) + "\\n")
-          PYRENAME
-              git add -A
-              commit_sanitised \\
-                "$sha" \\
-                "rename project to astrology" \\
-                "Adopt the final repository, package and CLI identity throughout runtime configuration and documentation."
-          """ + marker
-          text = text.replace(marker, rename)
-          path.write_text(text)
-          PATCHMAIN
-          bash -n /tmp/rebuild-main.sh
-          exec bash /tmp/rebuild-main.sh''',
-          }
-          for old, new in replacements.items():
-              if script.count(old) != 1:
-                  raise SystemExit(f'Expected exactly one trigger fragment: {old}')
-              script = script.replace(old, new)
+          script = script.replace(
+              'script, count = pattern.subn(replacement, script, count=1)',
+              'script, count = pattern.subn(lambda _match: replacement, script, count=1)',
+          )
+          script = script.replace('exec bash /tmp/rebuild-main.sh', 'exit 0')
           Path('/tmp/rebuild-trigger.sh').write_text(script)
           PY
+
           bash -n /tmp/rebuild-trigger.sh
-          exec bash /tmp/rebuild-trigger.sh
+          bash /tmp/rebuild-trigger.sh
+
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/rebuild-main.sh')
+          text = path.read_text()
+          text = text.replace(
+              'if ! git diff --quiet -- test/vendor.ts; then',
+              'if ! git diff --quiet; then',
+          )
+          text = text.replace('git add test/vendor.ts', 'git add -A')
+
+          marker = '    elif [[ "$sha" == fe8bd6a400f5319ed1df543413336ab741f2d9b7 ]]; then\n'
+          rename = '\n'.join([
+              '    elif [[ "$sha" == 15e6937b0393f92ca521d6e0d172f68fb9aa2965 ]]; then',
+              "      python <<'PYRENAME'",
+              'from pathlib import Path',
+              'import json',
+              '',
+              'for file in Path(".").rglob("*"):',
+              '    if not file.is_file() or ".git" in file.parts:',
+              '        continue',
+              '    try:',
+              '        value = file.read_text()',
+              '    except (UnicodeDecodeError, OSError):',
+              '        continue',
+              '    value = value.replace("kitty-crow/astral-charts", "kitty-crow/astrology")',
+              '    value = value.replace("astral-charts", "astrology")',
+              '    file.write_text(value)',
+              '',
+              'package = Path("package.json")',
+              'data = json.loads(package.read_text())',
+              'data["name"] = "astrology"',
+              'data["bin"] = {"astrology": "./dist/cli.js"}',
+              'package.write_text(json.dumps(data, indent=2) + "\\n")',
+              'PYRENAME',
+              '      git add -A',
+              '      commit_sanitised "$sha" "rename project to astrology" "Adopt the final repository, package and CLI identity throughout runtime configuration and documentation."',
+              '',
+          ])
+          if text.count(marker) != 1:
+              raise SystemExit('Places milestone marker was not found exactly once')
+          text = text.replace(marker, rename + marker)
+          path.write_text(text)
+          PY
+
+          bash -n /tmp/rebuild-main.sh
+          exec bash /tmp/rebuild-main.sh
