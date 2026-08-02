@@ -37,6 +37,12 @@ const iso = (ms: number): string => new Date(ms).toISOString();
 
 const idFor = (): string => randomBytes(4).toString("hex");
 
+const encode = <T>(record: TemporaryJobRecord<T>): string => {
+  const value = JSON.stringify(record);
+  if (value === undefined) throw new Error("Temporary job state must be JSON-serialisable");
+  return value;
+};
+
 const withId = (progress: ChartProgress, id: string): ChartProgress => ({
   ...progress,
   jobId: id,
@@ -107,7 +113,7 @@ export class TemporaryJobStore<T> {
       const id = idFor();
       const record = this.#record(id, null, progress, state, nowMs, nowMs);
       try {
-        await writeFile(this.#path(id), JSON.stringify(record), {
+        await writeFile(this.#path(id), encode(record), {
           encoding: "utf8",
           flag: "wx",
           mode: 0o600,
@@ -239,7 +245,7 @@ export class TemporaryJobStore<T> {
       `.${record.id}.${process.pid}.${randomBytes(4).toString("hex")}.tmp`,
     );
     try {
-      await writeFile(temporary, JSON.stringify(record), {
+      await writeFile(temporary, encode(record), {
         encoding: "utf8",
         flag: "wx",
         mode: 0o600,
