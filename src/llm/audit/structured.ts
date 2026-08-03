@@ -122,11 +122,15 @@ export const auditStructured = <T extends object>(
     errors: [],
   };
   const audited = visit(value, state, profile.id, null) as T;
+  const completion = auditCompletion(audited, profile.id);
   const errors = [...new Set([
     ...state.errors,
-    ...auditCompletion(audited, profile.id).map(({ message }) => message),
+    ...completion.map(({ message }) => message),
   ])];
   const needsRepair = errors.length > 0;
+  const repair = state.errors.length === 0 && completion.length > 0
+    ? "completion" as const
+    : "audit" as const;
 
   return {
     valid: !needsRepair,
@@ -137,6 +141,6 @@ export const auditStructured = <T extends object>(
     // Should heuristic repair remain imperfect, keep the parsed candidate and
     // finish the chart rather than throwing away all accepted work.
     soft: needsRepair,
-    ...(needsRepair ? { repair: "completion" as const } : {}),
+    ...(needsRepair ? { repair } : {}),
   };
 };
