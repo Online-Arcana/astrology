@@ -17,7 +17,7 @@ export interface CompletionRepair {
 }
 
 const terminal = /[.!?…”’)]$/u;
-const dangling = /\b(?:and|or|but|because|although|while|with|without|through|towards?|into|from|of|for|to|as|than|which|that|who|whose|when|where|if|unless|despite|including|such as)\s*$/iu;
+const dangling = /\b(?:and|or|but|because|although|while|whereas|if|unless)\s*$/iu;
 const continuation = /\b(?:continued|continue|to be continued|more follows|the rest|remaining fields?)\s*$/iu;
 const openEnding = /[,;:/\-–—]\s*$/u;
 
@@ -95,5 +95,8 @@ export const auditCompletion = (value: unknown, root = "output"): CompletionIssu
   visit(value, root, null, issues);
   return issues;
 };
+
+export const completionIssuesSoft = (issues: readonly CompletionIssue[]): boolean =>
+  issues.length > 0 && issues.every(({ code }) => code !== "missing_required_content");
 
 export const incompleteOutput = (value: unknown): boolean => auditCompletion(value).length > 0;
