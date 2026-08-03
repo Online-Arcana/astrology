@@ -40,6 +40,28 @@ const configFor = (apiKey: string, options: CalculationOptions): Config => readC
   ASTRAL_BILL_DIR: "browser-only",
 });
 
+const optionsFor = (checkpoint: ResumableChartGenerationCheckpoint): CalculationOptions => {
+  if (checkpoint.schema === "astral-generation-recovery/1.0.0") {
+    const settings = checkpoint.calculation as unknown as {
+      settings?: { primaryZodiac?: unknown; siderealAyanamsha?: unknown; interpretationMode?: unknown };
+    };
+    const zodiac = settings.settings?.primaryZodiac === "sidereal" ? "sidereal" : "tropical";
+    const ayanamsha = settings.settings?.siderealAyanamsha;
+    return {
+      primaryZodiac: zodiac,
+      interpretationMode: zodiac,
+      ayanamsha: ayanamsha === "fagan_bradley" || ayanamsha === "krishnamurti" || ayanamsha === "raman"
+        ? ayanamsha
+        : "lahiri",
+    };
+  }
+  return {
+    primaryZodiac: checkpoint.calculation.settings.primaryZodiac,
+    interpretationMode: checkpoint.calculation.settings.interpretationMode,
+    ayanamsha: checkpoint.calculation.settings.siderealAyanamsha ?? "lahiri",
+  };
+};
+
 const signedGeneratedFile = async (
   generated: GeneratedChart,
   key: BrowserSigningKey | null,
@@ -53,27 +75,16 @@ const signedGeneratedFile = async (
 };
 
 export class BrowserRuntime {
-  readonly #config: Config;
+  readonly #apiKey: string;
   readonly #places: Promise<PlaceCatalogue>;
   readonly #signal: AbortSignal | undefined;
 
-  constructor(apiKey: string, options: CalculationOptions, signal?: AbortSignal) {
+  constructor(apiKey: string, signal?: AbortSignal) {
     const selected = apiKey.trim();
     if (selected.length === 0) throw new Error("Enter and save an OpenAI API key before generating a chart");
-    if (options.primaryZodiac !== options.interpretationMode) {
-      throw new Error("The browser runtime requires one selected zodiac system");
-    }
-    this.#config = configFor(selected, options);
+    this.#apiKey = selected;
     this.#places = loadCscCatalogue();
     this.#signal = signal;
-  }
-
-  get options(): CalculationOptions {
-    return {
-      primaryZodiac: this.#config.chart.primaryZodiac,
-      ayanamsha: this.#config.chart.ayanamsha,
-      interpretationMode: this.#config.chart.interpretationMode,
-    };
   }
 
   places(): Promise<PlaceCatalogue> {
@@ -85,16 +96,22 @@ export class BrowserRuntime {
     ...(this.#signal === undefined ? {} : { signal: this.#signal }),
   });
 
+  async #service(options: CalculationOptions) {
+    if (options.primaryZodiac !== options.interpretationMode) {
+      throw new Error("The browser runtime requires one selected zodiac system");
+    }
+    return loadChartGenerationService(configFor(this.#apiKey, options), browserVersion, {
+      fetch: this.#fetch,
+    });
+  }
+
   async generate(
     birth: BirthInput,
     options: CalculationOptions,
     hooks: GenerationHooks,
     signingKey: BrowserSigningKey | null,
   ): Promise<BrowserGeneratedChart> {
-    const service = await loadChartGenerationService(this.#config, browserVersion, {
-      fetch: this.#fetch,
-    });
-    const generated = await service.generate(birth, options, hooks);
+    const generated = await (await this.#service(options)).generate(birth, options, hooks);
     return {
       ...generated,
       file: await signedGeneratedFile(generated, signingKey),
@@ -107,10 +124,7 @@ export class BrowserRuntime {
     hooks: GenerationHooks,
     signingKey: BrowserSigningKey | null,
   ): Promise<BrowserGeneratedChart> {
-    const service = await loadChartGenerationService(this.#config, browserVersion, {
-      fetch: this.#fetch,
-    });
-    const generated = await service.resume(checkpoint, hooks);
+    const generated = await (await this.#service(optionsFor(checkpoint))).resume(checkpoint, hooks);
     return {
       ...generated,
       file: await signedGeneratedFile(generated, signingKey),
