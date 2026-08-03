@@ -61,13 +61,27 @@ export const buildSnapshot = async (
 
 export const snapshotText = (snapshot: InterpretationSnapshot): string => JSON.stringify(snapshot);
 
+/**
+ * Conservative JSON token estimate used before a model request is sent. JSON
+ * commonly tokenises more densely than ordinary prose, so three UTF-16 code
+ * units per token intentionally leaves headroom rather than chasing an exact
+ * tokenizer for every configured model.
+ */
+export const snapshotTokenEstimate = (snapshot: InterpretationSnapshot): number =>
+  Math.max(1, Math.ceil(snapshotText(snapshot).length / 3));
+
 export const snapshotInput = (
   fileId: string | null,
   snapshot: InterpretationSnapshot,
   input: unknown,
 ): unknown => {
-  const text = JSON.stringify({ snapshotRevision: snapshot.revision, snapshotSha256: snapshot.sha256, input });
   if (fileId === null) return { snapshot, input };
+  const text = JSON.stringify({
+    snapshotRevision: snapshot.revision,
+    snapshotSha256: snapshot.sha256,
+    snapshotTokenEstimate: snapshotTokenEstimate(snapshot),
+    input,
+  });
   return [{
     role: "user",
     content: [
