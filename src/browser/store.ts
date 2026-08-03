@@ -57,31 +57,35 @@ export class BrowserStore {
   async put<T extends { id: string }>(store: StoreName, value: T): Promise<void> {
     const database = await this.#database;
     const transaction = database.transaction(store, "readwrite");
+    const done = transactionDone(transaction);
     transaction.objectStore(store).put(structuredClone(value));
-    await transactionDone(transaction);
+    await done;
   }
 
   async get<T>(store: StoreName, id: string): Promise<T | null> {
     const database = await this.#database;
     const transaction = database.transaction(store, "readonly");
+    const done = transactionDone(transaction);
     const value = await requestResult(transaction.objectStore(store).get(id));
-    await transactionDone(transaction);
+    await done;
     return value === undefined ? null : value as T;
   }
 
   async all<T>(store: StoreName): Promise<T[]> {
     const database = await this.#database;
     const transaction = database.transaction(store, "readonly");
+    const done = transactionDone(transaction);
     const values = await requestResult(transaction.objectStore(store).getAll());
-    await transactionDone(transaction);
+    await done;
     return values as T[];
   }
 
   async delete(store: StoreName, id: string): Promise<void> {
     const database = await this.#database;
     const transaction = database.transaction(store, "readwrite");
+    const done = transactionDone(transaction);
     transaction.objectStore(store).delete(id);
-    await transactionDone(transaction);
+    await done;
   }
 
   jobs(): Promise<BrowserJob[]> {
