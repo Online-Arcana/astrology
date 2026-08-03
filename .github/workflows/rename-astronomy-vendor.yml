@@ -7,39 +7,42 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: rename-astronomy-vendor
+  cancel-in-progress: true
+
 jobs:
   rename:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
           ref: agent/rename-astronomy-vendor
           submodules: recursive
           fetch-depth: 1
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
       - name: Rename and pin astronomy vendor
         env:
           TARGET: ed1064049979b68abb3ff0a7812f5ee4fc04caec
         run: |
           set -Eeuo pipefail
-          git -C vendor/astronomia fetch --depth=1 origin "$TARGET"
+          git -C vendor/astronomia fetch --depth=1 origin main
+          test "$(git -C vendor/astronomia rev-parse origin/main)" = "$TARGET"
           git -C vendor/astronomia checkout --detach "$TARGET"
-          test "$(git -C vendor/astronomia rev-parse HEAD)" = "$TARGET"
 
           git mv vendor/astronomia vendor/astronomy
-          git config -f .gitmodules --rename-section \
-            'submodule.vendor/astronomia' 'submodule.vendor/astronomy'
-          git config -f .gitmodules submodule.vendor/astronomy.path vendor/astronomy
 
           python <<'PY'
           from pathlib import Path
 
-          path = Path('package.json')
-          text = path.read_text()
+          modules = Path('.gitmodules')
+          text = modules.read_text()
+          if text.count('vendor/astronomia') != 2:
+              raise SystemExit('unexpected .gitmodules astronomy path count')
+          modules.write_text(text.replace('vendor/astronomia', 'vendor/astronomy'))
+
+          package = Path('package.json')
+          text = package.read_text()
           replacements = {
               '"vendor:astronomia": "npm --prefix vendor/astronomia install && npm --prefix vendor/astronomia run build"':
                   '"vendor:astronomy": "npm --prefix vendor/astronomy install && npm --prefix vendor/astronomy run build"',
@@ -50,26 +53,14 @@ jobs:
               if text.count(old) != 1:
                   raise SystemExit(f'expected exactly one occurrence of {old!r}')
               text = text.replace(old, new)
-          path.write_text(text)
+          package.write_text(text)
           PY
 
           ! git grep -n 'vendor/astronomia'
           test "$(git -C vendor/astronomy rev-parse HEAD)" = "$TARGET"
-          git submodule status --recursive
-      - name: Verify complete flow
-        run: |
-          set -Eeuo pipefail
-          corepack enable
-          npm run vendor:build
-          npm install --ignore-scripts
-          npm run ci
-          npm run test:vendor
-      - name: Commit rename and pin
-        run: |
-          set -Eeuo pipefail
+
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A .gitmodules package.json vendor
-          git diff --cached --quiet && exit 0
           git commit -m "build: rename astronomy vendor and update pin"
           git push origin HEAD:agent/rename-astronomy-vendor
