@@ -56,6 +56,8 @@ await test("public frontend contains no local identity or embedded secret", asyn
   const files = await Promise.all([
     readFile("public/index.html", "utf8"),
     readFile("public/style.css", "utf8"),
+    readFile("public/key-export.js", "utf8"),
+    readFile("scripts/build-pages.mjs", "utf8"),
     readFile("src/browser/app.ts", "utf8"),
     readFile("src/browser/runtime.ts", "utf8"),
     readFile("src/browser/keys.ts", "utf8"),
@@ -67,6 +69,16 @@ await test("public frontend contains no local identity or embedded secret", asyn
   assert(!/id="cityQuery"[^>]*\svalue=/u.test(text), "city search must not have a prefilled location");
   assert(/localStorage/u.test(text), "client keys must be stored locally");
   assert(/IndexedDB|indexedDB/u.test(text), "chart recovery must use browser database storage");
+});
+
+await test("generated signing keys can be backed up and restored", async () => {
+  const controls = await readFile("public/key-export.js", "utf8");
+  const build = await readFile("scripts/build-pages.mjs", "utf8");
+  assert(/copySigningKeyBundle/u.test(controls), "frontend must offer signing-key copy");
+  assert(/downloadSigningKeyBundle/u.test(controls), "frontend must offer signing-key download");
+  assert(/importSigningKeyBundle/u.test(controls), "frontend must offer signing-key import");
+  assert(/key-export\.js/u.test(build), "Pages build must load signing-key backup controls");
+  assert(/privatePkcs8/u.test(controls) && /publicRaw/u.test(controls), "backup must preserve the complete signing pair");
 });
 
 console.log(`1..${passed}`);
