@@ -50,16 +50,16 @@ const signedGeneratedFile = async (
 };
 
 export class BrowserRuntime {
-  readonly #apiKey: string;
   readonly #config: Config;
   readonly #places: Promise<PlaceCatalogue>;
+  readonly #signal: AbortSignal | undefined;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, signal?: AbortSignal) {
     const selected = apiKey.trim();
     if (selected.length === 0) throw new Error("Enter and save an OpenAI API key before generating a chart");
-    this.#apiKey = selected;
     this.#config = configFor(selected);
     this.#places = loadCscCatalogue();
+    this.#signal = signal;
   }
 
   get options(): CalculationOptions {
@@ -74,6 +74,11 @@ export class BrowserRuntime {
     return this.#places;
   }
 
+  #fetch: typeof fetch = async (resource, init) => globalThis.fetch(resource, {
+    ...init,
+    ...(this.#signal === undefined ? {} : { signal: this.#signal }),
+  });
+
   async generate(
     birth: BirthInput,
     options: CalculationOptions,
@@ -81,7 +86,7 @@ export class BrowserRuntime {
     signingKey: BrowserSigningKey | null,
   ): Promise<BrowserGeneratedChart> {
     const service = await loadChartGenerationService(this.#config, browserVersion, {
-      fetch: globalThis.fetch.bind(globalThis),
+      fetch: this.#fetch,
     });
     const generated = await service.generate(birth, options, hooks);
     return {
@@ -97,7 +102,7 @@ export class BrowserRuntime {
     signingKey: BrowserSigningKey | null,
   ): Promise<BrowserGeneratedChart> {
     const service = await loadChartGenerationService(this.#config, browserVersion, {
-      fetch: globalThis.fetch.bind(globalThis),
+      fetch: this.#fetch,
     });
     const generated = await service.resume(checkpoint, hooks);
     return {
