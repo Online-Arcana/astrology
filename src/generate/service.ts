@@ -42,7 +42,8 @@ export interface GeneratedChart {
   interpretation: InterpretationRun;
   chart: AstralChart;
   file: AstralFile;
-  bill: ChartBill;
+  /** Present for the built-in OpenAI runtime; optional for compatible custom generators. */
+  bill?: ChartBill;
 }
 
 export interface ChartGenerationCheckpoint {
@@ -339,7 +340,9 @@ export const loadChartGenerationService = async (
       zodiac: value.system.zodiac,
       ayanamsha: value.settings.siderealAyanamsha ?? "none",
     },
-    contextTokenBudget: config.chart.laneContextTokens,
+    ...(config.chart.laneContextTokens === undefined
+      ? {}
+      : { contextTokenBudget: config.chart.laneContextTokens }),
     onUsage,
     ...openai,
   });
