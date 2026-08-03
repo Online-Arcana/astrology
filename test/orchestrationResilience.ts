@@ -62,7 +62,7 @@ const unit = (
   ...(onAccept === undefined ? {} : { onAccept }),
 });
 
-test("a repeated generic semantic miss is accepted after one correction", async () => {
+test("a generic semantic warning is accepted without another primary attempt", async () => {
   const client = new Client({ summary: "A source-grounded interpretation." });
   const soft: string[][] = [];
   const accepted: object[] = [];
@@ -77,10 +77,10 @@ test("a repeated generic semantic miss is accepted after one correction", async 
     },
   );
 
-  assert.equal(client.calls, 2);
-  assert.equal(result.calls, 2);
-  assert.equal(result.retries, 1);
-  assert.equal(result.units["tropical.aspect.moon_south_node_mean_sextile"]?.attempts, 2);
+  assert.equal(client.calls, 1);
+  assert.equal(result.calls, 1);
+  assert.equal(result.retries, 0);
+  assert.equal(result.units["tropical.aspect.moon_south_node_mean_sextile"]?.attempts, 1);
   assert.equal(soft.length, 1);
   assert.equal(accepted.length, 1);
 });
