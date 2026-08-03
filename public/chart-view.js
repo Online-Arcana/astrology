@@ -78,6 +78,8 @@ const progressCard = document.querySelector("#progressCard");
 const progressNumbers = document.querySelector("#progressNumbers");
 const progressState = {
   jobId: null,
+  pendingJobId: null,
+  visible: false,
   startedAt: Date.now(),
   startingCompleted: 0,
   lastCompleted: 0,
@@ -164,12 +166,6 @@ const setRecoveryKey = (jobId) => {
   if (copy instanceof HTMLButtonElement) copy.disabled = false;
 };
 
-const recoveryKeyFromRecords = () => {
-  const heading = document.querySelector("#recoveryList .record strong")?.textContent ?? "";
-  const match = /^Chart\s+([a-f0-9]{12})$/u.exec(heading.trim());
-  return match?.[1] ?? null;
-};
-
 const openJobsDatabase = () => new Promise((resolve, reject) => {
   const request = indexedDB.open("astral-browser", 1);
   request.addEventListener("success", () => resolve(request.result), { once: true });
@@ -177,8 +173,7 @@ const openJobsDatabase = () => new Promise((resolve, reject) => {
 });
 
 const latestRecoveryKey = async () => {
-  const fromRecords = recoveryKeyFromRecords();
-  if (fromRecords !== null) return fromRecords;
+  if (progressState.jobId !== null) return progressState.jobId;
   const database = await openJobsDatabase();
   try {
     if (!database.objectStoreNames.contains("jobs")) return null;
@@ -189,7 +184,7 @@ const latestRecoveryKey = async () => {
       request.addEventListener("error", () => reject(request.error ?? new Error("Could not read recovery jobs")), { once: true });
     });
     const latest = jobs
-      .filter((job) => typeof job?.id === "string")
+      .filter((job) => typeof job?.id === "string" && Date.parse(String(job.updatedAt ?? "")) >= progressState.startedAt - 2000)
       .sort((left, right) => String(right.updatedAt ?? "").localeCompare(String(left.updatedAt ?? "")))[0];
     return latest?.id ?? null;
   } finally {
@@ -218,6 +213,22 @@ const syncProgress = () => {
   if (match === null) return;
   const completed = Number.parseInt(match[1], 10);
   const total = Number.parseInt(match[2], 10);
+  const visible = progressCard?.classList.contains("hidden") === false;
+  if (visible && !progressState.visible) {
+    progressState.visible = true;
+    progressState.startedAt = Date.now();
+    progressState.startingCompleted = completed;
+    progressState.jobId = null;
+    const output = document.querySelector("#activeRecoveryKey");
+    if (output !== null) output.textContent = "Waiting for the first safe checkpoint…";
+    const copy = document.querySelector("#copyActiveRecoveryKey");
+    if (copy instanceof HTMLButtonElement) copy.disabled = true;
+    if (progressState.pendingJobId !== null) setRecoveryKey(progressState.pendingJobId);
+    progressState.pendingJobId = null;
+  } else if (!visible) {
+    progressState.visible = false;
+    return;
+  }
   progressState.lastCompleted = completed;
   progressState.lastTotal = total;
 
@@ -245,6 +256,13 @@ if (progressCard instanceof HTMLElement) {
 }
 const recoveryList = document.querySelector("#recoveryList");
 if (recoveryList instanceof HTMLElement) {
+  recoveryList.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement) || target.textContent?.trim() !== "Resume") return;
+    const heading = target.closest(".record")?.querySelector("strong")?.textContent ?? "";
+    const match = /^Chart\s+([a-f0-9]{12})$/u.exec(heading.trim());
+    if (match?.[1] !== undefined) progressState.pendingJobId = match[1];
+  }, { capture: true });
   new MutationObserver(() => void syncRecoveryKey()).observe(recoveryList, { childList: true, subtree: true });
 }
 setInterval(syncProgress, 1000);
