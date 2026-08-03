@@ -10,7 +10,7 @@ import { cliHelp, parseCliArgs, type PlaceCommand } from "./interface/cliArgs.js
 import { parseCalculationRequest } from "./interface/request.js";
 import { loadApiRuntime } from "./interface/runtime.js";
 import { listenAstralServer } from "./interface/server.js";
-import type { AstralFile, TrustedAuthority } from "./types/file.js";
+import type { TrustedAuthority } from "./types/file.js";
 
 const readStdin = async (): Promise<string> => {
   let text = "";
@@ -172,23 +172,27 @@ export const runCli = async (args: readonly string[]): Promise<void> => {
       config.chart.laneContextTokens ?? 60_000,
       history.averageCompletedChartCostUsd,
     );
-    let latest: ChartBill | null = null;
+    const latest: { value: ChartBill | null } = { value: null };
     try {
       const generated = await runtime.generator.generate(parsed.birth, parsed.options, {
         onBill: (bill) => {
-          latest = bill;
+          latest.value = bill;
           runtime.bills.live(bill);
           view.draw(bill);
         },
       });
-      await runtime.bills.save(generated.bill);
-      view.finish(generated.bill);
+      const bill = generated.bill ?? latest.value;
+      if (bill !== null) {
+        await runtime.bills.save(bill);
+        view.finish(bill);
+      }
       await writeText(command.output, encodeAstralFile(generated.file, command.pretty));
       return;
     } catch (cause: unknown) {
-      if (latest !== null && latest.status !== "running") {
-        await runtime.bills.save(latest);
-        view.finish(latest);
+      const bill = latest.value;
+      if (bill !== null && bill.status !== "running") {
+        await runtime.bills.save(bill);
+        view.finish(bill);
       }
       throw cause;
     }
