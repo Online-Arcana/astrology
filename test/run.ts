@@ -155,7 +155,7 @@ test("JSON references must resolve and remain in the permitted set", () => {
   ok(!refsValid(root, [ref], new Set()), "disallowed reference");
 });
 
-test("interpretation reuses one bounded conversation, retries narrowly and routes models", async () => {
+test("interpretation reuses one bounded conversation, repairs narrowly and routes models", async () => {
   const ref = "#/systems/tropical/points/mars" as const;
   const calculation = { systems: { tropical: { points: { mars: { status: "exact", value: 17 } } } } };
   const bad = {
@@ -212,9 +212,9 @@ test("interpretation reuses one bounded conversation, retries narrowly and route
   );
   equal(result.conversationId, "conv_chart_one", "foundation conversation");
   equal(result.calls, 3, "call count");
-  equal(result.retries, 1, "narrow retry count");
-  equal(result.units["tropical-sexuality"]?.attempts, 2, "section attempts");
-  equal(seenModels.join(","), "gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano", "model routing");
+  equal(result.retries, 1, "small repair count");
+  equal(result.units["tropical-sexuality"]?.attempts, 1, "section primary attempts");
+  equal(seenModels.join(","), "gpt-5.4-mini,gpt-5.4-nano,gpt-5.4-nano", "model routing");
 });
 
 test("separate chart runs never share a conversation", async () => {
