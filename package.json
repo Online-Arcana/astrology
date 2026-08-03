@@ -1,6 +1,6 @@
 {
   "name": "astrology",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "Library for astrology calculations, chart geometry, and interpretation",
   "type": "module",
   "license": "MIT",
@@ -14,9 +14,10 @@
   "scripts": {
     "check": "tsc -p tsconfig.json --noEmit",
     "build": "tsc -p tsconfig.build.json",
-    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js && node .test/test/geometry.js && node .test/test/points.js && node .test/test/dignity.js && node .test/test/derived.js && node .test/test/patterns.js && node .test/test/eclipses.js && node .test/test/compatibility.js && node .test/test/service.js && node .test/test/interfaces.js && node .test/test/chartFile.js && node .test/test/audit.js && node .test/test/completionRepair.js && node .test/test/auditHook.js && node .test/test/openaiTransport.js && node .test/test/openaiTransportTimeout.js && node .test/test/openaiFiles.js && node .test/test/openaiRuntime.js && node .test/test/contextWindow.js && node .test/test/billing.js && node .test/test/orchestrationResilience.js && node .test/test/recovery.js && node .test/test/crossUnitCoherence.js && node .test/test/waves.js && node .test/test/freshWaves.js && node .test/test/recoveryMigration.js && node .test/test/publicCompatibility.js && node .test/test/release019.js",
+    "build:pages": "node scripts/build-pages.mjs",
+    "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js && node .test/test/calculation.js && node .test/test/geometry.js && node .test/test/points.js && node .test/test/dignity.js && node .test/test/derived.js && node .test/test/patterns.js && node .test/test/eclipses.js && node .test/test/compatibility.js && node .test/test/service.js && node .test/test/interfaces.js && node .test/test/chartFile.js && node .test/test/audit.js && node .test/test/completionRepair.js && node .test/test/auditHook.js && node .test/test/openaiTransport.js && node .test/test/openaiTransportTimeout.js && node .test/test/openaiFiles.js && node .test/test/openaiRuntime.js && node .test/test/contextWindow.js && node .test/test/billing.js && node .test/test/orchestrationResilience.js && node .test/test/recovery.js && node .test/test/crossUnitCoherence.js && node .test/test/waves.js && node .test/test/freshWaves.js && node .test/test/recoveryMigration.js && node .test/test/publicCompatibility.js && node .test/test/browserFrontend.js && node .test/test/release020.js",
     "test:vendor": "tsc -p tsconfig.test.json && node .test/test/vendor.js",
-    "ci": "npm run check && npm run test && npm run build",
+    "ci": "npm run check && npm run test && npm run build && npm run build:pages",
     "start": "node dist/cli.js serve",
     "vendor:astronomy": "npm --prefix vendor/astronomy install && npm --prefix vendor/astronomy run build",
     "vendor:places": "npm --prefix vendor/places/packages/countries install --ignore-scripts --workspaces=false --no-audit && npm --prefix vendor/places/packages/countries audit --audit-level=low --workspaces=false && npm --prefix vendor/places/packages/countries run build",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
+    "esbuild": "^0.25.8",
     "tsx": "^4.20.6",
     "typescript": "^5.8.3"
   }
