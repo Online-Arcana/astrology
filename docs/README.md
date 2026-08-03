@@ -4,6 +4,7 @@ Start with the path that matches the work.
 
 ## Use the project
 
+- [Browser frontend](browser.md): client-only generation, local credentials, IndexedDB recovery, signing boundaries, bills and GitHub Pages.
 - [CLI and JSON API](interfaces.md): calculate charts, generate `.astral` files, validate files and browse places.
 - [Configuration](configuration.md): chart basis, models, bounded lanes, recovery and signing.
 - [Chart files](chart-files.md): assemble, encode, decode, sign and validate complete files.
@@ -34,6 +35,8 @@ Start with the path that matches the work.
 - [NLP audit](audit.md): semantic role, human-first style, completion, duplication and source references.
 
 ## Suggested reading paths
+
+**Using the static page:** browser → chart-files → format
 
 **Operating the CLI or server:** interfaces → configuration → chart-files → format
 
