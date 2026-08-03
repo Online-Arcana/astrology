@@ -5,6 +5,7 @@ import type { KeyId } from "../types/file.js";
 
 const openAiStorageKey = "astral.openai-key";
 const signingStorageKey = "astral.signing-key";
+const defaultIssuer = "astral-browser/local";
 
 export interface BrowserSigningKey extends AuthorityKeys {
   issuer: string;
@@ -23,13 +24,41 @@ export const parseSigningKey = (text: string): BrowserSigningKey => {
   try {
     value = JSON.parse(text) as unknown;
   } catch (cause) {
-    throw new Error("Signing key must be a JSON key bundle", { cause });
+    throw new Error("Stored signing key is not a JSON key bundle", { cause });
   }
-  if (!record(value)) throw new Error("Signing key must be a JSON object");
+  if (!record(value)) throw new Error("Stored signing key must be a JSON object");
   return {
     issuer: required(value["issuer"], "Signing key issuer"),
     privatePkcs8: required(value["privatePkcs8"], "Signing privatePkcs8"),
     publicRaw: required(value["publicRaw"], "Signing publicRaw"),
+  };
+};
+
+const publicRawFromPrivate = async (privatePkcs8: string): Promise<string> => {
+  const privateKey = await crypto.subtle.importKey(
+    "pkcs8",
+    ownedBuffer(unbase64url(privatePkcs8)),
+    { name: "Ed25519" },
+    true,
+    ["sign"],
+  );
+  const jwk = await crypto.subtle.exportKey("jwk", privateKey);
+  if (typeof jwk.x !== "string" || jwk.x.length === 0) {
+    throw new Error("The Ed25519 private key did not expose its public component");
+  }
+  return `base64url:${jwk.x}`;
+};
+
+/** Accept a complete JSON bundle or a bare base64url PKCS8 private key. */
+export const readSigningKey = async (text: string): Promise<BrowserSigningKey> => {
+  const selected = text.trim();
+  if (selected.length === 0) throw new Error("Signing key is required");
+  if (selected.startsWith("{")) return parseSigningKey(selected);
+  const privatePkcs8 = selected.startsWith("base64url:") ? selected : `base64url:${selected}`;
+  return {
+    issuer: defaultIssuer,
+    privatePkcs8,
+    publicRaw: await publicRawFromPrivate(privatePkcs8),
   };
 };
 
@@ -60,7 +89,7 @@ export const validateSigningKey = async (key: BrowserSigningKey): Promise<void> 
 };
 
 export const generateSigningKey = async (
-  issuer = "astral-browser/local",
+  issuer = defaultIssuer,
 ): Promise<BrowserSigningKey> => {
   const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
   const privatePkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", pair.privateKey));
