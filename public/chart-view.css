@@ -1,0 +1,132 @@
+.technical-group {
+  overflow: hidden;
+}
+
+.technical-group > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .9rem 1rem;
+  background: var(--surface-2);
+  color: var(--accent-strong);
+  cursor: pointer;
+  list-style: none;
+  font-weight: 800;
+}
+
+.technical-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.technical-group > summary::after {
+  content: "⌄";
+  flex: 0 0 auto;
+  font-size: 1.2rem;
+  transition: transform .15s ease;
+}
+
+.technical-group[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.technical-group[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.technical-group-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.technical-group-action {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.technical-group-body {
+  min-width: 0;
+}
+
+.generation-status-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  margin: .9rem 0 1.1rem;
+}
+
+.generation-stat {
+  min-width: 0;
+  padding: .85rem;
+  border: 1px solid var(--border);
+  border-radius: .9rem;
+  background: rgba(11, 9, 27, .52);
+}
+
+.generation-stat > span,
+.generation-stat > strong {
+  display: block;
+}
+
+.generation-stat > span {
+  margin-bottom: .3rem;
+  color: var(--muted);
+  font-size: .75rem;
+}
+
+.generation-stat > strong {
+  overflow-wrap: anywhere;
+}
+
+.recovery-key-stat {
+  grid-column: 1 / -1;
+}
+
+.recovery-key-value {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.recovery-key-value code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--accent-strong);
+}
+
+.recovery-key-value button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .technical-group > summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .technical-group-action {
+    margin-left: 0;
+  }
+
+  .generation-status-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .recovery-key-stat {
+    grid-column: auto;
+  }
+
+  .recovery-key-value {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recovery-key-value button {
+    width: 100%;
+  }
+}
