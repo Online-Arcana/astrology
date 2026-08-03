@@ -47,6 +47,10 @@ label {
   word-break: break-word;
 }
 
+#saveOpenAiKey {
+  display: none !important;
+}
+
 .inline {
   width: 100%;
 }
