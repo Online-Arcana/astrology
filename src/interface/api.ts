@@ -1,3 +1,7 @@
+import { fetchOpenAICosts } from "../billing/openaiCosts.js";
+import { openAiPriceCatalogue } from "../billing/pricing.js";
+import type { BillStore } from "../billing/store.js";
+import type { ChartBill } from "../billing/types.js";
 import { CalculationUnavailableError, type CalculationOptions, type CalculationService } from "../calculate/service.js";
 import { validateAstralFile } from "../file/validate.js";
 import type { ChartGenerationService } from "../generate/service.js";
@@ -23,6 +27,10 @@ export interface ApiRuntime {
   options: CalculationOptions;
   places: PlaceCatalogue;
   version: string;
+  /** Optional for backwards-compatible custom runtimes. */
+  bills?: BillStore;
+  /** Optional admin credential used only by the provider-cost endpoint. */
+  openAiAdminKey?: string | null;
 }
 
 const response = (status: number, body: unknown): ApiResponse => ({ status, body });
@@ -38,6 +46,16 @@ const required = (query: URLSearchParams, key: string): string => {
   const value = query.get(key)?.trim();
   if (!value) throw new Error(`${key} query parameter is required`);
   return value;
+};
+const unix = (query: URLSearchParams, key: string, requiredValue: boolean): number | null => {
+  const value = query.get(key);
+  if (value === null || value.trim().length === 0) {
+    if (requiredValue) throw new Error(`${key} query parameter is required`);
+    return null;
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) throw new Error(`${key} must be a non-negative Unix timestamp`);
+  return parsed;
 };
 
 const inputFailure = (cause: unknown): ApiResponse => {
@@ -77,13 +95,27 @@ const generation = async (request: ApiRequest, runtime: ApiRuntime): Promise<Api
   } catch (cause) {
     return error(400, "invalid_request", cause instanceof Error ? cause.message : "Invalid request");
   }
+  const latest: { value: ChartBill | null } = { value: null };
   try {
-    const generated = await runtime.generator.generate(parsed.birth, parsed.options);
-    return response(200, { ok: true, file: generated.file });
+    const generated = await runtime.generator.generate(parsed.birth, parsed.options, {
+      onBill: (bill) => {
+        latest.value = bill;
+        runtime.bills?.live(bill);
+      },
+    });
+    const bill = generated.bill ?? latest.value;
+    if (bill !== null) await runtime.bills?.save(bill);
+    return response(200, {
+      ok: true,
+      file: generated.file,
+      ...(bill === null ? {} : { bill }),
+    });
   } catch (cause) {
+    const bill = latest.value;
+    if (bill !== null && bill.status !== "running") await runtime.bills?.save(bill);
     const input = inputFailure(cause);
     if (input.status !== 500) return input;
-    return error(502, "interpretation_failed", "Interpreted chart generation failed");
+    return error(502, "interpretation_failed", cause instanceof Error ? cause.message : "Interpreted chart generation failed");
   }
 };
 
@@ -155,6 +187,43 @@ const places = async (request: ApiRequest, runtime: ApiRuntime): Promise<ApiResp
   }
 };
 
+const billing = async (request: ApiRequest, runtime: ApiRuntime): Promise<ApiResponse> => {
+  const bills = runtime.bills;
+  if (bills === undefined) return error(503, "billing_not_configured", "Billing storage is not configured");
+  try {
+    switch (request.path) {
+      case "/v1/billing":
+        return response(200, { ok: true, summary: await bills.summary() });
+      case "/v1/billing/live":
+        return response(200, { ok: true, bills: bills.liveBills() });
+      case "/v1/billing/bills":
+        return response(200, { ok: true, bills: await bills.list() });
+      case "/v1/billing/bill": {
+        const bill = await bills.get(required(request.query, "id"));
+        return bill === null ? error(404, "bill_not_found", "Bill not found") : response(200, { ok: true, bill });
+      }
+      case "/v1/billing/pricing":
+        return response(200, { ok: true, pricing: openAiPriceCatalogue });
+      case "/v1/billing/provider-costs": {
+        const adminKey = runtime.openAiAdminKey ?? null;
+        if (adminKey === null) {
+          return error(503, "provider_costs_not_configured", "OPENAI_ADMIN_KEY is required for provider cost reconciliation");
+        }
+        const start = unix(request.query, "start_time", true) as number;
+        const end = unix(request.query, "end_time", false);
+        return response(200, {
+          ok: true,
+          costs: await fetchOpenAICosts(adminKey, start, end),
+        });
+      }
+      default:
+        return error(404, "not_found", "Route not found");
+    }
+  } catch (cause) {
+    return error(400, "invalid_billing_request", cause instanceof Error ? cause.message : "Billing request failed");
+  }
+};
+
 export const routeApi = async (request: ApiRequest, runtime: ApiRuntime): Promise<ApiResponse> => {
   const method = request.method.toUpperCase();
   if (method === "GET" && request.path === "/health") {
@@ -163,7 +232,12 @@ export const routeApi = async (request: ApiRequest, runtime: ApiRuntime): Promis
       service: "astral-charts",
       version: runtime.version,
       interpretedGeneration: runtime.generator !== null,
+      billing: runtime.bills !== undefined,
     });
+  }
+  if (request.path.startsWith("/v1/billing")) {
+    if (method !== "GET") return error(405, "method_not_allowed", "Billing routes require GET");
+    return billing(request, runtime);
   }
   if (request.path.startsWith("/v1/places/")) {
     if (method !== "GET") return error(405, "method_not_allowed", "Place routes require GET");

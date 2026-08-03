@@ -2,13 +2,15 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import process from "node:process";
+import type { ChartBill, UsageGroup } from "./billing/types.js";
 import { readConfig } from "./config.js";
 import { encodeAstralFile } from "./file/validate.js";
 import { routeApi, type ApiRequest, type ApiResponse } from "./interface/api.js";
 import { cliHelp, parseCliArgs, type PlaceCommand } from "./interface/cliArgs.js";
+import { parseCalculationRequest } from "./interface/request.js";
 import { loadApiRuntime } from "./interface/runtime.js";
 import { listenAstralServer } from "./interface/server.js";
-import type { AstralFile, TrustedAuthority } from "./types/file.js";
+import type { TrustedAuthority } from "./types/file.js";
 
 const readStdin = async (): Promise<string> => {
   let text = "";
@@ -89,6 +91,51 @@ const trustedAuthorities = async (path: string | null): Promise<TrustedAuthority
   throw new Error("Trusted-authority file must contain an array or a trustedAuthorities array");
 };
 
+const money = (value: number | null): string => value === null ? "unpriced" : `$${value.toFixed(6)}`;
+const tokens = (value: number): string => new Intl.NumberFormat("en-GB").format(value);
+const bar = (value: number, maximum: number, width = 22): string => {
+  const ratio = maximum <= 0 ? 0 : Math.min(1, value / maximum);
+  const filled = Math.round(width * ratio);
+  return `[${"█".repeat(filled)}${"░".repeat(width - filled)}]`;
+};
+const groupLine = (group: UsageGroup): string =>
+  `${group.key}: ${tokens(group.totalTokens)} tokens · ${tokens(group.inputTokens)} in · ${tokens(group.outputTokens)} out · ${money(group.costUsd)}`;
+
+class BillView {
+  readonly #limit: number;
+  readonly #average: number | null;
+  #lines = 0;
+
+  constructor(limit: number, average: number | null) {
+    this.#limit = limit;
+    this.#average = average;
+  }
+
+  draw(bill: ChartBill): void {
+    if (!process.stderr.isTTY) return;
+    const lines = [
+      `Chart cost ${money(bill.total.costUsd)} · ${tokens(bill.total.totalTokens)} tokens · historical average ${money(this.#average)}`,
+      ...bill.byLane.map((lane) => `${bar(lane.totalTokens, this.#limit)} ${groupLine(lane)}`),
+      "By model:",
+      ...bill.byModel.map((model) => `  ${groupLine(model)}`),
+    ];
+    if (this.#lines > 0) process.stderr.write(`\u001b[${this.#lines}A`);
+    for (const line of lines) process.stderr.write(`\u001b[2K${line}\n`);
+    for (let index = lines.length; index < this.#lines; index += 1) process.stderr.write("\u001b[2K\n");
+    if (this.#lines > lines.length) process.stderr.write(`\u001b[${this.#lines - lines.length}A`);
+    this.#lines = Math.max(this.#lines, lines.length);
+  }
+
+  finish(bill: ChartBill): void {
+    this.draw(bill);
+    if (!process.stderr.isTTY) {
+      process.stderr.write(`${JSON.stringify({ billing: bill })}\n`);
+      return;
+    }
+    process.stderr.write(`Final chart cost: ${money(bill.total.costUsd)} across ${tokens(bill.total.totalTokens)} tokens.\n`);
+  }
+}
+
 export const runCli = async (args: readonly string[]): Promise<void> => {
   const command = parseCliArgs(args);
   if (command.kind === "help") {
@@ -99,25 +146,56 @@ export const runCli = async (args: readonly string[]): Promise<void> => {
   const config = readConfig(process.env);
   const runtime = await loadApiRuntime(config, "0.19.0");
 
+  if (command.kind === "bills") {
+    await writeText(command.output, `${JSON.stringify(await runtime.bills.summary(), null, 2)}\n`);
+    return;
+  }
+
   if (command.kind === "calculate" || command.kind === "generate") {
     const body = calculationBody(
       parseJson(await readText(command.input), "Input"),
       command.optionOverrides,
     );
-    const result = await routeApi({
-      method: "POST",
-      path: command.kind === "calculate" ? "/v1/calculations" : "/v1/charts",
-      query: new URLSearchParams(),
-      body,
-    }, runtime);
-    if (command.kind === "calculate" || result.status < 200 || result.status >= 300) {
-      await output(command.output, result);
+    if (command.kind === "calculate") {
+      await output(command.output, await routeApi({
+        method: "POST",
+        path: "/v1/calculations",
+        query: new URLSearchParams(),
+        body,
+      }, runtime));
       return;
     }
-    const file = (result.body as { file?: unknown }).file as AstralFile | undefined;
-    if (!file) throw new Error("Chart generation returned no astral file");
-    await writeText(command.output, encodeAstralFile(file, command.pretty));
-    return;
+    if (runtime.generator === null) throw new Error("Interpreted chart generation requires OPENAI_API_KEY");
+    const parsed = parseCalculationRequest(body, runtime.options);
+    const history = await runtime.bills.summary();
+    const view = new BillView(
+      config.chart.laneContextTokens ?? 60_000,
+      history.averageCompletedChartCostUsd,
+    );
+    const latest: { value: ChartBill | null } = { value: null };
+    try {
+      const generated = await runtime.generator.generate(parsed.birth, parsed.options, {
+        onBill: (bill) => {
+          latest.value = bill;
+          runtime.bills.live(bill);
+          view.draw(bill);
+        },
+      });
+      const bill = generated.bill ?? latest.value;
+      if (bill !== null) {
+        await runtime.bills.save(bill);
+        view.finish(bill);
+      }
+      await writeText(command.output, encodeAstralFile(generated.file, command.pretty));
+      return;
+    } catch (cause: unknown) {
+      const bill = latest.value;
+      if (bill !== null && bill.status !== "running") {
+        await runtime.bills.save(bill);
+        view.finish(bill);
+      }
+      throw cause;
+    }
   }
 
   if (command.kind === "validate") {
@@ -158,6 +236,7 @@ export const runCli = async (args: readonly string[]): Promise<void> => {
     host: address.address,
     port: address.port,
     interpretedGeneration: runtime.generator !== null,
+    billing: true,
   })}\n`);
   const close = (): void => {
     server.close((cause) => {

@@ -19,6 +19,7 @@ export type CliCommand =
   | { kind: "validate"; input: string; output: string; trusted: string | null }
   | { kind: "serve"; host: string; port: number; bodyLimitBytes: number }
   | { kind: "places"; command: PlaceCommand }
+  | { kind: "bills"; output: string }
   | { kind: "help" };
 
 const flag = (args: readonly string[], name: string): string | null => {
@@ -117,6 +118,7 @@ export const parseCliArgs = (args: readonly string[]): CliCommand => {
     };
   }
   if (command === "places") return { kind: "places", command: placeCommand(args.slice(1)) };
+  if (command === "bills") return { kind: "bills", output: flag(args, "--output") ?? "-" };
   throw new Error(`Unknown command: ${command}`);
 };
 
@@ -129,6 +131,7 @@ Commands:
   generate  [--input FILE|-] [--output FILE|-] [--pretty]
             [--zodiac tropical|sidereal]
             [--ayanamsha lahiri|fagan_bradley|krishnamurti|raman]
+  bills [--output FILE|-]
   validate  [--input FILE|-] [--output FILE|-] [--trusted FILE]
   serve [--host HOST] [--port PORT] [--body-limit BYTES]
   places continents
@@ -137,5 +140,6 @@ Commands:
   places cities --country CODE [--region CODE] [--query TEXT]
   places get --id PLACE_ID
 
+Generate shows a live token and estimated-cost meter on stderr and persists a final bill. Bills prints historical totals and the average completed chart cost.
 Each chart uses one zodiac system. Tropical is the default. Create a separate chart to use another zodiac or sidereal ayanamsha.
 `;
