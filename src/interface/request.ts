@@ -1,5 +1,5 @@
 import type { CalculationOptions } from "../calculate/service.js";
-import type { BirthInput } from "../types/base.js";
+import type { BirthInput, PreferredGender } from "../types/base.js";
 import type { Zodiac } from "../types/astro.js";
 
 export interface CalculationRequest {
@@ -27,6 +27,12 @@ const oneOf = <T extends string>(value: unknown, name: string, values: readonly 
   return value as T;
 };
 
+const optionalOneOf = <T extends string>(
+  value: unknown,
+  name: string,
+  values: readonly T[],
+): T | undefined => value === undefined ? undefined : oneOf(value, name, values);
+
 const birth = (value: unknown): BirthInput => {
   const raw = object(value, "birth");
   const timeAccuracy = oneOf(raw["timeAccuracy"], "birth.timeAccuracy", ["exact", "approximate", "unknown"] as const);
@@ -42,8 +48,14 @@ const birth = (value: unknown): BirthInput => {
   };
   const name = optionalString(raw["name"], "birth.name");
   const lang = optionalString(raw["lang"], "birth.lang");
+  const preferredGender = optionalOneOf<PreferredGender>(
+    raw["preferredGender"],
+    "birth.preferredGender",
+    ["male", "female", "non-binary"] as const,
+  );
   if (name !== undefined) result.name = name;
   if (lang !== undefined) result.lang = lang;
+  if (preferredGender !== undefined) result.preferredGender = preferredGender;
   return result;
 };
 
