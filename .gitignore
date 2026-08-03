@@ -11,6 +11,3 @@ coverage/
 /public/app.js
 /public/.nojekyll
 /public/places/
-
-# Local manual test harness
-/test/local/
