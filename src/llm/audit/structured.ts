@@ -126,13 +126,18 @@ export const auditStructured = <T extends object>(
   };
   const audited = visit(value, state, profile.id, null) as T;
   const completion = auditCompletion(audited, profile.id);
-  state.errors.push(...completion.map(({ message }) => message));
-  if (completion.length > 0 && !completionIssuesSoft(completion)) state.hard = true;
-  const errors = [...new Set(state.errors)];
+  const errors = [...new Set([
+    ...state.errors,
+    ...completion.map(({ message }) => message),
+  ])];
+  const repair = !state.hard && completionIssuesSoft(completion)
+    ? "completion" as const
+    : undefined;
   return {
     valid: errors.length === 0,
     value: audited,
     errors,
-    soft: errors.length > 0 && !state.hard,
+    soft: false,
+    ...(repair === undefined ? {} : { repair }),
   };
 };
