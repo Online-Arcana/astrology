@@ -230,13 +230,13 @@ await test("fixed plan keeps one bounded foundation conversation and routes fiel
   );
   equal(
     client.models.join(","),
-    "gpt-5.4-nano,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
-    "leaf retry escalation section synthesis and utility model routing",
+    "gpt-5.4-nano,gpt-5.4-nano,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
+    "leaf audit repair section synthesis and utility model routing",
   );
   equal(
     client.efforts.join(","),
-    "none,low,low,low,none",
-    "per-field reasoning and retry escalation",
+    "none,none,low,low,none",
+    "per-field reasoning and audit repair effort",
   );
   equal(
     client.tokens.join(","),
@@ -244,11 +244,21 @@ await test("fixed plan keeps one bounded foundation conversation and routes fiel
     "per-field token ceilings",
   );
   equal(result.run.calls, 5, "OpenAI call count");
-  equal(result.run.retries, 1, "narrow retry count");
-  const retryInput = client.inputs[1] as { correction?: { auditFailures?: string[] } };
-  const failures = retryInput.correction?.auditFailures ?? [];
-  assert(failures.length > 0, "retry must include audit failures");
-  equal(result.run.units["tropical.point.sun"]?.model, "gpt-5.4-mini", "accepted retry model");
+  equal(result.run.retries, 1, "small audit repair count");
+  const repairInput = client.inputs[1] as { auditErrors?: string[] };
+  const failures = repairInput.auditErrors ?? [];
+  assert(failures.length > 0, "small repair must include audit findings");
+  equal(result.run.units["tropical.point.sun"]?.model, "gpt-5.4-nano", "accepted primary model");
+  equal(
+    result.run.units["tropical.point.sun"]?.provenance?.repairedBy,
+    "gpt-5.4-nano",
+    "audit repair model",
+  );
+  equal(
+    result.run.units["tropical.point.sun"]?.provenance?.repairKind,
+    "completion_condensation",
+    "audit repair provenance",
+  );
   equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
   assert(result.run.units["tropical.point.sun"] !== undefined, "Sun unit retained");
   assert(result.run.units["tropical.life.identityAndPurpose"] !== undefined, "life section retained");
