@@ -55,10 +55,12 @@ export interface UnitAudit<T extends object> {
   value: T;
   errors: string[];
   soft?: boolean;
+  repair?: "completion";
 }
 
 export type InterpretationRepairKind =
   | "truncation_condensation"
+  | "completion_condensation"
   | "audit_correction"
   | "coherence_correction";
 
@@ -175,6 +177,7 @@ export interface InterpretationDiagnostic {
 
 export interface RunHooks {
   onStart?: (unit: InterpretationCall, attempt: number, model: string) => void;
+  onRepair?: (unit: InterpretationCall, attempt: number, model: string, errors: readonly string[]) => void;
   onComplete?: (result: UnitResult<object>) => void;
   onRetry?: (unit: InterpretationCall, attempt: number, errors: readonly string[]) => void;
   onReject?: (
