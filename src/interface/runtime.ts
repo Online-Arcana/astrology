@@ -1,3 +1,4 @@
+import { BillStore } from "../billing/store.js";
 import { loadCalculationService } from "../calculate/service.js";
 import type { Config } from "../config.js";
 import { loadChartGenerationService } from "../generate/service.js";
@@ -15,5 +16,13 @@ export const loadApiRuntime = async (
   const generator = config.openai.apiKey.trim().length === 0
     ? null
     : await loadChartGenerationService(config, version);
-  return { service, generator, options, places, version };
+  return {
+    service,
+    generator,
+    options,
+    places,
+    version,
+    bills: new BillStore(config.billing.directory),
+    openAiAdminKey: config.openai.adminKey,
+  };
 };
