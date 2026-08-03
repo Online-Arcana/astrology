@@ -22,5 +22,19 @@ assert(/Formatted/u.test(html) && /Raw/u.test(html), "opened charts must provide
 assert(/Preferred gender/u.test(html), "browser form must expose preferred gender metadata");
 assert(/Ed25519 signing key bundle/u.test(html), "browser form must accept a client-only signing key");
 assert(/OpenAI API key/u.test(html), "browser form must accept a client-only OpenAI key");
+assert(!/Peterhead/u.test(html), "browser form must not contain a preselected local place");
+assert(!/signOpened|Sign opened/u.test(html), "opened files must not expose signing controls");
+
+const build = await readFile("scripts/build-pages.mjs", "utf8");
+assert(/places\/manifest\.json/u.test(build), "Pages build must generate the static place manifest");
+assert(/src\/browser\/places\.ts/u.test(build), "Pages build must replace the server-only place loader");
+assert(/src\/browser\/vendor\.ts/u.test(build), "Pages build must replace dynamic vendor loading");
+assert(/Public Pages asset failed privacy audit/u.test(build), "Pages build must retain the privacy gate");
+
+const runtime = await readFile("src/browser/runtime.ts", "utf8");
+const app = await readFile("src/browser/app.ts", "utf8");
+assert(/generated\.file\.authority !== null/u.test(runtime), "browser generation must refuse to replace an existing authority");
+assert(!/sign\(/u.test(app), "file-opening UI must not directly access the signing function");
+assert(/encodeAstralFile\(file, true\)/u.test(app), "final browser files must be indented");
 
 console.log("1..1");
