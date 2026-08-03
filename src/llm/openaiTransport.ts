@@ -338,6 +338,73 @@ export const createOpenAITransport = (
     "OpenAI transport retry delay",
   );
 
+  const request = async (
+    input: RequestInfo | URL,
+    init: RequestInit,
+    timeoutMs: number,
+    message: string,
+    responseId: string | null,
+    responseStatus: string | null,
+  ): Promise<Response> => {
+    const parent = init.signal ?? undefined;
+    const controller = new AbortController();
+    let timedOut = false;
+
+    const onAbort = (): void => {
+      controller.abort(
+        parent === undefined
+          ? undefined
+          : abortError(parent),
+      );
+    };
+
+    if (parent?.aborted) {
+      onAbort();
+    } else {
+      parent?.addEventListener(
+        "abort",
+        onAbort,
+        { once: true },
+      );
+    }
+
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort(
+        new Error(message),
+      );
+    }, Math.max(1, timeoutMs));
+
+    try {
+      return await fetcher(input, {
+        ...init,
+        signal: controller.signal,
+      });
+    } catch (cause: unknown) {
+      if (parent?.aborted) {
+        throw abortError(parent);
+      }
+
+      if (timedOut) {
+        throw new OpenAITransportError(
+          message,
+          responseId,
+          responseStatus,
+          cause,
+          true,
+        );
+      }
+
+      throw cause;
+    } finally {
+      clearTimeout(timer);
+      parent?.removeEventListener(
+        "abort",
+        onAbort,
+      );
+    }
+  };
+
   const get = async (
     url: string,
     headers: Headers,
@@ -368,13 +435,20 @@ export const createOpenAITransport = (
       );
 
       try {
-        const response = await fetcher(url, {
-          method: "GET",
-          headers,
-          ...(signal === undefined
-            ? {}
-            : { signal }),
-        });
+        const response = await request(
+          url,
+          {
+            method: "GET",
+            headers,
+            ...(signal === undefined
+              ? {}
+              : { signal }),
+          },
+          remaining,
+          `OpenAI response ${id} poll request timed out`,
+          id,
+          "in_progress",
+        );
 
         if (!transient.has(response.status)) {
           return response;
@@ -493,12 +567,16 @@ export const createOpenAITransport = (
     headers: Headers,
   ): Promise<void> => {
     try {
-      const response = await fetcher(
+      const response = await request(
         `${responseUrl}/${encodeURIComponent(id)}/cancel`,
         {
           method: "POST",
           headers,
         },
+        10_000,
+        `OpenAI response ${id} cancellation timed out`,
+        id,
+        "in_progress",
       );
       await response.body?.cancel();
     } catch {
@@ -545,12 +623,28 @@ export const createOpenAITransport = (
       const remaining = createDeadline - Date.now();
 
       if (remaining <= 0) {
-        throw new OpenAITransportError(
+        const timeout = new OpenAITransportError(
           `OpenAI response creation timed out after ${createTimeoutMs} ms`,
           null,
           null,
           createCause,
           true,
+        );
+
+        if (responseAttempt >= responseAttempts) {
+          throw timeout;
+        }
+
+        await pause(retryDelayMs, signal);
+        return send(
+          input,
+          {
+            ...init,
+            headers: new Headers(init.headers),
+          },
+          body,
+          signal,
+          responseAttempt + 1,
         );
       }
 
@@ -561,17 +655,24 @@ export const createOpenAITransport = (
       );
 
       try {
-        const created = await fetcher(input, {
-          ...init,
-          headers,
-          body: JSON.stringify({
-            ...body,
-            background: true,
-          }),
-          ...(signal === undefined
-            ? {}
-            : { signal }),
-        });
+        const created = await request(
+          input,
+          {
+            ...init,
+            headers,
+            body: JSON.stringify({
+              ...body,
+              background: true,
+            }),
+            ...(signal === undefined
+              ? {}
+              : { signal }),
+          },
+          remaining,
+          "OpenAI response creation request timed out",
+          null,
+          null,
+        );
 
         if (!transient.has(created.status)) {
           response = created;
@@ -686,7 +787,14 @@ export const createOpenAITransport = (
       || !responseEndpoint(input)
       || typeof init?.body !== "string"
     ) {
-      return fetcher(input, init);
+      return request(
+        input,
+        init ?? {},
+        pollTimeoutMs,
+        "OpenAI request timed out",
+        null,
+        null,
+      );
     }
 
     let body: unknown;
@@ -694,11 +802,25 @@ export const createOpenAITransport = (
     try {
       body = JSON.parse(init.body);
     } catch {
-      return fetcher(input, init);
+      return request(
+        input,
+        init ?? {},
+        pollTimeoutMs,
+        "OpenAI request timed out",
+        null,
+        null,
+      );
     }
 
     if (!rec(body)) {
-      return fetcher(input, init);
+      return request(
+        input,
+        init ?? {},
+        pollTimeoutMs,
+        "OpenAI request timed out",
+        null,
+        null,
+      );
     }
 
     const signal =
