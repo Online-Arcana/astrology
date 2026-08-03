@@ -57,9 +57,19 @@ test(
       polls += 1;
 
       if (url.includes("resp_1")) {
-        return response({
-          id: "resp_1",
-          status: "in_progress",
+        return new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal;
+
+          if (signal?.aborted) {
+            reject(signal.reason);
+            return;
+          }
+
+          signal?.addEventListener(
+            "abort",
+            () => reject(signal.reason),
+            { once: true },
+          );
         });
       }
 
