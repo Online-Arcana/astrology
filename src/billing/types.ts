@@ -49,12 +49,15 @@ export interface PriceCatalogue {
 }
 
 export type BillStatus = "running" | "completed" | "failed" | "stopped";
+export type BillCoverage = "complete" | "partial";
 
 export interface ChartBill {
   schema: "astral-bill/1.0.0";
   id: string;
   calculationFingerprint: string;
   status: BillStatus;
+  /** Partial means generation resumed work created before usage accounting existed. */
+  coverage: BillCoverage;
   startedAt: string;
   endedAt: string | null;
   pricing: {
@@ -74,6 +77,7 @@ export interface BillingSummary {
   schema: "astral-billing-summary/1.0.0";
   bills: number;
   completedBills: number;
+  averageEligibleBills: number;
   failedBills: number;
   totalCostUsd: number;
   averageCompletedChartCostUsd: number | null;
