@@ -5,6 +5,7 @@ export type Env = Readonly<Record<string, string | undefined>>;
 export interface Config {
   openai: {
     apiKey: string;
+    adminKey: string | null;
     bigModel: string;
     smallModel: string;
     reasoning: "none" | "low" | "medium" | "high";
@@ -19,6 +20,9 @@ export interface Config {
     laneCount?: number;
     laneUnits?: number;
     laneContextTokens?: number;
+  };
+  billing: {
+    directory: string;
   };
   signing: {
     enabled: boolean;
@@ -83,6 +87,7 @@ export const readConfig = (env: Env): Config => {
   return {
     openai: {
       apiKey: env["OPENAI_API_KEY"] ?? "",
+      adminKey: env["OPENAI_ADMIN_KEY"] || null,
       bigModel: env["OPENAI_BIG_MODEL"] ?? "gpt-5.4-mini",
       smallModel: env["OPENAI_SMALL_MODEL"] ?? "gpt-5.4-nano",
       reasoning: oneOf(env["OPENAI_REASONING"], "low", ["none", "low", "medium", "high"] as const, "OPENAI_REASONING"),
@@ -97,6 +102,9 @@ export const readConfig = (env: Env): Config => {
       laneCount: bounded(env["ASTRAL_LANE_COUNT"], 4, "ASTRAL_LANE_COUNT", 4),
       laneUnits: bounded(env["ASTRAL_LANE_UNITS"], 10, "ASTRAL_LANE_UNITS", 10),
       laneContextTokens: ints(env["ASTRAL_LANE_CONTEXT_TOKENS"], 60_000, "ASTRAL_LANE_CONTEXT_TOKENS"),
+    },
+    billing: {
+      directory: env["ASTRAL_BILL_DIR"]?.trim() || ".astral/bills",
     },
     signing: {
       enabled: signingEnabled,
