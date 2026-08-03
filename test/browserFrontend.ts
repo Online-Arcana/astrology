@@ -38,7 +38,7 @@ await test("preferred gender is optional and legacy metadata defaults to male", 
   equal(preferredGenderOf({ preferredGender: "non-binary" }), "non-binary", "non-binary preference");
   const request = parseCalculationRequest({
     birth: {
-      date: "1991-01-01",
+      date: "2000-01-01",
       time: "12:00:00",
       timeAccuracy: "exact",
       placeId: "fixture:place",
@@ -60,8 +60,9 @@ await test("public frontend contains no local identity or embedded secret", asyn
     readFile("src/browser/runtime.ts", "utf8"),
   ]);
   const text = files.join("\n");
-  assert(!/Peterhead|\/home\/kitty|192\.168\.|kitty@|SIGNATURE_KEY\s*=|OPENAI_API_KEY\s*=/u.test(text), "public source must not contain local identity or credential values");
+  assert(!/\/home\/[A-Za-z0-9._-]+|192\.168\.|(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(text), "public source must not contain local paths, private-network addresses or credential values");
   assert(!/id="signOpened"|>Sign opened/u.test(text), "opened files must never expose a signing action");
+  assert(!/id="cityQuery"[^>]*\svalue=/u.test(text), "city search must not have a prefilled location");
   assert(/localStorage/u.test(text), "client keys must be stored locally");
   assert(/IndexedDB|indexedDB/u.test(text), "chart recovery must use browser database storage");
 });
