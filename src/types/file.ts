@@ -1,4 +1,4 @@
-import type { BirthData, JsonRef, PlaceData, TimeData } from "./base.js";
+import type { BirthData, JsonRef, PlaceData, PreferredGender, TimeData } from "./base.js";
 import type {
   Ayanamsha,
   AstronomyData,
@@ -63,6 +63,8 @@ export interface AstralCalculation {
     providedName: string | null;
     language: string;
     adult: true;
+    /** Missing only in files created before preferred-gender metadata existed. */
+    preferredGender?: PreferredGender;
   };
   birth: BirthData;
   place: PlaceData;
