@@ -27,8 +27,10 @@ export interface ApiRuntime {
   options: CalculationOptions;
   places: PlaceCatalogue;
   version: string;
-  bills: BillStore;
-  openAiAdminKey: string | null;
+  /** Optional for backwards-compatible custom runtimes. */
+  bills?: BillStore;
+  /** Optional admin credential used only by the provider-cost endpoint. */
+  openAiAdminKey?: string | null;
 }
 
 const response = (status: number, body: unknown): ApiResponse => ({ status, body });
@@ -98,11 +100,11 @@ const generation = async (request: ApiRequest, runtime: ApiRuntime): Promise<Api
     const generated = await runtime.generator.generate(parsed.birth, parsed.options, {
       onBill: (bill) => {
         latest.value = bill;
-        runtime.bills.live(bill);
+        runtime.bills?.live(bill);
       },
     });
     const bill = generated.bill ?? latest.value;
-    if (bill !== null) await runtime.bills.save(bill);
+    if (bill !== null) await runtime.bills?.save(bill);
     return response(200, {
       ok: true,
       file: generated.file,
@@ -110,7 +112,7 @@ const generation = async (request: ApiRequest, runtime: ApiRuntime): Promise<Api
     });
   } catch (cause) {
     const bill = latest.value;
-    if (bill !== null && bill.status !== "running") await runtime.bills.save(bill);
+    if (bill !== null && bill.status !== "running") await runtime.bills?.save(bill);
     const input = inputFailure(cause);
     if (input.status !== 500) return input;
     return error(502, "interpretation_failed", cause instanceof Error ? cause.message : "Interpreted chart generation failed");
@@ -186,29 +188,32 @@ const places = async (request: ApiRequest, runtime: ApiRuntime): Promise<ApiResp
 };
 
 const billing = async (request: ApiRequest, runtime: ApiRuntime): Promise<ApiResponse> => {
+  const bills = runtime.bills;
+  if (bills === undefined) return error(503, "billing_not_configured", "Billing storage is not configured");
   try {
     switch (request.path) {
       case "/v1/billing":
-        return response(200, { ok: true, summary: await runtime.bills.summary() });
+        return response(200, { ok: true, summary: await bills.summary() });
       case "/v1/billing/live":
-        return response(200, { ok: true, bills: runtime.bills.liveBills() });
+        return response(200, { ok: true, bills: bills.liveBills() });
       case "/v1/billing/bills":
-        return response(200, { ok: true, bills: await runtime.bills.list() });
+        return response(200, { ok: true, bills: await bills.list() });
       case "/v1/billing/bill": {
-        const bill = await runtime.bills.get(required(request.query, "id"));
+        const bill = await bills.get(required(request.query, "id"));
         return bill === null ? error(404, "bill_not_found", "Bill not found") : response(200, { ok: true, bill });
       }
       case "/v1/billing/pricing":
         return response(200, { ok: true, pricing: openAiPriceCatalogue });
       case "/v1/billing/provider-costs": {
-        if (runtime.openAiAdminKey === null) {
+        const adminKey = runtime.openAiAdminKey ?? null;
+        if (adminKey === null) {
           return error(503, "provider_costs_not_configured", "OPENAI_ADMIN_KEY is required for provider cost reconciliation");
         }
         const start = unix(request.query, "start_time", true) as number;
         const end = unix(request.query, "end_time", false);
         return response(200, {
           ok: true,
-          costs: await fetchOpenAICosts(runtime.openAiAdminKey, start, end),
+          costs: await fetchOpenAICosts(adminKey, start, end),
         });
       }
       default:
@@ -227,7 +232,7 @@ export const routeApi = async (request: ApiRequest, runtime: ApiRuntime): Promis
       service: "astral-charts",
       version: runtime.version,
       interpretedGeneration: runtime.generator !== null,
-      billing: true,
+      billing: runtime.bills !== undefined,
     });
   }
   if (request.path.startsWith("/v1/billing")) {
