@@ -1,5 +1,5 @@
-[submodule "vendor/astronomia"]
-	path = vendor/astronomia
+[submodule "vendor/astronomy"]
+	path = vendor/astronomy
 	url = https://github.com/kitty-crow/astronomia.git
 [submodule "vendor/openai-schema"]
 	path = vendor/openai-schema
