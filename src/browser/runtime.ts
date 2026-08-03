@@ -22,15 +22,15 @@ export interface BrowserGeneratedChart extends Omit<GeneratedChart, "file" | "bi
   bill: ChartBill | null;
 }
 
-const configFor = (apiKey: string): Config => readConfig({
+const configFor = (apiKey: string, options: CalculationOptions): Config => readConfig({
   OPENAI_API_KEY: apiKey,
   OPENAI_BIG_MODEL: "gpt-5.4-mini",
   OPENAI_SMALL_MODEL: "gpt-5.4-nano",
   OPENAI_REASONING: "low",
   OPENAI_MAX_OUTPUT_TOKENS: "12000",
-  ASTRAL_PRIMARY_ZODIAC: "tropical",
-  ASTRAL_INTERPRETATION_MODE: "tropical",
-  ASTRAL_SIDEREAL_AYANAMSHA: "lahiri",
+  ASTRAL_PRIMARY_ZODIAC: options.primaryZodiac,
+  ASTRAL_INTERPRETATION_MODE: options.interpretationMode,
+  ASTRAL_SIDEREAL_AYANAMSHA: options.ayanamsha,
   ASTRAL_MAX_RETRIES: "3",
   ASTRAL_FOUNDATION_UNITS: "10",
   ASTRAL_LANE_COUNT: "4",
@@ -45,6 +45,9 @@ const signedGeneratedFile = async (
   key: BrowserSigningKey | null,
 ): Promise<AstralFile> => {
   if (key === null) return generated.file;
+  if (generated.file.authority !== null) {
+    throw new Error("The browser will not replace an existing chart authority signature");
+  }
   const generatedAt = generated.file["astral-chart"].provenance.generatedAt;
   return sign(generated.file, key.issuer, key, generatedAt);
 };
@@ -54,10 +57,13 @@ export class BrowserRuntime {
   readonly #places: Promise<PlaceCatalogue>;
   readonly #signal: AbortSignal | undefined;
 
-  constructor(apiKey: string, signal?: AbortSignal) {
+  constructor(apiKey: string, options: CalculationOptions, signal?: AbortSignal) {
     const selected = apiKey.trim();
     if (selected.length === 0) throw new Error("Enter and save an OpenAI API key before generating a chart");
-    this.#config = configFor(selected);
+    if (options.primaryZodiac !== options.interpretationMode) {
+      throw new Error("The browser runtime requires one selected zodiac system");
+    }
+    this.#config = configFor(selected, options);
     this.#places = loadCscCatalogue();
     this.#signal = signal;
   }
