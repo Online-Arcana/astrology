@@ -170,20 +170,29 @@ test("missing terminal punctuation is repaired locally", () => {
   assert(tensions[0]?.endsWith(".") === true, "cosmetic punctuation must be appended locally");
 });
 
-test("completion audit catches unfinished narrative text", () => {
+test("natural terminal prepositions are not mistaken for unfinished clauses", () => {
+  const issues = auditCompletion(
+    { detail: "You may hesitate when deciding which long-term commitment to give your limited energy to" },
+    "tropical.house.2",
+  );
+  assert(!issues.some(({ code }) => code === "dangling_clause"), "terminal preposition must remain valid English");
+});
+
+test("completion audit catches genuinely unfinished narrative text", () => {
   const issues = auditCompletion({ detail: "You seek depth and trust because" }, "tropical.life.sexuality");
   assert(issues.some(({ code }) => code === "dangling_clause"), "dangling clause must be detected");
 });
 
-test("dangling clauses remain hard structured failures", () => {
+test("genuinely unfinished prose requests completion repair", () => {
   const result = auditStructured(
     { detail: "You seek depth and trust because" },
     {},
     new Set<JsonRef>(),
     profile("tropical.life.sexuality"),
   );
-  assert(!result.valid, "genuinely unfinished prose must still fail");
-  assert(result.errors.some((message) => message.includes("unfinished clause")), "hard completion reason must remain visible");
+  assert(!result.valid, "genuinely unfinished prose must not be accepted directly");
+  assert(result.repair === "completion", "genuine truncation must request model completion repair");
+  assert(result.soft !== true, "genuine truncation must not be soft-accepted");
 });
 
 test("interpretation schemas enumerate only permitted source references", () => {
