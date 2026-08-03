@@ -191,7 +191,7 @@ test("genuinely unfinished prose requests repair without becoming fatal", () => 
     profile("tropical.life.sexuality"),
   );
   assert(!result.valid, "genuinely unfinished prose must not be accepted directly");
-  assert(result.repair === "completion", "genuine truncation must request small-model repair");
+  assert(result.repair === "completion", "genuine truncation must request small-model completion");
   assert(result.soft === true, "an unresolved NLP finding must remain non-fatal");
 });
 
@@ -208,7 +208,7 @@ test("ordinary NLP findings request small-model repair and remain non-fatal", ()
   );
   assert(!result.valid, "missing second-person language must be detected");
   assert(result.errors.some((message) => message.includes("direct second-person language")), "finding must be retained");
-  assert(result.repair === "completion", "finding must be handed to the small-model repair path");
+  assert(result.repair === "audit", "finding must be handed to general small-model audit correction");
   assert(result.soft === true, "NLP must not terminate chart generation");
 });
 
