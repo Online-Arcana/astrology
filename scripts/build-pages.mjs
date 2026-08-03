@@ -74,14 +74,26 @@ await build({
 
 await writeFile("public/.nojekyll", "", "utf8");
 
+const privateIpv4 = /(?:^|[^0-9])(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?:[^0-9]|$)/u;
 const files = ["public/index.html", "public/style.css", "public/app.js"];
 for (const file of files) {
   const content = await readFile(file, "utf8");
-  const localPath = /\/home\/[A-Za-z0-9._-]+/u.test(content);
-  const privateNetwork = /(?:10\.|127\.0\.0\.1|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/u.test(content);
-  const embeddedCredential = /(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(content);
-  const prefilledCity = /id=["']cityQuery["'][^>]*\svalue=/u.test(content);
-  if (localPath || privateNetwork || embeddedCredential || prefilledCity) {
-    throw new Error(`Public Pages asset failed privacy audit: ${file}`);
+  const findings = [];
+
+  if (/\/home\/[A-Za-z0-9._-]+/u.test(content)) {
+    findings.push("local home path");
+  }
+  if (privateIpv4.test(content)) {
+    findings.push("private network address");
+  }
+  if (/(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(content)) {
+    findings.push("literal credential assignment");
+  }
+  if (/id=["']cityQuery["'][^>]*\svalue=/u.test(content)) {
+    findings.push("prefilled city");
+  }
+
+  if (findings.length > 0) {
+    throw new Error(`Public Pages asset failed privacy audit (${findings.join(", ")}): ${file}`);
   }
 }
