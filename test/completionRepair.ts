@@ -51,6 +51,13 @@ const config = () => readConfig({
   OPENAI_BIG_MODEL: "gpt-big",
 });
 
+const houseProfile = (): FieldProfile => ({
+  id: "tropical.house.7",
+  lexicon: ["trust", "relationship", "distance", "close"],
+  minLength: 2,
+  maxLength: 4_000,
+});
+
 test("parsed prose truncation is condensed and completed by the small model", async () => {
   let clients = 0;
   let primaryCalls = 0;
@@ -129,12 +136,6 @@ test("parsed prose truncation is condensed and completed by the small model", as
 });
 
 test("ordinary NLP findings are handed to the small model and do not fail the run", async () => {
-  const profile: FieldProfile = {
-    id: "tropical.house.7",
-    lexicon: ["trust", "relationship", "distance", "close"],
-    minLength: 2,
-    maxLength: 4_000,
-  };
   let clients = 0;
   let primaryCalls = 0;
   let repairCalls = 0;
@@ -175,7 +176,7 @@ test("ordinary NLP findings are handed to the small model and do not fail the ru
       value,
       {},
       new Set(),
-      profile,
+      houseProfile(),
     ),
   };
 
@@ -201,4 +202,58 @@ test("ordinary NLP findings are handed to the small model and do not fail the ru
     (result.units["tropical.house.7"]?.value as { detail?: string }).detail,
     "You may create distance in close relationships when trusting another person feels uncertain.",
   );
+});
+
+test("an imperfect NLP repair is soft-accepted instead of aborting the chart", async () => {
+  let clients = 0;
+  let repairCalls = 0;
+  const unchanged = {
+    detail: "Difficulty trusting another person can create distance in close relationships.",
+  };
+
+  const createClient = (): SchemaClient => {
+    clients += 1;
+    return new Client(`conv_fallback_${clients}`, (input, options) => {
+      if (record(input) && Array.isArray(input["auditErrors"])) {
+        repairCalls += 1;
+        assert.equal(options.body.model, "gpt-small");
+      }
+      return unchanged;
+    });
+  };
+
+  const unit: InterpretationCall = {
+    id: "tropical.house.7",
+    label: "House 7",
+    kind: "small",
+    effort: "none",
+    tokens: 256,
+    shape,
+    allowedSourceRefs: new Set(),
+    input: () => ({ field: "house.7" }),
+    audit: (value) => auditStructured(
+      value,
+      {},
+      new Set(),
+      houseProfile(),
+    ),
+  };
+
+  const warnings: string[][] = [];
+  const result = await runInterpretation(
+    {},
+    [unit],
+    config(),
+    createClient,
+    {
+      onSoftAccept: (_unit, _attempt, errors) => {
+        warnings.push([...errors]);
+      },
+    },
+  );
+
+  assert.equal(repairCalls, 2, "bounded repair passes");
+  assert.equal(warnings.length, 1, "unresolved warning must be retained diagnostically");
+  assert.equal(result.calls, 3, "one primary call plus two small repair calls");
+  assert.deepEqual(result.units["tropical.house.7"]?.value, unchanged);
 });
