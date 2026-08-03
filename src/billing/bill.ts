@@ -1,5 +1,6 @@
 import { openAiPriceCatalogue, priceUsage } from "./pricing.js";
 import type {
+  BillCoverage,
   BillStatus,
   BillingSummary,
   ChartBill,
@@ -54,6 +55,7 @@ const copy = (bill: ChartBill): ChartBill => JSON.parse(JSON.stringify(bill)) as
 export class BillCollector {
   readonly #id: string;
   readonly #fingerprint: string;
+  readonly #coverage: BillCoverage;
   readonly #startedAt: string;
   readonly #events: PricedUsage[];
   #status: BillStatus;
@@ -63,9 +65,11 @@ export class BillCollector {
     calculationFingerprint: string,
     previous: ChartBill | null = null,
     now: () => string = () => new Date().toISOString(),
+    coverage: BillCoverage = previous?.coverage ?? "complete",
   ) {
     this.#id = previous?.id ?? globalThis.crypto.randomUUID();
     this.#fingerprint = calculationFingerprint;
+    this.#coverage = previous?.coverage ?? coverage;
     this.#startedAt = previous?.startedAt ?? now();
     this.#events = previous?.events.map((event) => ({ ...event, usage: { ...event.usage } })) ?? [];
     this.#status = "running";
@@ -97,6 +101,7 @@ export class BillCollector {
       id: this.#id,
       calculationFingerprint: this.#fingerprint,
       status: this.#status,
+      coverage: this.#coverage,
       startedAt: this.#startedAt,
       endedAt: this.#endedAt,
       pricing: {
@@ -119,12 +124,15 @@ export const billingSummary = (values: readonly ChartBill[], latest = 10): Billi
   const completed = bills.filter(({ status }) => status === "completed");
   const allEvents = bills.flatMap(({ events }) => events);
   const total = totals(allEvents);
-  const pricedCompleted = completed.filter(({ total: value }) => value.costUsd !== null);
+  const pricedCompleted = completed.filter((bill) =>
+    bill.coverage !== "partial" && bill.total.costUsd !== null
+  );
   const completedCost = pricedCompleted.reduce((sum, { total: value }) => sum + (value.costUsd ?? 0), 0);
   return {
     schema: "astral-billing-summary/1.0.0",
     bills: bills.length,
     completedBills: completed.length,
+    averageEligibleBills: pricedCompleted.length,
     failedBills: bills.filter(({ status }) => status === "failed").length,
     totalCostUsd: total.costUsd ?? 0,
     averageCompletedChartCostUsd: pricedCompleted.length === 0 ? null : completedCost / pricedCompleted.length,
