@@ -1,5 +1,5 @@
-const unsupported = (specifier: never): never => {
-  throw new Error(`Unsupported vendor module ${String(specifier)}`);
+const unsupported = (specifier: string): never => {
+  throw new Error(`Unsupported vendor module ${specifier}`);
 };
 
 export type VendorSpecifier =
@@ -29,7 +29,7 @@ export type VendorSpecifier =
   | "astronomia/data/vsop87Bneptune";
 
 /** Static cases let bundlers include the same vendor modules used by Node. */
-export const loadVendor = async <T>(specifier: VendorSpecifier): Promise<T> => {
+export const loadVendor = async <T>(specifier: string): Promise<T> => {
   switch (specifier) {
     case "@countrystatecity/countries": return import("@countrystatecity/countries") as Promise<T>;
     case "@js-joda/core": return import("@js-joda/core") as Promise<T>;
