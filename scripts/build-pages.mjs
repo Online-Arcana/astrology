@@ -6,6 +6,7 @@ const publicDir = resolve("public");
 const placeSource = resolve("vendor/places/packages/countries/dist/data");
 const placeOutput = resolve(publicDir, "places/data");
 const keyExportPath = resolve(publicDir, "key-export.js");
+const usabilityStylePath = resolve(publicDir, "usability.css");
 const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
 
 const finalCode = (name) => name.split("-").at(-1) ?? "";
@@ -47,21 +48,28 @@ const htmlFiles = async (directory) => {
   return files;
 };
 
-const keyExportTag = (file) => {
-  const path = relative(dirname(file), keyExportPath).replaceAll("\\", "/");
-  const source = path.startsWith(".") ? path : `./${path}`;
-  return `<script type="module" src="${source}"></script>`;
+const assetSource = (file, assetPath) => {
+  const path = relative(dirname(file), assetPath).replaceAll("\\", "/");
+  return path.startsWith(".") ? path : `./${path}`;
 };
+
+const keyExportTag = (file) => `<script type="module" src="${assetSource(file, keyExportPath)}"></script>`;
+const usabilityStyleTag = (file) => `<link rel="stylesheet" href="${assetSource(file, usabilityStylePath)}">`;
 
 const applyPageDefaults = async () => {
   const viewportPattern = /<meta\s+name=["']viewport["'][^>]*>/iu;
   const headPattern = /<head(?:\s[^>]*)?>/iu;
+  const headClosePattern = /<\/head\s*>/iu;
   const bodyPattern = /<\/body\s*>/iu;
   for (const file of await htmlFiles(publicDir)) {
     const content = await readFile(file, "utf8");
     let updated = viewportPattern.test(content)
       ? content.replace(viewportPattern, viewport)
       : content.replace(headPattern, (head) => `${head}\n  ${viewport}`);
+    if (!updated.includes("usability.css")) {
+      if (!headClosePattern.test(updated)) throw new Error(`Public HTML page has no closing head tag: ${file}`);
+      updated = updated.replace(headClosePattern, `  ${usabilityStyleTag(file)}\n</head>`);
+    }
     if (!updated.includes("key-export.js")) {
       if (!bodyPattern.test(updated)) throw new Error(`Public HTML page has no closing body tag: ${file}`);
       updated = updated.replace(bodyPattern, `  ${keyExportTag(file)}\n</body>`);
@@ -115,7 +123,7 @@ await applyPageDefaults();
 await writeFile("public/.nojekyll", "", "utf8");
 
 const privateIpv4 = /(?:^|[^0-9])(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?:[^0-9]|$)/u;
-const files = [...await htmlFiles(publicDir), "public/style.css", "public/app.js", "public/key-export.js"];
+const files = [...await htmlFiles(publicDir), "public/style.css", "public/usability.css", "public/app.js", "public/key-export.js"];
 for (const file of files) {
   const content = await readFile(file, "utf8");
   const findings = [];
