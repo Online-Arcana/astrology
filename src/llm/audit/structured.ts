@@ -1,6 +1,6 @@
 import { refsValid } from "../../ref/resolve.js";
 import type { JsonRef } from "../../types/base.js";
-import { auditCompletion, completionIssuesSoft } from "./completion.js";
+import { auditCompletion } from "./completion.js";
 import {
   auditField,
   auditList,
@@ -20,12 +20,10 @@ interface State {
   profile: FieldProfile;
   earlier: NarrativeEntry[];
   errors: string[];
-  hard: boolean;
 }
 
-const fail = (state: State, errors: readonly string[]): void => {
+const report = (state: State, errors: readonly string[]): void => {
   state.errors.push(...errors);
-  state.hard = true;
 };
 
 const keyFor = (path: string): string | null => {
@@ -47,12 +45,12 @@ const profileAt = (profile: FieldProfile, path: string): FieldProfile => {
 
 const references = (value: unknown, state: State, path: string): JsonRef[] => {
   if (!Array.isArray(value) || !value.every((item) => typeof item === "string" && item.startsWith("#/"))) {
-    fail(state, [`${path} must contain local JSON references`]);
+    report(state, [`${path} must contain local JSON references`]);
     return [];
   }
   const refs = value as JsonRef[];
   if (!refsValid(state.calculation, refs, state.allowed)) {
-    fail(state, [`${path} contains unresolved, unavailable or unpermitted source references`]);
+    report(state, [`${path} contains unresolved, unavailable or unpermitted source references`]);
   }
   return [...refs];
 };
@@ -64,7 +62,7 @@ const auditText = (value: string, state: State, path: string): string => {
     id: path,
     priorFields: [...(profile.priorFields ?? []), ...state.earlier],
   });
-  if (!result.valid) fail(state, result.issues.map(({ message }) => message));
+  if (!result.valid) report(state, result.issues.map(({ message }) => message));
   if (result.value.length >= 20) state.earlier.push({ path, value: result.value });
   return result.value;
 };
@@ -89,7 +87,7 @@ const visit = (
         id: path,
         priorFields: [...(profile.priorFields ?? []), ...state.earlier],
       });
-      if (!result.valid) fail(state, result.issues.map(({ message }) => message));
+      if (!result.valid) report(state, result.issues.map(({ message }) => message));
       result.values.forEach((item, index) => {
         if (item.length >= 20) state.earlier.push({ path: `${path}[${index}]`, value: item });
       });
@@ -99,7 +97,7 @@ const visit = (
   }
 
   if (!record(value)) {
-    fail(state, [`${path} has an unsupported value`]);
+    report(state, [`${path} has an unsupported value`]);
     return value;
   }
 
@@ -122,7 +120,6 @@ export const auditStructured = <T extends object>(
     profile,
     earlier: [],
     errors: [],
-    hard: false,
   };
   const audited = visit(value, state, profile.id, null) as T;
   const completion = auditCompletion(audited, profile.id);
@@ -130,14 +127,20 @@ export const auditStructured = <T extends object>(
     ...state.errors,
     ...completion.map(({ message }) => message),
   ])];
-  const repair = !state.hard && completionIssuesSoft(completion)
+  const needsRepair = errors.length > 0;
+  const repair = state.errors.length === 0 && completion.length > 0
     ? "completion" as const
-    : undefined;
+    : "audit" as const;
+
   return {
-    valid: errors.length === 0,
+    valid: !needsRepair,
     value: audited,
     errors,
-    soft: false,
-    ...(repair === undefined ? {} : { repair }),
+    // NLP is a free detector, not an execution gate. The orchestrator sends
+    // every finding to the small model for the smallest possible correction.
+    // Should heuristic repair remain imperfect, keep the parsed candidate and
+    // finish the chart rather than throwing away all accepted work.
+    soft: needsRepair,
+    ...(needsRepair ? { repair } : {}),
   };
 };

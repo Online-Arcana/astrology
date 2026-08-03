@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readConfig } from "../src/config.js";
+import { auditStructured } from "../src/llm/audit/structured.js";
+import type { FieldProfile } from "../src/llm/audit/field.js";
 import { runInterpretation } from "../src/llm/orchestrate/run.js";
 import type {
   InterpretationCall,
@@ -43,12 +45,20 @@ class Client implements SchemaClient {
   }
 }
 
+const config = () => readConfig({
+  ASTRAL_MAX_RETRIES: "1",
+  OPENAI_SMALL_MODEL: "gpt-small",
+  OPENAI_BIG_MODEL: "gpt-big",
+});
+
+const houseProfile = (): FieldProfile => ({
+  id: "tropical.house.7",
+  lexicon: ["trust", "relationship", "distance", "close"],
+  minLength: 2,
+  maxLength: 4_000,
+});
+
 test("parsed prose truncation is condensed and completed by the small model", async () => {
-  const config = readConfig({
-    ASTRAL_MAX_RETRIES: "1",
-    OPENAI_SMALL_MODEL: "gpt-small",
-    OPENAI_BIG_MODEL: "gpt-big",
-  });
   let clients = 0;
   let primaryCalls = 0;
   let repairCalls = 0;
@@ -99,7 +109,7 @@ test("parsed prose truncation is condensed and completed by the small model", as
   const result = await runInterpretation(
     {},
     [unit],
-    config,
+    config(),
     createClient,
     {
       onRepair: (_unit, _attempt, model, errors) => {
@@ -123,4 +133,127 @@ test("parsed prose truncation is condensed and completed by the small model", as
     (result.units["tropical.life.sexuality"]?.value as { detail?: string }).detail,
     "You seek depth and trust because dependable intimacy matters to you.",
   );
+});
+
+test("ordinary NLP findings are handed to the small model and do not fail the run", async () => {
+  let clients = 0;
+  let primaryCalls = 0;
+  let repairCalls = 0;
+  const repairEvents: string[][] = [];
+
+  const createClient = (): SchemaClient => {
+    clients += 1;
+    return new Client(`conv_audit_${clients}`, (input, options) => {
+      if (record(input) && Array.isArray(input["auditErrors"])) {
+        repairCalls += 1;
+        assert.equal(options.body.model, "gpt-small");
+        assert(
+          (input["auditErrors"] as unknown[]).some((error) =>
+            typeof error === "string" && error.includes("direct second-person language")),
+          "repair must receive the exact NLP finding",
+        );
+        return {
+          detail: "You may create distance in close relationships when trusting another person feels uncertain.",
+        };
+      }
+      primaryCalls += 1;
+      return {
+        detail: "Difficulty trusting another person can create distance in close relationships.",
+      };
+    });
+  };
+
+  const unit: InterpretationCall = {
+    id: "tropical.house.7",
+    label: "House 7",
+    kind: "small",
+    effort: "none",
+    tokens: 256,
+    shape,
+    allowedSourceRefs: new Set(),
+    input: () => ({ field: "house.7" }),
+    audit: (value) => auditStructured(
+      value,
+      {},
+      new Set(),
+      houseProfile(),
+    ),
+  };
+
+  const result = await runInterpretation(
+    {},
+    [unit],
+    config(),
+    createClient,
+    {
+      onRepair: (_unit, _attempt, model, errors) => {
+        assert.equal(model, "gpt-small");
+        repairEvents.push([...errors]);
+      },
+    },
+  );
+
+  assert.equal(primaryCalls, 1);
+  assert.equal(repairCalls, 1);
+  assert.equal(repairEvents.length, 1);
+  assert.equal(result.calls, 2);
+  assert.equal(result.retries, 1);
+  assert.equal(
+    (result.units["tropical.house.7"]?.value as { detail?: string }).detail,
+    "You may create distance in close relationships when trusting another person feels uncertain.",
+  );
+});
+
+test("an imperfect NLP repair is soft-accepted instead of aborting the chart", async () => {
+  let clients = 0;
+  let repairCalls = 0;
+  const unchanged = {
+    detail: "Difficulty trusting another person can create distance in close relationships.",
+  };
+
+  const createClient = (): SchemaClient => {
+    clients += 1;
+    return new Client(`conv_fallback_${clients}`, (input, options) => {
+      if (record(input) && Array.isArray(input["auditErrors"])) {
+        repairCalls += 1;
+        assert.equal(options.body.model, "gpt-small");
+      }
+      return unchanged;
+    });
+  };
+
+  const unit: InterpretationCall = {
+    id: "tropical.house.7",
+    label: "House 7",
+    kind: "small",
+    effort: "none",
+    tokens: 256,
+    shape,
+    allowedSourceRefs: new Set(),
+    input: () => ({ field: "house.7" }),
+    audit: (value) => auditStructured(
+      value,
+      {},
+      new Set(),
+      houseProfile(),
+    ),
+  };
+
+  const warnings: string[][] = [];
+  const result = await runInterpretation(
+    {},
+    [unit],
+    config(),
+    createClient,
+    {
+      onSoftAccept: (_unit, _attempt, errors) => {
+        warnings.push([...errors]);
+      },
+    },
+  );
+
+  assert.equal(repairCalls, 2, "bounded repair passes");
+  assert.equal(warnings.length, 1, "unresolved warning must be retained diagnostically");
+  assert.equal(result.calls, 3, "one primary call plus two small repair calls");
+  assert.deepEqual(result.units["tropical.house.7"]?.value, unchanged);
 });

@@ -24,8 +24,11 @@ export const auditSection = (
   }
   if (!refsValid(calculation, section.sourceRefs, allowed)) errors.push(`${profile.id} contains invalid source references`);
 
+  const unique = [...new Set(errors)];
+  const needsRepair = unique.length > 0;
+
   return {
-    valid: errors.length === 0,
+    valid: !needsRepair,
     value: {
       ...section,
       summary: summary?.value ?? null,
@@ -34,6 +37,8 @@ export const auditSection = (
       strengths: strengths.values,
       tensions: tensions.values,
     },
-    errors,
+    errors: unique,
+    soft: needsRepair,
+    ...(needsRepair ? { repair: "audit" as const } : {}),
   };
 };

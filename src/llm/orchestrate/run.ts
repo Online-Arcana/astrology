@@ -157,6 +157,18 @@ const completionRepairInstruction = [
   "Never place internal JSON references in prose; references belong only in sourceRefs.",
 ].join("\n");
 
+const auditRepairInstruction = [
+  "A deterministic NLP audit found one or more possible problems in an otherwise parsed interpretation.",
+  "Inspect auditErrors and return the same strict schema with only the smallest necessary corrections.",
+  "Preserve every sound conclusion, nuance and source reference from partialCandidate.",
+  "Do not flatten context-dependent differences or rewrite the interpretation merely to make it more uniform.",
+  "Correct only the specific wording, relevance, duplication, direct-address, formatting or reference issues that are actually present.",
+  "Use deterministicInput and snapshot context only to verify or repair the flagged material.",
+  "Write directly to the person using you and your.",
+  "Never place internal JSON references in prose; references belong only in sourceRefs.",
+  "Return the complete strict schema without commentary, reasoning or preamble.",
+].join("\n");
+
 const repairTruncation = async (
   options: ExecutionOptions,
   cause: unknown,
@@ -220,7 +232,7 @@ const repairTruncation = async (
   };
 };
 
-const repairCompletion = async (
+const repairAudited = async (
   options: ExecutionOptions,
   partial: object,
   initialAudit: UnitAudit<object>,
@@ -230,6 +242,13 @@ const repairCompletion = async (
 ): Promise<UnitResult<object> | null> => {
   const repairClient = options.createClient();
   const model = options.config.openai.smallModel;
+  const repair = initialAudit.repair ?? "audit";
+  const instruction = repair === "completion"
+    ? completionRepairInstruction
+    : auditRepairInstruction;
+  const repairKind = repair === "completion"
+    ? "completion_condensation" as const
+    : "audit_correction" as const;
   let candidate = partial;
   let errors = [...initialAudit.errors];
 
@@ -241,7 +260,8 @@ const repairCompletion = async (
     let output: object;
     try {
       const input = {
-        instruction: completionRepairInstruction,
+        instruction,
+        repairKind: repair,
         repairPass: pass,
         auditErrors: errors,
         partialCandidate: candidate,
@@ -274,12 +294,12 @@ const repairCompletion = async (
         value: audited.value,
         attempts: attempt,
         model: originalModel,
-        provenance: { repairedBy: model, repairKind: "completion_condensation" },
+        provenance: { repairedBy: model, repairKind },
       };
     }
 
     await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
-    if (audited.repair !== "completion") return null;
+    if (audited.repair === undefined) return null;
     candidate = audited.value;
     errors = [...audited.errors];
   }
@@ -350,8 +370,11 @@ const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object
     }
 
     const audited = options.unit.audit(output, context);
-    if (!audited.valid && audited.repair === "completion") {
-      const repaired = await repairCompletion(options, audited.value, audited, context, attempt, model);
+    let rejected = false;
+    if (!audited.valid && audited.repair !== undefined) {
+      await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
+      rejected = true;
+      const repaired = await repairAudited(options, audited.value, audited, context, attempt, model);
       if (repaired !== null) {
         options.hooks.onComplete?.(repaired);
         await options.onState(null);
@@ -359,7 +382,7 @@ const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object
       }
     }
 
-    const softAccepted = !audited.valid && audited.soft === true && attempt >= maximumAttempts;
+    const softAccepted = !audited.valid && audited.soft === true;
     if (audited.valid || softAccepted) {
       const result: UnitResult<object> = { id: options.unit.id, value: audited.value, attempts: attempt, model };
       if (softAccepted) options.hooks.onSoftAccept?.(options.unit, attempt, audited.errors);
@@ -368,7 +391,7 @@ const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object
       return result;
     }
 
-    await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
+    if (!rejected) await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
     correction = [...audited.errors];
     if (attempt < maximumAttempts) {
       options.counters.retries += 1;

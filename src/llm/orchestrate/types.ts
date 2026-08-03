@@ -55,7 +55,7 @@ export interface UnitAudit<T extends object> {
   value: T;
   errors: string[];
   soft?: boolean;
-  repair?: "completion";
+  repair?: "completion" | "audit";
 }
 
 export type InterpretationRepairKind =

@@ -47,7 +47,7 @@ test("theme entries may use concise direct semantic language", () => {
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
-test("strong evidence for a neighbouring field remains a hard failure", () => {
+test("strong evidence for a neighbouring field remains detectable", () => {
   const result = auditField(
     "You discuss needs openly, name boundaries directly and clarify misunderstandings through explicit conversation.",
     {
@@ -59,7 +59,7 @@ test("strong evidence for a neighbouring field remains a hard failure", () => {
       },
     },
   );
-  assert(!result.valid, "clear neighbouring-field content must fail");
+  assert(!result.valid, "clear neighbouring-field content must be detected");
   assert(result.issues.some(({ code }) => code === "irrelevant"), "wrong field must report semantic irrelevance");
 });
 
@@ -79,47 +79,47 @@ test("a strength may describe constructive use of pressure", () => {
   assert(result.valid, result.issues.map(({ message }) => message).join("; "));
 });
 
-test("an obvious tension placed in strengths is rejected", () => {
+test("an obvious tension placed in strengths is detected", () => {
   const result = auditField(
     "You face persistent conflict and instability that create pressure and repeatedly undermine workable decisions.",
     profile("tropical.overview.strengths[2]"),
   );
-  assert(!result.valid, "opposite-role strength entry must fail");
+  assert(!result.valid, "opposite-role strength entry must be detected");
   assert(result.issues.some(({ code }) => code === "irrelevant"), "opposite role must report irrelevance");
 });
 
-test("an obvious strength placed in tensions is rejected", () => {
+test("an obvious strength placed in tensions is detected", () => {
   const result = auditField(
     "Your reliable discipline and confidence provide a stable capacity for clear and effective action.",
     profile("tropical.overview.tensions[2]"),
   );
-  assert(!result.valid, "opposite-role tension entry must fail");
+  assert(!result.valid, "opposite-role tension entry must be detected");
   assert(result.issues.some(({ code }) => code === "irrelevant"), "opposite role must report irrelevance");
 });
 
-test("process narration remains rejected", () => {
+test("process narration remains detectable", () => {
   const result = auditField(
     "I will analyse the supplied chart and explain the requested field.",
     profile("tropical.overview.strengths[3]"),
   );
-  assert(!result.valid, "process narration must still fail");
+  assert(!result.valid, "process narration must still be detected");
 });
 
-test("technical placement-led prose is rejected", () => {
+test("technical placement-led prose is detected", () => {
   const result = auditField(
     "The Virgo Moon in the eighth house points to a mind that notices hidden psychological layers.",
     profile("tropical.life.mindAndCommunication.detail"),
   );
-  assert(!result.valid, "technical opening must fail");
+  assert(!result.valid, "technical opening must be detected");
   assert(result.issues.some(({ code }) => code === "technical_opening"), "technical opening code");
 });
 
-test("internal source references are rejected outside sourceRefs", () => {
+test("internal source references are detected outside sourceRefs", () => {
   const result = auditField(
     "Your emotional intensity deepens trust [#/astral-calculation/system/points/moon].",
     profile("tropical.life.emotionalNature.detail"),
   );
-  assert(!result.valid, "reference leakage must fail");
+  assert(!result.valid, "reference leakage must be detected");
   assert(result.issues.some(({ code }) => code === "reference_leakage"), "reference leakage code");
 });
 
@@ -129,7 +129,7 @@ test("path-aware duplicate diagnostics name the matched field and score", () => 
     ...profile("tropical.life.sexuality.detail"),
     priorFields: [{ path: "tropical.life.romance.detail", value }],
   });
-  assert(!result.valid, "exact cross-field duplicate must fail");
+  assert(!result.valid, "exact cross-field duplicate must be detected");
   assert(
     result.issues.some(({ message }) => message.includes("tropical.life.romance.detail") && message.includes("score 1.0000")),
     "duplicate diagnostic must include path and score",
@@ -183,7 +183,7 @@ test("completion audit catches genuinely unfinished narrative text", () => {
   assert(issues.some(({ code }) => code === "dangling_clause"), "dangling clause must be detected");
 });
 
-test("genuinely unfinished prose requests completion repair", () => {
+test("genuinely unfinished prose requests repair without becoming fatal", () => {
   const result = auditStructured(
     { detail: "You seek depth and trust because" },
     {},
@@ -191,8 +191,25 @@ test("genuinely unfinished prose requests completion repair", () => {
     profile("tropical.life.sexuality"),
   );
   assert(!result.valid, "genuinely unfinished prose must not be accepted directly");
-  assert(result.repair === "completion", "genuine truncation must request model completion repair");
-  assert(result.soft !== true, "genuine truncation must not be soft-accepted");
+  assert(result.repair === "completion", "genuine truncation must request small-model completion");
+  assert(result.soft === true, "an unresolved NLP finding must remain non-fatal");
+});
+
+test("ordinary NLP findings request small-model repair and remain non-fatal", () => {
+  const result = auditStructured(
+    {
+      tensions: [
+        "Difficulty trusting other people can create distance before close relationships have time to develop.",
+      ],
+    },
+    {},
+    new Set<JsonRef>(),
+    profile("tropical.house.7"),
+  );
+  assert(!result.valid, "missing second-person language must be detected");
+  assert(result.errors.some((message) => message.includes("direct second-person language")), "finding must be retained");
+  assert(result.repair === "audit", "finding must be handed to general small-model audit correction");
+  assert(result.soft === true, "NLP must not terminate chart generation");
 });
 
 test("interpretation schemas enumerate only permitted source references", () => {
