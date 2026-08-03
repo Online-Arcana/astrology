@@ -19,7 +19,7 @@
     "ci": "npm run check && npm run test && npm run build",
     "start": "node dist/cli.js serve",
     "vendor:astronomy": "npm --prefix vendor/astronomy install && npm --prefix vendor/astronomy run build",
-    "vendor:places": "npm --prefix vendor/places ci --ignore-scripts && npm --prefix vendor/places run build --workspace=@countrystatecity/countries",
+    "vendor:places": "npm --prefix vendor/places/packages/countries install --ignore-scripts --workspaces=false && npm --prefix vendor/places/packages/countries run build",
     "vendor:time": "npm --prefix vendor/time ci && npm --prefix vendor/time run build",
     "vendor:schema": "npm --prefix vendor/openai-schema install && npm --prefix vendor/openai-schema run build",
     "vendor:build": "npm run vendor:astronomy && npm run vendor:places && npm run vendor:time && npm run vendor:schema"
