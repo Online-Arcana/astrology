@@ -7,5 +7,10 @@ coverage/
 *.log
 .DS_Store
 
+# Generated static frontend assets
+/public/app.js
+/public/.nojekyll
+/public/places/
+
 # Local manual test harness
 /test/local/
