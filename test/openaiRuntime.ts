@@ -256,7 +256,7 @@ await test("fixed plan keeps one bounded foundation conversation and routes fiel
   );
   equal(
     result.run.units["tropical.point.sun"]?.provenance?.repairKind,
-    "completion_condensation",
+    "audit_correction",
     "audit repair provenance",
   );
   equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
