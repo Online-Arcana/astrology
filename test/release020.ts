@@ -22,7 +22,7 @@ assert(/Formatted/u.test(html) && /Raw/u.test(html), "opened charts must provide
 assert(/Preferred gender/u.test(html), "browser form must expose preferred gender metadata");
 assert(/Ed25519 signing key bundle/u.test(html), "browser form must accept a client-only signing key");
 assert(/OpenAI API key/u.test(html), "browser form must accept a client-only OpenAI key");
-assert(!/Peterhead/u.test(html), "browser form must not contain a preselected local place");
+assert(!/id="cityQuery"[^>]*\svalue=/u.test(html), "browser form must not contain a preselected place");
 assert(!/signOpened|Sign opened/u.test(html), "opened files must not expose signing controls");
 
 const build = await readFile("scripts/build-pages.mjs", "utf8");
