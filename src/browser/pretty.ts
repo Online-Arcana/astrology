@@ -1,5 +1,12 @@
 import type { Section } from "../types/chart.js";
-import type { AstrologicalPoint, Sign } from "../types/astro.js";
+import type {
+  Aspect,
+  AstrologicalPoint,
+  House,
+  HouseSystem,
+  Sign,
+  SignPosition,
+} from "../types/astro.js";
 import type { AstralFile } from "../types/file.js";
 
 export interface CustomerRow {
@@ -63,6 +70,8 @@ const names: Readonly<Record<string, string>> = {
   unconsciousPatterns: "Unconscious patterns",
   wellbeingAndDailyRhythm: "Wellbeing and daily rhythm",
   developmentalDirection: "Developmental direction",
+  long_term: "Long-term",
+  conflict_resolution: "Conflict resolution",
 };
 
 const label = (value: string): string => {
@@ -78,11 +87,37 @@ const label = (value: string): string => {
 };
 
 const signName = (value: Sign): string => label(value);
+const decimal = (value: number, digits = 2): string => value.toFixed(digits).replace(/\.00$/u, "");
 
-const pointPosition = (point: AstrologicalPoint): string | null => {
+const positionText = (position: SignPosition): string =>
+  `${signName(position.sign)} ${position.degree}° ${String(position.minute).padStart(2, "0")}′ ${String(position.second).padStart(2, "0")}″`;
+
+const dignityText = (point: AstrologicalPoint): string | null => {
+  const value = point.dignity.value;
+  if (value === null) return null;
+  const states = [
+    value.domicile ? "domicile" : null,
+    value.exalted ? "exalted" : null,
+    value.detriment ? "detriment" : null,
+    value.fallen ? "fall" : null,
+    value.triplicityRuler ? "triplicity ruler" : null,
+    value.boundRuler ? "bound ruler" : null,
+    value.faceRuler ? "face ruler" : null,
+    value.peregrine ? "peregrine" : null,
+  ].filter((item): item is string => item !== null);
+  return states.length === 0 ? `dignity score ${value.score}` : `${states.join(", ")} · score ${value.score}`;
+};
+
+const pointText = (point: AstrologicalPoint, houses: HouseSystem): string | null => {
   const position = point.position.value;
   if (position === null) return null;
-  return `${signName(position.sign)} ${position.degree}° ${String(position.minute).padStart(2, "0")}′ ${String(position.second).padStart(2, "0")}″`;
+  const values = [positionText(position)];
+  const house = point.houses[houses].value;
+  if (house !== null) values.push(`House ${house.house}`);
+  if (point.motion !== "not_applicable" && point.motion !== "unknown") values.push(label(point.motion));
+  const dignity = dignityText(point);
+  if (dignity !== null) values.push(dignity);
+  return values.join(" · ");
 };
 
 const row = (name: string, value: string | null | undefined): CustomerRow[] =>
@@ -115,24 +150,108 @@ const sectionGroup = (fallback: string, section: Section): CustomerGroup => ({
   rows: [...sectionRows(section), ...extraRows(section)],
 });
 
-const coreGroups = (file: AstralFile): CustomerGroup[] => {
+const houseText = (house: House): string | null => {
+  const cusp = house.cusp.value;
+  if (cusp === null) return null;
+  const values = [positionText(cusp)];
+  if (house.occupants.length > 0) values.push(`Occupants: ${house.occupants.map(label).join(", ")}`);
+  if (house.interceptedSigns.length > 0) values.push(`Intercepted: ${house.interceptedSigns.map(signName).join(", ")}`);
+  const traditional = house.rulerTraditional.value;
+  const modern = house.rulerModern.value;
+  if (traditional !== null) values.push(`Ruler: ${label(traditional)}`);
+  if (modern !== null && modern !== traditional) values.push(`Modern ruler: ${label(modern)}`);
+  return values.join(" · ");
+};
+
+const aspectText = (aspect: Aspect): string =>
+  `${label(aspect.a)} ${label(aspect.kind).toLocaleLowerCase("en-GB")} ${label(aspect.b)} · orb ${decimal(aspect.orbDegrees)}° · ${label(aspect.phase).toLocaleLowerCase("en-GB")} · strength ${decimal(aspect.strength)}`;
+
+const deterministicGroups = (file: AstralFile): CustomerGroup[] => {
   const calculation = file["astral-calculation"];
-  const chart = file["astral-chart"];
-  const points = calculation.system.points;
+  const system = calculation.system;
+  const primaryHouses = calculation.settings.primaryHouseSystem;
+  const points = system.points;
   const sun = points.sun.position.value?.sign;
   const moon = points.moon.position.value?.sign;
   const ascendant = points.ascendant.position.value?.sign;
+  const place = calculation.place;
   const identity: CustomerRow[] = [
-    ...row("Chart name", chart.subject.name.value),
+    ...row("Chart name", file["astral-chart"].subject.name.value),
     ...row("Your solar sign", sun === undefined ? null : signName(sun)),
     ...row("Your lunar sign", moon === undefined ? null : signName(moon)),
     ...row("Your rising sign", ascendant === undefined ? null : signName(ascendant)),
-    ...row("Zodiac system", label(chart.zodiac)),
+    ...row("Zodiac system", label(system.zodiac)),
+    ...row("Ayanamsha", system.ayanamsha === null ? null : label(system.ayanamsha)),
+    ...row("Birth date", calculation.birth.date),
+    ...row("Birth time", calculation.birth.time === null ? "Unknown" : calculation.birth.time),
+    ...row("Birth place", `${place.city.name}${place.region === null ? "" : `, ${place.region.name}`}, ${place.country.name}`),
   ];
-  const positions = Object.entries(points).flatMap(([id, point]) => row(label(id), pointPosition(point)));
+  const positions = Object.entries(points).flatMap(([id, point]) => row(label(id), pointText(point, primaryHouses)));
+  const houseChart = system.houses[primaryHouses];
+  const houses = Object.values(houseChart.houses).flatMap((house) => row(`House ${house.number}`, houseText(house)));
+  const lunar = system.lunarPhase;
+  const lunarRows: CustomerRow[] = [
+    ...row("Phase", lunar.phase.value === null ? null : label(lunar.phase.value)),
+    ...row("Moon age", lunar.ageDays.value === null ? null : `${decimal(lunar.ageDays.value)} days`),
+    ...row("Illumination", lunar.illumination.value === null ? null : `${decimal(lunar.illumination.value * 100)}%`),
+    ...row("Cycle", lunar.waxing.value === null ? null : lunar.waxing.value ? "Waxing" : "Waning"),
+  ];
+  const derived = system.derived;
+  const derivedRows: CustomerRow[] = [
+    ...row("Sect", derived.sect.value === null ? null : label(derived.sect.value)),
+    ...row("Traditional chart ruler", derived.chartRuler.traditional.value === null ? null : label(derived.chartRuler.traditional.value)),
+    ...row("Modern chart ruler", derived.chartRuler.modern.value === null ? null : label(derived.chartRuler.modern.value)),
+    ...list("Dominant planets", derived.dominantPlanets.map((item) => `${label(item.planet)} (${decimal(item.score)})`)),
+    ...list("Dominant signs", derived.dominantSigns.map((item) => `${signName(item.sign)} (${decimal(item.score)})`)),
+    ...list("Retrograde planets", derived.retrogradePlanets.map(label)),
+    ...list("Unaspected planets", derived.unaspectedPlanets.map(label)),
+    ...row("Jones pattern", derived.jonesPattern.value === null ? null : label(derived.jonesPattern.value)),
+  ];
+  const balanceRows: CustomerRow[] = [
+    ...row("Elements", Object.entries(derived.balances.elements).map(([key, value]) => `${label(key)} ${value}`).join(" · ")),
+    ...row("Modalities", Object.entries(derived.balances.modalities).map(([key, value]) => `${label(key)} ${value}`).join(" · ")),
+    ...row("Polarities", Object.entries(derived.balances.polarities).map(([key, value]) => `${label(key)} ${value}`).join(" · ")),
+    ...row("Hemispheres", Object.entries(derived.balances.hemispheres).map(([key, value]) => `${label(key)} ${value}`).join(" · ")),
+    ...row("House modes", Object.entries(derived.balances.houseModes).map(([key, value]) => `${label(key)} ${value}`).join(" · ")),
+  ];
+  const majorAspects = system.aspects.filter(({ class: kind }) => kind === "major").map((aspect) => ({ label: label(aspect.id), value: aspectText(aspect) }));
+  const minorAspects = system.aspects.filter(({ class: kind }) => kind === "minor").map((aspect) => ({ label: label(aspect.id), value: aspectText(aspect) }));
+  const declinations = system.declinationAspects.map((aspect) => ({
+    label: label(aspect.id),
+    value: `${label(aspect.a)} ${label(aspect.kind).toLocaleLowerCase("en-GB")} ${label(aspect.b)} · orb ${decimal(aspect.orbDegrees)}° · strength ${decimal(aspect.strength)}`,
+  }));
+  const patterns = system.patterns.map((pattern) => ({
+    label: label(pattern.kind),
+    value: `${pattern.points.map(label).join(", ")} · strength ${decimal(pattern.strength)}${pattern.focalPoint === null ? "" : ` · focal point ${label(pattern.focalPoint)}`}`,
+  }));
+  const eclipseRows: CustomerRow[] = [];
+  const natal = system.eclipses.atBirth.value;
+  if (natal !== null) eclipseRows.push({
+    label: "Eclipse at birth",
+    value: `${label(natal.type)} ${natal.kind} eclipse · ${natal.exactUtcIso} · ${natal.node} node`,
+  });
+  const prenatalSolar = system.eclipses.prenatalSolar.value;
+  if (prenatalSolar !== null) eclipseRows.push({
+    label: "Prenatal solar eclipse",
+    value: `${label(prenatalSolar.type)} · ${positionText(prenatalSolar.position)} · ${decimal(prenatalSolar.daysBeforeBirth)} days before birth`,
+  });
+  const prenatalLunar = system.eclipses.prenatalLunar.value;
+  if (prenatalLunar !== null) eclipseRows.push({
+    label: "Prenatal lunar eclipse",
+    value: `${label(prenatalLunar.type)} · ${positionText(prenatalLunar.position)} · ${decimal(prenatalLunar.daysBeforeBirth)} days before birth`,
+  });
   return [
     { title: "Your chart", rows: identity },
     { title: "Your placements", rows: positions },
+    { title: `${label(primaryHouses)} houses`, rows: houses },
+    { title: "Your lunar phase", rows: lunarRows },
+    { title: "Rulers and dominant features", rows: derivedRows },
+    { title: "Chart balance", rows: balanceRows },
+    { title: "Major aspects", rows: majorAspects },
+    { title: "Minor aspects", rows: minorAspects },
+    { title: "Declination aspects", rows: declinations },
+    { title: "Aspect patterns", rows: patterns },
+    { title: "Eclipses", rows: eclipseRows },
   ];
 };
 
@@ -165,12 +284,15 @@ const interpretationGroups = (file: AstralFile): CustomerGroup[] => {
 
 const compatibilityGroups = (file: AstralFile): CustomerGroup[] => {
   const result: CustomerGroup[] = [];
+  const calculated = file["astral-calculation"].compatibility.domains;
   for (const domain of Object.values(file["astral-chart"].compatibility.domains)) {
     result.push({ title: `${label(domain.domain)} compatibility`, rows: row("Overview", domain.overview) });
     for (const interpretation of Object.values(domain.signs)) {
+      const score = calculated[domain.domain].signs[interpretation.sign];
       result.push({
         title: `${label(domain.domain)} compatibility with ${signName(interpretation.sign)}`,
         rows: [
+          ...row("Score", `${decimal(score.score)} / 100 · rank ${score.rank} of 12 · ${label(score.level)} · ${label(score.relation)}`),
           ...row("Summary", interpretation.summary),
           ...row("Dynamic", interpretation.dynamic),
           ...list("Strengths", interpretation.strengths),
@@ -219,7 +341,7 @@ const synthesisGroups = (file: AstralFile): CustomerGroup[] => {
 };
 
 export const customerGroups = (file: AstralFile): CustomerGroup[] => [
-  ...coreGroups(file),
+  ...deterministicGroups(file),
   ...interpretationGroups(file),
   ...compatibilityGroups(file),
   ...synthesisGroups(file),
