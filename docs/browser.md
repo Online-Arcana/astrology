@@ -14,6 +14,8 @@ The optional Ed25519 authority is available only to the active generation path. 
 
 The file-opening path has no signing action. An imported unsigned file remains unsigned. An imported signed file is verified and displayed without replacing its authority. A verified authority fingerprint matching the locally saved key is labelled **Made by this browser key**.
 
+A generated signing key must be backed up outside browser storage. The page provides **Show bundle**, **Copy bundle**, **Download bundle** and **Import bundle** controls. The downloaded JSON contains the issuer, PKCS8 private key and raw public key needed to continue using the same signing identity on another browser or after site data is cleared. Treat that JSON as a private credential.
+
 GitHub Actions secrets are deliberately not passed to the static build. A deployed browser page cannot use a workflow secret without publishing it.
 
 ## Recovery and stopping
