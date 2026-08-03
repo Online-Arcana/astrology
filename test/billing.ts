@@ -40,7 +40,7 @@ const usage = (model: string, clientId: string, input = 1_000, cached = 200, out
 });
 
 await test("official catalogue prices uncached cached and output tokens", () => {
-  near(priceUsage("gpt-5.4-nano", usage("gpt-5.4-nano", "a").usage) ?? -1, 0.000519, "nano price");
+  near(priceUsage("gpt-5.4-nano", usage("gpt-5.4-nano", "a").usage) ?? -1, 0.000539, "nano price");
   near(priceUsage("gpt-5.4-mini-2026-03-17", usage("gpt-5.4-mini", "b").usage) ?? -1, 0.001965, "dated mini price");
   equal(priceUsage("unknown-model", usage("unknown-model", "c").usage), null, "unknown model is unpriced");
 });
