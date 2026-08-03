@@ -5,6 +5,7 @@ import { build } from "esbuild";
 const publicDir = resolve("public");
 const placeSource = resolve("vendor/places/packages/countries/dist/data");
 const placeOutput = resolve(publicDir, "places/data");
+const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
 
 const finalCode = (name) => name.split("-").at(-1) ?? "";
 
@@ -30,6 +31,32 @@ const placeManifest = async () => {
     countries,
     states,
   };
+};
+
+const htmlFiles = async (directory) => {
+  const files = [];
+  for (const item of await readdir(directory, { withFileTypes: true })) {
+    const path = resolve(directory, item.name);
+    if (item.isDirectory()) {
+      files.push(...await htmlFiles(path));
+      continue;
+    }
+    if (item.isFile() && item.name.toLowerCase().endsWith(".html")) files.push(path);
+  }
+  return files;
+};
+
+const applyViewport = async () => {
+  const viewportPattern = /<meta\s+name=["']viewport["'][^>]*>/iu;
+  const headPattern = /<head(?:\s[^>]*)?>/iu;
+  for (const file of await htmlFiles(publicDir)) {
+    const content = await readFile(file, "utf8");
+    const updated = viewportPattern.test(content)
+      ? content.replace(viewportPattern, viewport)
+      : content.replace(headPattern, (head) => `${head}\n  ${viewport}`);
+    if (updated === content) continue;
+    await writeFile(file, updated, "utf8");
+  }
 };
 
 await mkdir(publicDir, { recursive: true });
@@ -72,10 +99,11 @@ await build({
   logLevel: "info",
 });
 
+await applyViewport();
 await writeFile("public/.nojekyll", "", "utf8");
 
 const privateIpv4 = /(?:^|[^0-9])(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?:[^0-9]|$)/u;
-const files = ["public/index.html", "public/style.css", "public/app.js"];
+const files = [...await htmlFiles(publicDir), "public/style.css", "public/app.js"];
 for (const file of files) {
   const content = await readFile(file, "utf8");
   const findings = [];
