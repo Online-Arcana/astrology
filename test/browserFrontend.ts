@@ -58,6 +58,8 @@ await test("public frontend contains no local identity or embedded secret", asyn
     readFile("public/style.css", "utf8"),
     readFile("src/browser/app.ts", "utf8"),
     readFile("src/browser/runtime.ts", "utf8"),
+    readFile("src/browser/keys.ts", "utf8"),
+    readFile("src/browser/store.ts", "utf8"),
   ]);
   const text = files.join("\n");
   assert(!/\/home\/[A-Za-z0-9._-]+|192\.168\.|(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(text), "public source must not contain local paths, private-network addresses or credential values");
