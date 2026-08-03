@@ -61,11 +61,13 @@ const applyPageDefaults = async () => {
   const headPattern = /<head(?:\s[^>]*)?>/iu;
   const headClosePattern = /<\/head\s*>/iu;
   const bodyPattern = /<\/body\s*>/iu;
+  const minuteTimePattern = /(<input\b[^>]*\bid=["']time["'][^>]*\bstep=["'])1(["'][^>]*>)/iu;
   for (const file of await htmlFiles(publicDir)) {
     const content = await readFile(file, "utf8");
     let updated = viewportPattern.test(content)
       ? content.replace(viewportPattern, viewport)
       : content.replace(headPattern, (head) => `${head}\n  ${viewport}`);
+    updated = updated.replace(minuteTimePattern, (_match, before, after) => `${before}60${after}`);
     if (!updated.includes("usability.css")) {
       if (!headClosePattern.test(updated)) throw new Error(`Public HTML page has no closing head tag: ${file}`);
       updated = updated.replace(headClosePattern, `  ${usabilityStyleTag(file)}\n</head>`);
