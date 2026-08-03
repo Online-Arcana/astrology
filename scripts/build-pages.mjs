@@ -14,14 +14,14 @@ const placeManifest = async () => {
   for (const item of await readdir(placeSource, { withFileTypes: true })) {
     if (!item.isDirectory()) continue;
     const country = finalCode(item.name).toUpperCase();
-    if (!/^[A-Z]{2}$/u.test(country)) continue;
+    if (!/^[A-Z]{2}$/.test(country)) continue;
     countries[country] = item.name;
     states[country] = {};
     const countryPath = resolve(placeSource, item.name);
     for (const region of await readdir(countryPath, { withFileTypes: true })) {
       if (!region.isDirectory()) continue;
       const code = finalCode(region.name).toUpperCase();
-      if (!/^[A-Z0-9-]+$/u.test(code)) continue;
+      if (!/^[A-Z0-9-]+$/.test(code)) continue;
       states[country][code] = region.name;
     }
   }
@@ -65,8 +65,8 @@ await build({
   plugins: [{
     name: "astral-browser-runtime",
     setup(context) {
-      context.onResolve({ filter: /(?:^|\/)vendor\/load\.js$/u }, () => ({ path: aliases["vendor/load.js"] }));
-      context.onResolve({ filter: /(?:^|\/)place\/csc\.js$/u }, () => ({ path: aliases["place/csc.js"] }));
+      context.onResolve({ filter: /(?:^|\/)vendor\/load\.js$/ }, () => ({ path: aliases["vendor/load.js"] }));
+      context.onResolve({ filter: /(?:^|\/)place\/csc\.js$/ }, () => ({ path: aliases["place/csc.js"] }));
     },
   }],
   logLevel: "info",
