@@ -31,7 +31,7 @@ import type {
   SchemaClientFactory,
   WaveCheckpoint,
 } from "../llm/orchestrate/types.js";
-import type { BirthInput } from "../types/base.js";
+import { preferredGenderOf, type BirthInput, type PreferredGender } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
 import type { AstralCalculation, AstralFile } from "../types/file.js";
 
@@ -103,11 +103,21 @@ const baseDeveloperInstruction = [
   "Return only the requested strict JSON schema.",
 ].join("\n");
 
+const grammaticalGenderInstruction = (gender: PreferredGender): string => {
+  const neutral = "Prefer natural gender-neutral wording whenever it preserves meaning, especially in English. Never infer anatomy, sex at birth, social roles, interests or relationship roles from preferred gender.";
+  switch (gender) {
+    case "male": return `${neutral} Where the target language genuinely requires gender agreement or a personal pronoun, use masculine forms and masculine pronouns.`;
+    case "female": return `${neutral} Where the target language genuinely requires gender agreement or a personal pronoun, use feminine forms and feminine pronouns.`;
+    case "non-binary": return `${neutral} Use neutral pronouns and neutral grammatical forms where established. Otherwise rewrite the sentence naturally to avoid gendered pronouns or morphology rather than forcing an awkward form.`;
+  }
+};
+
 const languageInstruction = (calculation: AstralCalculation): string => {
   const ayanamsha = calculation.settings.siderealAyanamsha;
   return [
     `Write all interpretation text in ${calculation.subject.language}.`,
     "The subject is an adult.",
+    grammaticalGenderInstruction(preferredGenderOf(calculation.subject)),
     "Astrology may be interpreted as symbolism, tendencies and patterns only.",
     "Do not add medical, legal, financial, safeguarding or crisis advice.",
     `Use only the selected ${calculation.system.zodiac} zodiac system.`,
@@ -322,7 +332,7 @@ export class ChartGenerationService {
 
 export const loadChartGenerationService = async (
   config: Config,
-  version = "0.19.0",
+  version = "0.20.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {
@@ -339,6 +349,7 @@ export const loadChartGenerationService = async (
       astral_charts_version: version,
       zodiac: value.system.zodiac,
       ayanamsha: value.settings.siderealAyanamsha ?? "none",
+      preferred_gender: preferredGenderOf(value.subject),
     },
     ...(config.chart.laneContextTokens === undefined
       ? {}
