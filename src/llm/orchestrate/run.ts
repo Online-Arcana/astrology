@@ -15,6 +15,7 @@ import type {
   SchemaClient,
   SchemaClientFactory,
   SnapshotCheckpoint,
+  UnitAudit,
   UnitContext,
   UnitResult,
   WaveCheckpoint,
@@ -145,6 +146,17 @@ const repairInstruction = [
   "Finish every required property, sentence and list entry.",
 ].join("\n");
 
+const completionRepairInstruction = [
+  "The primary interpretation parsed successfully, but one or more prose fields were cut off.",
+  "Return a concise, complete replacement for the entire strict schema.",
+  "Preserve every sound conclusion and source reference from partialCandidate.",
+  "Condense wording where necessary and finish every incomplete sentence or list entry naturally.",
+  "Do not invent a new interpretation or change already complete conclusions.",
+  "Use deterministicInput and snapshot context only to complete missing meaning.",
+  "Write directly to the person using you and your.",
+  "Never place internal JSON references in prose; references belong only in sourceRefs.",
+].join("\n");
+
 const repairTruncation = async (
   options: ExecutionOptions,
   cause: unknown,
@@ -157,6 +169,12 @@ const repairTruncation = async (
   const partialCandidate = rawText(cause);
   options.counters.calls += 1;
   options.counters.retries += 1;
+  options.hooks.onRepair?.(
+    options.unit,
+    attempt,
+    model,
+    [responseStatus(cause) ?? "malformed_json"],
+  );
   let output: object;
   try {
     output = await options.limiter.run(() => repairClient.run(
@@ -200,6 +218,73 @@ const repairTruncation = async (
     model: originalModel,
     provenance: { repairedBy: model, repairKind: "truncation_condensation" },
   };
+};
+
+const repairCompletion = async (
+  options: ExecutionOptions,
+  partial: object,
+  initialAudit: UnitAudit<object>,
+  context: UnitContext,
+  attempt: number,
+  originalModel: string,
+): Promise<UnitResult<object> | null> => {
+  const repairClient = options.createClient();
+  const model = options.config.openai.smallModel;
+  let candidate = partial;
+  let errors = [...initialAudit.errors];
+
+  for (let pass = 1; pass <= 2; pass += 1) {
+    options.counters.calls += 1;
+    options.counters.retries += 1;
+    options.hooks.onRepair?.(options.unit, attempt, model, errors);
+
+    let output: object;
+    try {
+      const input = {
+        instruction: completionRepairInstruction,
+        repairPass: pass,
+        auditErrors: errors,
+        partialCandidate: candidate,
+        deterministicInput: options.unit.input(context),
+      };
+      output = await options.limiter.run(() => repairClient.run(
+        options.unit.shape,
+        options.snapshot === null
+          ? input
+          : snapshotInput(options.remoteFileId, options.snapshot, input),
+        {
+          body: {
+            model,
+            store: false,
+            reasoning: { effort: "none" },
+            max_output_tokens: tokensFor(options.config, options.unit),
+          },
+          retries: 0,
+        },
+      ));
+    } catch {
+      return null;
+    }
+
+    conversation(repairClient, options.counters);
+    const audited = options.unit.audit(output, context);
+    if (audited.valid) {
+      return {
+        id: options.unit.id,
+        value: audited.value,
+        attempts: attempt,
+        model: originalModel,
+        provenance: { repairedBy: model, repairKind: "completion_condensation" },
+      };
+    }
+
+    await options.hooks.onReject?.(options.unit, attempt, model, output, audited);
+    if (audited.repair !== "completion") return null;
+    candidate = audited.value;
+    errors = [...audited.errors];
+  }
+
+  return null;
 };
 
 const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object>> => {
@@ -265,6 +350,15 @@ const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object
     }
 
     const audited = options.unit.audit(output, context);
+    if (!audited.valid && audited.repair === "completion") {
+      const repaired = await repairCompletion(options, audited.value, audited, context, attempt, model);
+      if (repaired !== null) {
+        options.hooks.onComplete?.(repaired);
+        await options.onState(null);
+        return repaired;
+      }
+    }
+
     const softAccepted = !audited.valid && audited.soft === true && attempt >= maximumAttempts;
     if (audited.valid || softAccepted) {
       const result: UnitResult<object> = { id: options.unit.id, value: audited.value, attempts: attempt, model };
@@ -279,10 +373,20 @@ const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object
     if (attempt < maximumAttempts) {
       options.counters.retries += 1;
       options.hooks.onRetry?.(options.unit, attempt, correction);
-      await options.onState(state(options.unit, attempt + 1, correction, "audit"));
+      await options.onState(state(
+        options.unit,
+        attempt + 1,
+        correction,
+        audited.repair === "completion" ? "truncation" : "audit",
+      ));
       continue;
     }
-    await options.onState(state(options.unit, attempt, correction, "audit"));
+    await options.onState(state(
+      options.unit,
+      attempt,
+      correction,
+      audited.repair === "completion" ? "truncation" : "audit",
+    ));
     throw new Error(`Interpretation unit ${options.unit.id} failed audit: ${audited.errors.join("; ")}`);
   }
   throw new Error(`Interpretation unit ${options.unit.id} produced no accepted output`);
