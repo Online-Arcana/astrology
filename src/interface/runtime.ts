@@ -12,7 +12,7 @@ export interface LoadedApiRuntime extends ApiRuntime {
 
 export const loadApiRuntime = async (
   config: Config,
-  version = "0.19.0",
+  version = "0.20.0",
 ): Promise<LoadedApiRuntime> => {
   const [{ service, options }, places] = await Promise.all([
     loadCalculationService(config, version),

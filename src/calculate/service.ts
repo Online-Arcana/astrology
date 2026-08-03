@@ -26,7 +26,15 @@ import type { PlaceCatalogue } from "../place/model.js";
 import { resolveBirthTime } from "../time/calculate.js";
 import type { TimeResolver } from "../time/model.js";
 import { loadTimeResolver } from "../time/vendor.js";
-import type { BirthInput, Calc, CalcReason, CalcStatus, JsonRef, TimeData } from "../types/base.js";
+import {
+  preferredGenderOf,
+  type BirthInput,
+  type Calc,
+  type CalcReason,
+  type CalcStatus,
+  type JsonRef,
+  type TimeData,
+} from "../types/base.js";
 import type {
   Ayanamsha,
   AstrologicalPoint,
@@ -410,6 +418,7 @@ export class CalculationService {
         providedName: input.name?.trim() || null,
         language: input.lang?.trim() || "en",
         adult: true as const,
+        preferredGender: preferredGenderOf(input),
       },
       birth: { date: input.date, time: input.time, timeAccuracy: input.timeAccuracy },
       place,
@@ -447,7 +456,7 @@ export class CalculationService {
   }
 }
 
-export const loadCalculationPorts = async (version = "0.19.0"): Promise<CalculationPorts> => {
+export const loadCalculationPorts = async (version = "0.20.0"): Promise<CalculationPorts> => {
   const [places, timeResolver, astronomy, lunarOrbit, eclipses] = await Promise.all([
     loadCscCatalogue(),
     loadTimeResolver(),
@@ -468,7 +477,7 @@ export const loadCalculationPorts = async (version = "0.19.0"): Promise<Calculat
 
 export const loadCalculationService = async (
   config: Config,
-  version = "0.19.0",
+  version = "0.20.0",
 ): Promise<{ service: CalculationService; options: CalculationOptions }> => ({
   service: new CalculationService(await loadCalculationPorts(version)),
   options: optionsFromConfig(config),

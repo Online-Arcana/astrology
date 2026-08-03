@@ -32,6 +32,16 @@ export type Json =
 
 export type JsonRef = `#/${string}`;
 
+export type PreferredGender = "male" | "female" | "non-binary";
+
+/**
+ * Files created before preferred-gender metadata existed are interpreted as
+ * male for backwards compatibility. New output always writes the field.
+ */
+export const preferredGenderOf = (
+  value: { preferredGender?: PreferredGender },
+): PreferredGender => value.preferredGender ?? "male";
+
 export interface BirthInput {
   date: string;
   time: string | null;
@@ -39,6 +49,7 @@ export interface BirthInput {
   placeId: string;
   name?: string;
   lang?: string;
+  preferredGender?: PreferredGender;
 }
 
 export interface PlaceData {

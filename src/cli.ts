@@ -144,7 +144,7 @@ export const runCli = async (args: readonly string[]): Promise<void> => {
   }
 
   const config = readConfig(process.env);
-  const runtime = await loadApiRuntime(config, "0.19.0");
+  const runtime = await loadApiRuntime(config, "0.20.0");
 
   if (command.kind === "bills") {
     await writeText(command.output, `${JSON.stringify(await runtime.bills.summary(), null, 2)}\n`);
@@ -186,7 +186,8 @@ export const runCli = async (args: readonly string[]): Promise<void> => {
         await runtime.bills.save(bill);
         view.finish(bill);
       }
-      await writeText(command.output, encodeAstralFile(generated.file, command.pretty));
+      // Final customer-facing .astral files are always indented. Recovery snapshots remain compact.
+      await writeText(command.output, encodeAstralFile(generated.file, true));
       return;
     } catch (cause: unknown) {
       const bill = latest.value;
