@@ -14,6 +14,7 @@ export interface OpenAITransportOptions {
   pollIntervalMs?: number;
   pollTimeoutMs?: number;
   createTimeoutMs?: number;
+  responseAttempts?: number;
   retryAttempts?: number;
   retryDelayMs?: number;
 }
@@ -21,17 +22,20 @@ export interface OpenAITransportOptions {
 export class OpenAITransportError extends Error {
   readonly responseId: string | null;
   readonly responseStatus: string | null;
+  readonly timedOut: boolean;
 
   constructor(
     message: string,
     responseId: string | null = null,
     responseStatus: string | null = null,
     cause?: unknown,
+    timedOut = false,
   ) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = "OpenAITransportError";
     this.responseId = responseId;
     this.responseStatus = responseStatus;
+    this.timedOut = timedOut;
   }
 }
 
@@ -200,22 +204,12 @@ const pause = (
       return;
     }
 
-    const timer = setTimeout(() => {
-      signal?.removeEventListener(
-        "abort",
-        onAbort,
-      );
-
-      resolve();
-    }, ms);
-
     const onAbort = (): void => {
       clearTimeout(timer);
       signal?.removeEventListener(
         "abort",
         onAbort,
       );
-
       reject(
         signal === undefined
           ? new Error(
@@ -224,6 +218,14 @@ const pause = (
           : abortError(signal),
       );
     };
+
+    const timer = setTimeout(() => {
+      signal?.removeEventListener(
+        "abort",
+        onAbort,
+      );
+      resolve();
+    }, ms);
 
     signal?.addEventListener(
       "abort",
@@ -308,14 +310,20 @@ export const createOpenAITransport = (
 
   const pollTimeoutMs = positive(
     options.pollTimeoutMs,
-    2 * 60 * 60 * 1_000,
+    2 * 60 * 1_000,
     "OpenAI poll timeout",
   );
 
   const createTimeoutMs = positive(
     options.createTimeoutMs,
-    15 * 60 * 1_000,
+    60 * 1_000,
     "OpenAI creation timeout",
+  );
+
+  const responseAttempts = positive(
+    options.responseAttempts,
+    3,
+    "OpenAI response attempts",
   );
 
   const retryAttempts = positive(
@@ -345,10 +353,11 @@ export const createOpenAITransport = (
 
       if (remaining <= 0) {
         throw new OpenAITransportError(
-          `OpenAI response ${id} could not be polled before its deadline`,
+          `OpenAI response ${id} polling timed out`,
           id,
-          null,
+          "in_progress",
           last,
+          true,
         );
       }
 
@@ -400,9 +409,11 @@ export const createOpenAITransport = (
 
       if (remaining <= 0) {
         throw new OpenAITransportError(
-          `OpenAI response ${id} did not finish within ${pollTimeoutMs} ms`,
+          `OpenAI response ${id} timed out after ${pollTimeoutMs} ms`,
           id,
           "in_progress",
+          undefined,
+          true,
         );
       }
 
@@ -476,31 +487,32 @@ export const createOpenAITransport = (
     }
   };
 
-  return async (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ): Promise<Response> => {
-    if (
-      !background
-      || requestMethod(input, init) !== "POST"
-      || !responseEndpoint(input)
-      || typeof init?.body !== "string"
-    ) {
-      return fetcher(input, init);
-    }
-
-    let body: unknown;
-
+  const cancel = async (
+    responseUrl: string,
+    id: string,
+    headers: Headers,
+  ): Promise<void> => {
     try {
-      body = JSON.parse(init.body);
+      const response = await fetcher(
+        `${responseUrl}/${encodeURIComponent(id)}/cancel`,
+        {
+          method: "POST",
+          headers,
+        },
+      );
+      await response.body?.cancel();
     } catch {
-      return fetcher(input, init);
+      // Cancellation is best effort; the replacement request is authoritative.
     }
+  };
 
-    if (!rec(body)) {
-      return fetcher(input, init);
-    }
-
+  const send = async (
+    input: RequestInfo | URL,
+    init: RequestInit,
+    body: RecordValue,
+    signal: AbortSignal | undefined,
+    responseAttempt: number,
+  ): Promise<Response> => {
     const headers = new Headers(
       init.headers
       ?? (
@@ -524,14 +536,6 @@ export const createOpenAITransport = (
       );
     }
 
-    const signal =
-      init.signal
-      ?? (
-        input instanceof Request
-          ? input.signal
-          : undefined
-      );
-
     const createDeadline = Date.now() + createTimeoutMs;
     let createAttempt = 0;
     let response: Response | null = null;
@@ -542,10 +546,11 @@ export const createOpenAITransport = (
 
       if (remaining <= 0) {
         throw new OpenAITransportError(
-          `OpenAI response creation did not finish within ${createTimeoutMs} ms`,
+          `OpenAI response creation timed out after ${createTimeoutMs} ms`,
           null,
           null,
           createCause,
+          true,
         );
       }
 
@@ -563,6 +568,9 @@ export const createOpenAITransport = (
             ...body,
             background: true,
           }),
+          ...(signal === undefined
+            ? {}
+            : { signal }),
         });
 
         if (!transient.has(created.status)) {
@@ -628,15 +636,85 @@ export const createOpenAITransport = (
       );
     }
 
-    if (waiting.has(status)) {
-      return poll(
-        requestUrl(input).replace(/\/+$/u, ""),
+    if (!waiting.has(status)) {
+      throw responseFailure(id, status, value);
+    }
+
+    const responseUrl =
+      requestUrl(input).replace(/\/+$/u, "");
+
+    try {
+      return await poll(
+        responseUrl,
         id,
         headers,
         signal,
       );
+    } catch (cause: unknown) {
+      if (
+        !(cause instanceof OpenAITransportError)
+        || !cause.timedOut
+        || responseAttempt >= responseAttempts
+        || signal?.aborted
+      ) {
+        throw cause;
+      }
+
+      await cancel(responseUrl, id, headers);
+      await pause(retryDelayMs, signal);
+
+      return send(
+        input,
+        {
+          ...init,
+          headers: new Headers(init.headers),
+        },
+        body,
+        signal,
+        responseAttempt + 1,
+      );
+    }
+  };
+
+  return async (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    if (
+      !background
+      || requestMethod(input, init) !== "POST"
+      || !responseEndpoint(input)
+      || typeof init?.body !== "string"
+    ) {
+      return fetcher(input, init);
     }
 
-    throw responseFailure(id, status, value);
+    let body: unknown;
+
+    try {
+      body = JSON.parse(init.body);
+    } catch {
+      return fetcher(input, init);
+    }
+
+    if (!rec(body)) {
+      return fetcher(input, init);
+    }
+
+    const signal =
+      init.signal
+      ?? (
+        input instanceof Request
+          ? input.signal
+          : undefined
+      );
+
+    return send(
+      input,
+      init,
+      body,
+      signal,
+      1,
+    );
   };
 };
