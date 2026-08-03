@@ -2,11 +2,12 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="theme-color" content="#151329">
   <meta name="description" content="Create, resume, inspect and validate private astrology charts entirely in your browser.">
   <title>Astrology chart creator</title>
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./usability.css">
 </head>
 <body>
   <header class="hero">
@@ -28,26 +29,40 @@
         <span id="keyIdentity" class="muted">No signing identity</span>
       </div>
       <p class="notice">Keys are saved only in this page origin’s <code>localStorage</code>. They are never included in the GitHub Pages build.</p>
-      <div class="grid two">
-        <label>
-          OpenAI API key
-          <span class="inline">
+
+      <div class="credentials">
+        <section class="credential credential-openai" aria-labelledby="openAiKeyLabel">
+          <label id="openAiKeyLabel" for="openAiKey">OpenAI API key</label>
+          <div class="credential-primary">
             <input id="openAiKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="sk-…">
-            <button id="saveOpenAiKey" type="button" class="secondary">Save</button>
+            <button id="saveOpenAiKey" type="button" class="secondary" hidden aria-hidden="true" tabindex="-1">Save</button>
             <button id="clearOpenAiKey" type="button" class="ghost">Clear</button>
-          </span>
-        </label>
-        <label>
-          Ed25519 signing key bundle
-          <span class="inline">
-            <input id="signingKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder='{"issuer":"…","privatePkcs8":"base64url:…","publicRaw":"base64url:…"}'>
+          </div>
+          <p class="credential-note">Saved automatically when you generate a chart.</p>
+        </section>
+
+        <section class="credential credential-signing" aria-labelledby="signingKeyLabel">
+          <label id="signingKeyLabel" for="signingKey">Ed25519 signing key bundle</label>
+          <div class="credential-primary signing-key-primary">
+            <span class="password-field">
+              <input id="signingKey" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder='{"issuer":"…","privatePkcs8":"base64url:…","publicRaw":"base64url:…"}'>
+              <button id="showSigningKeyBundle" type="button" class="password-toggle" aria-label="Show signing key bundle" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 3 18 18"></path>
+                  <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>
+                  <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a18 18 0 0 1-2 3.1"></path>
+                  <path d="M6.6 6.6C3.7 8.5 2 12 2 12s3.5 8 10 8a10.7 10.7 0 0 0 5.4-1.4"></path>
+                </svg>
+              </button>
+            </span>
             <button id="saveSigningKey" type="button" class="secondary">Save</button>
             <button id="generateSigningKey" type="button" class="ghost">Generate</button>
             <button id="clearSigningKey" type="button" class="ghost">Clear</button>
-          </span>
-        </label>
+          </div>
+        </section>
       </div>
-      <p class="notice warning">A signing key is used only while this page is completing a chart it generated. Opening an unsigned file can never make it signable.</p>
+
+      <p class="notice warning credential-warning">A signing key is used only while this page is completing a chart it generated. Opening an unsigned file can never make it signable.</p>
     </section>
 
     <nav class="tabs" aria-label="Chart actions">
@@ -96,7 +111,7 @@
               <option value="unknown">Unknown</option>
             </select>
           </label>
-          <label>Birth time<input id="time" type="time" step="1" required></label>
+          <label>Birth time<input id="time" type="time" step="60" required></label>
         </div>
 
         <div class="section-heading compact">
