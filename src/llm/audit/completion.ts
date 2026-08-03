@@ -11,6 +11,11 @@ export interface CompletionIssue {
   message: string;
 }
 
+export interface CompletionRepair {
+  value: string;
+  repaired: boolean;
+}
+
 const terminal = /[.!?…”’)]$/u;
 const dangling = /\b(?:and|or|but|because|although|while|with|without|through|towards?|into|from|of|for|to|as|than|which|that|who|whose|when|where|if|unless|despite|including|such as)\s*$/iu;
 const continuation = /\b(?:continued|continue|to be continued|more follows|the rest|remaining fields?)\s*$/iu;
@@ -52,6 +57,18 @@ const completeText = (value: string, path: string): CompletionIssue[] => {
     issues.push({ path, code: "missing_terminal_punctuation", message: `${path} does not end naturally` });
   }
   return issues;
+};
+
+export const repairTerminalPunctuation = (value: string, path: string): CompletionRepair => {
+  const text = value.trim();
+  if (text.length < 48 || terminal.test(text) || /(?:^|\.)title$/iu.test(path)) {
+    return { value: text, repaired: text !== value };
+  }
+  const issues = completeText(text, path);
+  const cosmetic = issues.length === 1 && issues[0]?.code === "missing_terminal_punctuation";
+  return cosmetic
+    ? { value: `${text}.`, repaired: true }
+    : { value: text, repaired: text !== value };
 };
 
 const structural = new Set(["status", "sign", "domain"]);

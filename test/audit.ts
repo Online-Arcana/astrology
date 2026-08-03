@@ -154,9 +154,36 @@ test("structured audit applies a specialised subfield lexicon", () => {
   assert(result.valid, result.errors.join("; "));
 });
 
+test("missing terminal punctuation is repaired locally", () => {
+  const result = auditStructured(
+    {
+      tensions: [
+        "You can become impatient with slower processes, creating avoidable friction when careful pacing would work better",
+      ],
+    },
+    {},
+    new Set<JsonRef>(),
+    profile("tropical.point.sun"),
+  );
+  assert(result.valid, result.errors.join("; "));
+  const tensions = (result.value as { tensions: string[] }).tensions;
+  assert(tensions[0]?.endsWith(".") === true, "cosmetic punctuation must be appended locally");
+});
+
 test("completion audit catches unfinished narrative text", () => {
   const issues = auditCompletion({ detail: "You seek depth and trust because" }, "tropical.life.sexuality");
   assert(issues.some(({ code }) => code === "dangling_clause"), "dangling clause must be detected");
+});
+
+test("dangling clauses remain hard structured failures", () => {
+  const result = auditStructured(
+    { detail: "You seek depth and trust because" },
+    {},
+    new Set<JsonRef>(),
+    profile("tropical.life.sexuality"),
+  );
+  assert(!result.valid, "genuinely unfinished prose must still fail");
+  assert(result.errors.some((message) => message.includes("unfinished clause")), "hard completion reason must remain visible");
 });
 
 test("interpretation schemas enumerate only permitted source references", () => {
