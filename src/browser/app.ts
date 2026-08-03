@@ -51,7 +51,9 @@ const choice = (selector: string): HTMLSelectElement => select<HTMLSelectElement
 const button = (selector: string): HTMLButtonElement => select<HTMLButtonElement>(selector);
 const element = (selector: string): HTMLElement => select<HTMLElement>(selector);
 const text = (selector: string, value: string): void => { element(selector).textContent = value; };
-const hidden = (selector: string, value: boolean): void => element(selector).classList.toggle("hidden", value);
+const hidden = (selector: string, value: boolean): void => {
+  element(selector).classList.toggle("hidden", value);
+};
 
 const store = new BrowserStore();
 const places = loadCscCatalogue();
@@ -198,21 +200,25 @@ const requestFromForm = (): GenerationRequest => {
   const city = selectedItem<CityChoice>(choice("#city"));
   if (city === null) throw new Error("Search for and choose a birth city");
   const accuracy = choice("#timeAccuracy").value as BirthInput["timeAccuracy"];
-  const time = accuracy === "unknown" ? null : input("#time").value;
-  if (accuracy !== "unknown" && time.length === 0) throw new Error("Enter a birth time or choose Unknown time accuracy");
+  const enteredTime = input("#time").value;
+  if (accuracy !== "unknown" && enteredTime.length === 0) {
+    throw new Error("Enter a birth time or choose Unknown time accuracy");
+  }
   const birth: BirthInput = {
     date: input("#date").value,
-    time,
+    time: accuracy === "unknown" ? null : enteredTime,
     timeAccuracy: accuracy,
     placeId: city.id,
   };
   if (birth.date.length === 0) throw new Error("Enter a birth date");
   const name = input("#name").value.trim();
   const lang = input("#lang").value.trim();
-  const gender = choice("#preferredGender").value as PreferredGender | "";
+  const gender = choice("#preferredGender").value;
   if (name.length > 0) birth.name = name;
   if (lang.length > 0) birth.lang = lang;
-  if (gender.length > 0) birth.preferredGender = gender;
+  if (gender === "male" || gender === "female" || gender === "non-binary") {
+    birth.preferredGender = gender satisfies PreferredGender;
+  }
   const zodiac = choice("#zodiac").value as Zodiac;
   return {
     birth,
@@ -366,11 +372,22 @@ const hooks = (): GenerationHooks => ({
     renderProgress();
   },
   onBill: (bill) => {
+    void store.put<ChartBill>("bills", bill);
     void renderBill(bill);
   },
 });
 
 const savedSigningKey = (): BrowserSigningKey | null => signingKey;
+
+const clearActiveGeneration = (): void => {
+  activeJobId = null;
+  activeRequest = null;
+  activeCheckpoint = null;
+  activeWave = null;
+  repairingUnits.clear();
+  abortController = null;
+  renderProgress();
+};
 
 const completeGeneration = async (result: Awaited<ReturnType<BrowserRuntime["generate"]>>): Promise<void> => {
   generatedFile = result.file;
@@ -384,13 +401,7 @@ const completeGeneration = async (result: Awaited<ReturnType<BrowserRuntime["gen
   await store.put<BrowserChart>("charts", chart);
   if (result.bill !== null) await store.put<ChartBill>("bills", result.bill);
   if (activeJobId !== null) await store.delete("jobs", activeJobId);
-  activeJobId = null;
-  activeRequest = null;
-  activeCheckpoint = null;
-  activeWave = null;
-  repairingUnits.clear();
-  abortController = null;
-  renderProgress();
+  clearActiveGeneration();
   await renderBill(result.bill);
   hidden("#completeCard", false);
   text("#completeAuthority", result.file.authority === null ? "Unsigned" : "Signed by this browser key");
@@ -425,8 +436,8 @@ const runGeneration = async (
       : await runtime.resume(checkpoint, hooks(), savedSigningKey());
     await completeGeneration(result);
   } catch (cause: unknown) {
+    const stopped = abortController?.signal.aborted === true;
     if (activeJobId !== null && activeCheckpoint !== null && activeRequest !== null) {
-      const stopped = abortController?.signal.aborted === true;
       await store.put<BrowserJob>("jobs", {
         id: activeJobId,
         status: stopped ? "stopped" : "failed",
@@ -437,11 +448,15 @@ const runGeneration = async (
         error: stopped ? null : cause instanceof Error ? cause.message : String(cause),
       });
     }
-    if (abortController?.signal.aborted !== true) showError(cause);
+    if (activeBill !== null && activeBill.status !== "running") {
+      await store.put<ChartBill>("bills", activeBill);
+    }
+    clearActiveGeneration();
+    if (!stopped) showError(cause);
   } finally {
     button("#generateButton").disabled = false;
     abortController = null;
-    await renderRecoveries();
+    await Promise.all([renderRecoveries(), renderHistory()]);
   }
 };
 
