@@ -77,7 +77,11 @@ await writeFile("public/.nojekyll", "", "utf8");
 const files = ["public/index.html", "public/style.css", "public/app.js"];
 for (const file of files) {
   const content = await readFile(file, "utf8");
-  if (/Peterhead|\/home\/kitty|192\.168\.|OPENAI_API_KEY\s*=|SIGNATURE_KEY\s*=/u.test(content)) {
+  const localPath = /\/home\/[A-Za-z0-9._-]+/u.test(content);
+  const privateNetwork = /(?:10\.|127\.0\.0\.1|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/u.test(content);
+  const embeddedCredential = /(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(content);
+  const prefilledCity = /id=["']cityQuery["'][^>]*\svalue=/u.test(content);
+  if (localPath || privateNetwork || embeddedCredential || prefilledCity) {
     throw new Error(`Public Pages asset failed privacy audit: ${file}`);
   }
 }
