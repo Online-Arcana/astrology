@@ -1,10 +1,11 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { build } from "esbuild";
 
 const publicDir = resolve("public");
 const placeSource = resolve("vendor/places/packages/countries/dist/data");
 const placeOutput = resolve(publicDir, "places/data");
+const keyExportPath = resolve(publicDir, "key-export.js");
 const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
 
 const finalCode = (name) => name.split("-").at(-1) ?? "";
@@ -46,14 +47,25 @@ const htmlFiles = async (directory) => {
   return files;
 };
 
-const applyViewport = async () => {
+const keyExportTag = (file) => {
+  const path = relative(dirname(file), keyExportPath).replaceAll("\\", "/");
+  const source = path.startsWith(".") ? path : `./${path}`;
+  return `<script type="module" src="${source}"></script>`;
+};
+
+const applyPageDefaults = async () => {
   const viewportPattern = /<meta\s+name=["']viewport["'][^>]*>/iu;
   const headPattern = /<head(?:\s[^>]*)?>/iu;
+  const bodyPattern = /<\/body\s*>/iu;
   for (const file of await htmlFiles(publicDir)) {
     const content = await readFile(file, "utf8");
-    const updated = viewportPattern.test(content)
+    let updated = viewportPattern.test(content)
       ? content.replace(viewportPattern, viewport)
       : content.replace(headPattern, (head) => `${head}\n  ${viewport}`);
+    if (!updated.includes("key-export.js")) {
+      if (!bodyPattern.test(updated)) throw new Error(`Public HTML page has no closing body tag: ${file}`);
+      updated = updated.replace(bodyPattern, `  ${keyExportTag(file)}\n</body>`);
+    }
     if (updated === content) continue;
     await writeFile(file, updated, "utf8");
   }
@@ -99,11 +111,11 @@ await build({
   logLevel: "info",
 });
 
-await applyViewport();
+await applyPageDefaults();
 await writeFile("public/.nojekyll", "", "utf8");
 
 const privateIpv4 = /(?:^|[^0-9])(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?:[^0-9]|$)/u;
-const files = [...await htmlFiles(publicDir), "public/style.css", "public/app.js"];
+const files = [...await htmlFiles(publicDir), "public/style.css", "public/app.js", "public/key-export.js"];
 for (const file of files) {
   const content = await readFile(file, "utf8");
   const findings = [];
