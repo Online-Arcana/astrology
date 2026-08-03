@@ -1,4 +1,5 @@
 import { OpenAISchema, type Shape } from "openai-schema";
+import type { ResponseUsage, TokenUsage, UsagePurpose } from "../billing/types.js";
 import {
   createOpenAITransport,
   type OpenAITransportOptions,
@@ -21,6 +22,8 @@ export interface OpenAISchemaRuntimeOptions {
   contextTokenBudget?: number;
   /** Fixed allowance for developer instructions and response framing. */
   contextSafetyTokens?: number;
+  /** Receives authoritative token usage from every completed Responses API call. */
+  onUsage?: (event: ResponseUsage) => void;
 }
 
 const bootstrap: Shape<Record<string, unknown>> = {
@@ -47,6 +50,9 @@ const positive = (value: number | undefined, fallback: number, name: string): nu
   if (!Number.isSafeInteger(selected) || selected < 1) throw new Error(`${name} must be a positive integer`);
   return selected;
 };
+
+const nonNegative = (value: unknown): number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
 
 const outputText = (value: unknown): string => {
   if (typeof value === "string") return value;
@@ -185,6 +191,51 @@ interface PreparedInput {
   compacted: boolean;
 }
 
+interface CapturedUsage {
+  responseId: string | null;
+  model: string | null;
+  usage: TokenUsage;
+}
+
+const responseUsage = (value: unknown): CapturedUsage | null => {
+  if (!record(value) || !record(value["usage"])) return null;
+  const usage = value["usage"];
+  const inputDetails = record(usage["input_tokens_details"]) ? usage["input_tokens_details"] : {};
+  const outputDetails = record(usage["output_tokens_details"]) ? usage["output_tokens_details"] : {};
+  const inputTokens = nonNegative(usage["input_tokens"]);
+  const outputTokens = nonNegative(usage["output_tokens"]);
+  const totalTokens = nonNegative(usage["total_tokens"]) || inputTokens + outputTokens;
+  return {
+    responseId: typeof value["id"] === "string" ? value["id"] : null,
+    model: typeof value["model"] === "string" ? value["model"] : null,
+    usage: {
+      inputTokens,
+      cachedInputTokens: nonNegative(inputDetails["cached_tokens"]),
+      outputTokens,
+      reasoningTokens: nonNegative(outputDetails["reasoning_tokens"]),
+      totalTokens,
+    },
+  };
+};
+
+const containsKey = (value: unknown, key: string, depth = 0): boolean => {
+  if (depth > 8 || value === null || value === undefined) return false;
+  if (Array.isArray(value)) return value.some((child) => containsKey(child, key, depth + 1));
+  if (!record(value)) return false;
+  if (key in value) return true;
+  return Object.values(value).some((child) => containsKey(child, key, depth + 1));
+};
+
+const purposeOf = (input: unknown): UsagePurpose => {
+  if (containsKey(input, "truncationReason")) return "truncation_repair";
+  if (containsKey(input, "repairKind")) {
+    return containsKey(input, "auditErrors") ? "audit_repair" : "completion_repair";
+  }
+  return "primary";
+};
+
+let clientSequence = 0;
+
 class OpenAISchemaClient implements SchemaClient {
   #client: OpenAISchema<Record<string, unknown>>;
   readonly #instructions: string;
@@ -195,6 +246,9 @@ class OpenAISchemaClient implements SchemaClient {
   readonly #runtimeBase: string | undefined;
   readonly #budget: number;
   readonly #safety: number;
+  readonly #onUsage: ((event: ResponseUsage) => void) | undefined;
+  readonly #clientId = `client-${clientSequence += 1}`;
+  readonly #captured: CapturedUsage[] = [];
   #usedTokens = 0;
 
   constructor(options: OpenAISchemaRuntimeOptions, conversationId?: string) {
@@ -203,10 +257,23 @@ class OpenAISchemaClient implements SchemaClient {
     this.#apiKey = options.apiKey;
     this.#runtimeBase = options.base;
     this.#base = (options.base ?? "https://api.openai.com/v1").replace(/\/+$/u, "");
-    this.#fetcher = createOpenAITransport({
+    this.#onUsage = options.onUsage;
+    const transport = createOpenAITransport({
       ...(options.transport ?? {}),
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
     });
+    this.#fetcher = async (input, init) => {
+      const response = await transport(input, init);
+      if (response.ok) {
+        try {
+          const usage = responseUsage(await response.clone().json());
+          if (usage !== null) this.#captured.push(usage);
+        } catch {
+          // The SDK remains authoritative when a non-Responses payload is returned.
+        }
+      }
+      return response;
+    };
     this.#budget = positive(options.contextTokenBudget, 60_000, "OpenAI context token budget");
     this.#safety = positive(options.contextSafetyTokens, 1_024, "OpenAI context safety allowance");
     this.#client = this.#create(conversationId);
@@ -251,6 +318,22 @@ class OpenAISchemaClient implements SchemaClient {
 
     if (this.#usedTokens > 0 && this.#usedTokens + tokens > this.#budget) this.#rotate();
     return { input: selected, tokens, compacted };
+  }
+
+  #flush(shapeName: string, configuredModel: string, purpose: UsagePurpose, from: number): void {
+    const values = this.#captured.splice(from);
+    for (const value of values) {
+      this.#onUsage?.({
+        responseId: value.responseId,
+        model: value.model ?? configuredModel,
+        shape: shapeName,
+        clientId: this.#clientId,
+        conversationId: this.#client.id ?? null,
+        purpose,
+        at: new Date().toISOString(),
+        usage: value.usage,
+      });
+    }
   }
 
   get id(): string | undefined {
@@ -322,17 +405,22 @@ class OpenAISchemaClient implements SchemaClient {
     let input = originalInput;
     let compacted = false;
     let contextFailures = 0;
+    const configuredModel = options.body.model;
+    const purpose = purposeOf(originalInput);
 
     for (;;) {
       const prepared = this.#prepare(input, options);
       input = prepared.input;
       compacted ||= prepared.compacted;
+      const capturedFrom = this.#captured.length;
 
       try {
         const result = await this.#run(value, input, options);
         this.#usedTokens += prepared.tokens;
+        this.#flush(value.name, configuredModel, purpose, capturedFrom);
         return result;
       } catch (cause: unknown) {
+        this.#flush(value.name, configuredModel, purpose, capturedFrom);
         const response = responseError(cause);
         if (response?.incomplete === true) {
           try {
@@ -347,9 +435,6 @@ class OpenAISchemaClient implements SchemaClient {
         contextFailures += 1;
 
         if (contextFailures === 1) {
-          // A recovered or underestimated conversation may already contain more
-          // history than this process can count. Retry the same unit once in a
-          // fresh conversation with the complete snapshot.
           this.#rotate();
           continue;
         }
@@ -364,8 +449,6 @@ class OpenAISchemaClient implements SchemaClient {
           }
         }
 
-        // A unit-only request that still exceeds the model window is a genuine
-        // model/configuration incompatibility rather than accumulated history.
         throw cause;
       }
     }
