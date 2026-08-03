@@ -173,6 +173,16 @@ label {
   display: none !important;
 }
 
+.password-toggle[aria-pressed="false"] svg:last-child,
+.password-toggle[aria-pressed="true"] svg:first-child {
+  display: none !important;
+}
+
+.password-toggle[aria-pressed="false"] svg:first-child,
+.password-toggle[aria-pressed="true"] svg:last-child {
+  display: block;
+}
+
 .signing-key-primary > .password-field {
   order: 0;
   flex-basis: 24rem;
