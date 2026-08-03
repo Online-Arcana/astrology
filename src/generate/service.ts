@@ -1,3 +1,5 @@
+import { BillCollector } from "../billing/bill.js";
+import type { ChartBill, PricedUsage, ResponseUsage } from "../billing/types.js";
 import {
   CalculationService,
   loadCalculationPorts,
@@ -40,6 +42,7 @@ export interface GeneratedChart {
   interpretation: InterpretationRun;
   chart: AstralChart;
   file: AstralFile;
+  bill: ChartBill;
 }
 
 export interface ChartGenerationCheckpoint {
@@ -48,15 +51,21 @@ export interface ChartGenerationCheckpoint {
   calculationFingerprint: string;
   calculation: AstralCalculation;
   interpretation: InterpretationCheckpoint;
+  billing?: ChartBill;
 }
 
 export type ResumableChartGenerationCheckpoint = ChartGenerationCheckpoint | LegacyGenerationCheckpoint;
 
 export interface GenerationHooks extends Omit<RunHooks, "onCheckpoint"> {
   onCheckpoint?: (checkpoint: ChartGenerationCheckpoint) => void | Promise<void>;
+  onUsage?: (event: PricedUsage) => void;
+  onBill?: (bill: ChartBill) => void;
 }
 
-export type ChartSchemaFactory = (calculation: AstralCalculation) => SchemaClientFactory;
+export type ChartSchemaFactory = (
+  calculation: AstralCalculation,
+  onUsage: (event: ResponseUsage) => void,
+) => SchemaClientFactory;
 
 export interface GenerationRuntime {
   calculation: Pick<CalculationService, "calculate">;
@@ -183,12 +192,14 @@ const recoveryFor = async (
   version: string,
   calculation: AstralCalculation,
   interpretation: InterpretationCheckpoint,
+  billing: ChartBill,
 ): Promise<ChartGenerationCheckpoint> => ({
   schema: generationRecoverySchema,
   version,
   calculationFingerprint: calculation.provenance.calculationFingerprint,
   calculation,
   interpretation: await authoritativeInterpretation(calculation, interpretation),
+  billing,
 });
 
 const assertRecoveryBasis = (checkpoint: ChartGenerationCheckpoint, config: Config): void => {
@@ -215,7 +226,7 @@ export class ChartGenerationService {
     hooks: GenerationHooks = {},
   ): Promise<GeneratedChart> {
     const calculation = await this.#runtime.calculation.calculate(birth, options);
-    return this.#complete(calculation, hooks, null);
+    return this.#complete(calculation, hooks, null, null);
   }
 
   async resume(
@@ -228,7 +239,7 @@ export class ChartGenerationService {
         optionsFromConfig(this.#runtime.config),
       );
       const recovery = migrateLegacyInterpretation(checkpoint, calculation);
-      return this.#complete(calculation, hooks, recovery);
+      return this.#complete(calculation, hooks, recovery, null);
     }
     if (checkpoint.schema !== generationRecoverySchema) {
       throw new Error("Generation recovery schema is unsupported");
@@ -243,58 +254,82 @@ export class ChartGenerationService {
     }
     assertRecoveryBasis(checkpoint, this.#runtime.config);
     const recovery = await authoritativeInterpretation(checkpoint.calculation, checkpoint.interpretation);
-    return this.#complete(checkpoint.calculation, hooks, recovery);
+    return this.#complete(checkpoint.calculation, hooks, recovery, checkpoint.billing ?? null);
   }
 
   async #complete(
     calculation: AstralCalculation,
     hooks: GenerationHooks,
     recovery: InterpretationRecovery | null,
+    priorBill: ChartBill | null,
   ): Promise<GeneratedChart> {
-    const { onCheckpoint, ...runHooks } = hooks;
+    const collector = new BillCollector(
+      calculation.provenance.calculationFingerprint,
+      priorBill,
+      () => this.#runtime.now(),
+    );
+    const report = (raw: ResponseUsage): void => {
+      const event = collector.add(raw);
+      hooks.onUsage?.(event);
+      hooks.onBill?.(collector.snapshot());
+    };
+    const { onCheckpoint, onUsage: _onUsage, onBill: _onBill, ...runHooks } = hooks;
     const instrumented = diagnosticHooks({
       ...runHooks,
       ...(onCheckpoint === undefined
         ? {}
         : {
             onCheckpoint: async (checkpoint: InterpretationCheckpoint) =>
-              onCheckpoint(await recoveryFor(this.#runtime.version, calculation, checkpoint)),
+              onCheckpoint(await recoveryFor(
+                this.#runtime.version,
+                calculation,
+                checkpoint,
+                collector.snapshot(),
+              )),
           }),
     }, () => this.#runtime.now());
-    const interpreted = await runInterpretationPlan(
-      calculation,
-      this.#runtime.config,
-      this.#runtime.schemaFactory(calculation),
-      instrumented,
-      recovery,
-    );
-    const generatedAt = this.#runtime.now();
-    const chart = assembleChart(calculation, interpreted.run, {
-      generatedAt,
-      bigModel: this.#runtime.config.openai.bigModel,
-      smallModel: this.#runtime.config.openai.smallModel,
-      structuredOutputSchema: structuredOutputCatalogue,
-      promptCatalogue,
-      astrologyCatalogue: calculation.provenance.astrologyProfile,
-      nlpAuditProfile,
-      ...(interpreted.generatedName === null ? {} : { generatedName: interpreted.generatedName }),
-    });
-    const file = await assembleAstralFile(calculation, chart, authority(this.#runtime.config, generatedAt));
-    return { calculation, interpretation: interpreted.run, chart, file };
+
+    try {
+      const interpreted = await runInterpretationPlan(
+        calculation,
+        this.#runtime.config,
+        this.#runtime.schemaFactory(calculation, report),
+        instrumented,
+        recovery,
+      );
+      const generatedAt = this.#runtime.now();
+      const chart = assembleChart(calculation, interpreted.run, {
+        generatedAt,
+        bigModel: this.#runtime.config.openai.bigModel,
+        smallModel: this.#runtime.config.openai.smallModel,
+        structuredOutputSchema: structuredOutputCatalogue,
+        promptCatalogue,
+        astrologyCatalogue: calculation.provenance.astrologyProfile,
+        nlpAuditProfile,
+        ...(interpreted.generatedName === null ? {} : { generatedName: interpreted.generatedName }),
+      });
+      const file = await assembleAstralFile(calculation, chart, authority(this.#runtime.config, generatedAt));
+      const bill = collector.finish("completed", generatedAt);
+      hooks.onBill?.(bill);
+      return { calculation, interpretation: interpreted.run, chart, file, bill };
+    } catch (cause: unknown) {
+      hooks.onBill?.(collector.finish("failed", this.#runtime.now()));
+      throw cause;
+    }
   }
 }
 
 export const loadChartGenerationService = async (
   config: Config,
   version = "0.19.0",
-  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata">> = {},
+  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {
     throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
   }
   const ports = await loadCalculationPorts(version);
   const calculation = new CalculationService(ports);
-  const schemaFactory: ChartSchemaFactory = (value) => createOpenAISchemaClientFactory({
+  const schemaFactory: ChartSchemaFactory = (value, onUsage) => createOpenAISchemaClientFactory({
     apiKey: config.openai.apiKey,
     instructions: `${baseDeveloperInstruction}\n\n${languageInstruction(value)}`,
     metadata: {
@@ -304,6 +339,8 @@ export const loadChartGenerationService = async (
       zodiac: value.system.zodiac,
       ayanamsha: value.settings.siderealAyanamsha ?? "none",
     },
+    contextTokenBudget: config.chart.laneContextTokens,
+    onUsage,
     ...openai,
   });
   return new ChartGenerationService({
