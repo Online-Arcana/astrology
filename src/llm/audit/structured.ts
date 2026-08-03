@@ -1,6 +1,6 @@
 import { refsValid } from "../../ref/resolve.js";
 import type { JsonRef } from "../../types/base.js";
-import { auditCompletion } from "./completion.js";
+import { auditCompletion, completionIssuesSoft } from "./completion.js";
 import {
   auditField,
   auditList,
@@ -20,7 +20,13 @@ interface State {
   profile: FieldProfile;
   earlier: NarrativeEntry[];
   errors: string[];
+  hard: boolean;
 }
+
+const fail = (state: State, errors: readonly string[]): void => {
+  state.errors.push(...errors);
+  state.hard = true;
+};
 
 const keyFor = (path: string): string | null => {
   const match = path.match(/(?:^|\.)([^.[\]]+)(?:\[\d+\])?$/u);
@@ -41,12 +47,12 @@ const profileAt = (profile: FieldProfile, path: string): FieldProfile => {
 
 const references = (value: unknown, state: State, path: string): JsonRef[] => {
   if (!Array.isArray(value) || !value.every((item) => typeof item === "string" && item.startsWith("#/"))) {
-    state.errors.push(`${path} must contain local JSON references`);
+    fail(state, [`${path} must contain local JSON references`]);
     return [];
   }
   const refs = value as JsonRef[];
   if (!refsValid(state.calculation, refs, state.allowed)) {
-    state.errors.push(`${path} contains unresolved, unavailable or unpermitted source references`);
+    fail(state, [`${path} contains unresolved, unavailable or unpermitted source references`]);
   }
   return [...refs];
 };
@@ -58,7 +64,7 @@ const auditText = (value: string, state: State, path: string): string => {
     id: path,
     priorFields: [...(profile.priorFields ?? []), ...state.earlier],
   });
-  if (!result.valid) state.errors.push(...result.issues.map(({ message }) => message));
+  if (!result.valid) fail(state, result.issues.map(({ message }) => message));
   if (result.value.length >= 20) state.earlier.push({ path, value: result.value });
   return result.value;
 };
@@ -83,7 +89,7 @@ const visit = (
         id: path,
         priorFields: [...(profile.priorFields ?? []), ...state.earlier],
       });
-      if (!result.valid) state.errors.push(...result.issues.map(({ message }) => message));
+      if (!result.valid) fail(state, result.issues.map(({ message }) => message));
       result.values.forEach((item, index) => {
         if (item.length >= 20) state.earlier.push({ path: `${path}[${index}]`, value: item });
       });
@@ -93,7 +99,7 @@ const visit = (
   }
 
   if (!record(value)) {
-    state.errors.push(`${path} has an unsupported value`);
+    fail(state, [`${path} has an unsupported value`]);
     return value;
   }
 
@@ -116,13 +122,17 @@ export const auditStructured = <T extends object>(
     profile,
     earlier: [],
     errors: [],
+    hard: false,
   };
   const audited = visit(value, state, profile.id, null) as T;
-  state.errors.push(...auditCompletion(audited, profile.id).map(({ message }) => message));
+  const completion = auditCompletion(audited, profile.id);
+  state.errors.push(...completion.map(({ message }) => message));
+  if (completion.length > 0 && !completionIssuesSoft(completion)) state.hard = true;
+  const errors = [...new Set(state.errors)];
   return {
-    valid: state.errors.length === 0,
+    valid: errors.length === 0,
     value: audited,
-    errors: [...new Set(state.errors)],
-    soft: false,
+    errors,
+    soft: errors.length > 0 && !state.hard,
   };
 };
