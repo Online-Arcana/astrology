@@ -13,6 +13,11 @@ label,
 .inline > *,
 .actions,
 .actions > *,
+.credentials,
+.credentials > *,
+.credential,
+.credential-primary,
+.credential-primary > *,
 .password-field,
 .record,
 .record > *,
@@ -40,6 +45,7 @@ button,
 .notice,
 .muted,
 .selected-place,
+.credential-note,
 .record span,
 .record strong,
 label {
@@ -56,18 +62,81 @@ label {
 }
 
 .inline input,
-.inline select,
-.password-field {
+.inline select {
   flex: 1 1 12rem;
+}
+
+.credentials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1.25rem;
+}
+
+.credential {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(11, 9, 27, .42);
+}
+
+.credential-openai {
+  flex: 1 1 23rem;
+}
+
+.credential-signing {
+  flex: 2 1 42rem;
+}
+
+.credential > label {
+  display: block;
+  line-height: 1.35;
+}
+
+.credential-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .65rem;
+  width: 100%;
+}
+
+.credential-primary > input,
+.credential-primary > .password-field {
+  flex: 1 1 18rem;
+}
+
+.credential-primary > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.credential-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.credential-warning {
+  margin: 1rem 0 0;
 }
 
 .password-field {
   position: relative;
-  display: block;
-  width: 100%;
+  display: flex;
+  width: auto;
 }
 
 .password-field input {
+  flex: 1 1 auto;
+  width: 100%;
   padding-right: 3.25rem;
 }
 
@@ -101,27 +170,84 @@ label {
 }
 
 .password-toggle svg[hidden] {
-  display: none;
+  display: none !important;
+}
+
+.signing-key-primary > .password-field {
+  order: 0;
+  flex-basis: 24rem;
+}
+
+.signing-key-primary > #saveSigningKey,
+.signing-key-primary > #generateSigningKey,
+.signing-key-primary > #clearSigningKey {
+  order: 1;
 }
 
 .signing-key-actions {
-  margin-top: .75rem;
+  order: 2;
+  flex: 0 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  width: 100%;
+  margin: .1rem 0 0;
+}
+
+.signing-key-actions > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+#signingKeyExportStatus {
+  order: 3;
+  flex: 0 0 100%;
+  width: 100%;
+  margin: 0;
+  font-weight: 500;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .credential-openai,
+  .credential-signing {
+    flex-basis: 100%;
+  }
 }
 
 @media (max-width: 640px) {
   .inline,
-  .actions {
+  .actions,
+  .credentials,
+  .credential-primary,
+  .signing-key-actions {
+    width: 100%;
+  }
+
+  .credentials {
+    flex-direction: column;
+  }
+
+  .credential {
+    flex: none;
     width: 100%;
   }
 
   .inline > input,
   .inline > select,
-  .inline > .password-field {
+  .credential-primary > input,
+  .credential-primary > .password-field {
     flex-basis: 100%;
   }
 
   .inline > button,
-  .actions > button {
+  .actions > button,
+  .credential-primary > button,
+  .signing-key-actions > button {
     flex: 1 1 auto;
     white-space: normal;
   }
