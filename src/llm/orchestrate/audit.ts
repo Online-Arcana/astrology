@@ -39,6 +39,6 @@ export const auditSection = (
     },
     errors: unique,
     soft: needsRepair,
-    ...(needsRepair ? { repair: "completion" as const } : {}),
+    ...(needsRepair ? { repair: "audit" as const } : {}),
   };
 };
