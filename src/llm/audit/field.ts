@@ -1,4 +1,5 @@
 import { forbiddenPatterns, unwantedExamples } from "./catalogue.js";
+import { repairTerminalPunctuation } from "./completion.js";
 import { duplicateMatch, type NarrativeEntry, type PriorNarrative } from "./duplicate.js";
 import { leakedReferences } from "./reference.js";
 import { semanticIssues } from "./semantic.js";
@@ -144,7 +145,8 @@ const styleIssues = (value: string, id: string): AuditIssue[] => {
 export const auditField = (input: string, profile: FieldProfile): FieldAudit => {
   const issues: AuditIssue[] = [];
   const cleaned = clean(input);
-  const value = cleaned.value;
+  const completed = repairTerminalPunctuation(cleaned.value, profile.id);
+  const value = completed.value;
   if (value.length === 0) issues.push({ code: "empty", message: `${profile.id} is empty after audit`, repairable: false });
   if (placeholders.test(value)) issues.push({ code: "placeholder", message: `${profile.id} contains a placeholder`, repairable: false });
   if (badFormat.test(value)) issues.push({ code: "format", message: `${profile.id} contains forbidden formatting`, repairable: true });
@@ -177,7 +179,12 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
   }
 
   const unsafe = issues.some((issue) => !issue.repairable);
-  return { valid: !unsafe && !badFormat.test(value), value, repaired: cleaned.repaired, issues };
+  return {
+    valid: !unsafe && !badFormat.test(value),
+    value,
+    repaired: cleaned.repaired || completed.repaired,
+    issues,
+  };
 };
 
 export const auditList = (
