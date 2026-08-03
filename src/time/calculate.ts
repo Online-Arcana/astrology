@@ -20,15 +20,20 @@ const unavailable = (reason: Calc<unknown>["reason"]): TimeData => ({
   resolution: { status: reason === "outside_supported_range" ? "unsupported" : "unavailable", value: null, reason },
 });
 
-const inputValid = (input: BirthInput): void => {
+const inputTime = (input: BirthInput): string | null => {
   if (!/^\d{4}-\d{2}-\d{2}$/u.test(input.date)) throw new Error("Birth date must use YYYY-MM-DD");
   if (input.timeAccuracy === "unknown") {
     if (input.time !== null) throw new Error("Unknown birth time must be null");
-    return;
+    return null;
   }
-  if (input.time === null || !/^\d{2}:\d{2}:\d{2}$/u.test(input.time)) {
-    throw new Error("Known birth time must use HH:mm:ss");
-  }
+  if (input.time === null) throw new Error("Known birth time must use HH:mm or HH:mm:ss");
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/u.exec(input.time);
+  if (match === null) throw new Error("Known birth time must use HH:mm or HH:mm:ss");
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3] ?? "00");
+  if (hour > 23 || minute > 59 || second > 59) throw new Error("Birth time is invalid");
+  return `${match[1]}:${match[2]}:${String(second).padStart(2, "0")}`;
 };
 
 const window = (localIso: string, utcIso: string, fold: 0 | 1 | null): TimeWindow => ({
@@ -113,9 +118,9 @@ export const resolveBirthTime = (
   resolver: TimeResolver,
   astronomy: AstralTimePort,
 ): TimeData => {
-  inputValid(input);
-  if (input.timeAccuracy === "unknown" || input.time === null) return unknownWindow(input, zone, resolver);
-  const resolved = resolver.resolve({ date: input.date, time: input.time, zone });
+  const time = inputTime(input);
+  if (time === null) return unknownWindow(input, zone, resolver);
+  const resolved = resolver.resolve({ date: input.date, time, zone });
   if (resolved.kind === "unsupported") return unavailable("outside_supported_range");
   if (resolved.kind === "nonexistent") return unavailable("nonexistent_local_time");
   if (resolved.kind === "ambiguous") {
