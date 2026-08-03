@@ -93,18 +93,24 @@ const generation = async (request: ApiRequest, runtime: ApiRuntime): Promise<Api
   } catch (cause) {
     return error(400, "invalid_request", cause instanceof Error ? cause.message : "Invalid request");
   }
-  let latest: ChartBill | null = null;
+  const latest: { value: ChartBill | null } = { value: null };
   try {
     const generated = await runtime.generator.generate(parsed.birth, parsed.options, {
       onBill: (bill) => {
-        latest = bill;
+        latest.value = bill;
         runtime.bills.live(bill);
       },
     });
-    await runtime.bills.save(generated.bill);
-    return response(200, { ok: true, file: generated.file, bill: generated.bill });
+    const bill = generated.bill ?? latest.value;
+    if (bill !== null) await runtime.bills.save(bill);
+    return response(200, {
+      ok: true,
+      file: generated.file,
+      ...(bill === null ? {} : { bill }),
+    });
   } catch (cause) {
-    if (latest !== null && latest.status !== "running") await runtime.bills.save(latest);
+    const bill = latest.value;
+    if (bill !== null && bill.status !== "running") await runtime.bills.save(bill);
     const input = inputFailure(cause);
     if (input.status !== 500) return input;
     return error(502, "interpretation_failed", cause instanceof Error ? cause.message : "Interpreted chart generation failed");
