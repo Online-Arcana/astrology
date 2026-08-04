@@ -29,7 +29,9 @@ const packagedPrefix = "ASTRPKG";
 const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
 const originalRevokeObjectUrl = URL.revokeObjectURL.bind(URL);
 const originalAnchorClick = HTMLAnchorElement.prototype.click;
+const originalBlobText = Blob.prototype.text;
 const trackedBlobs = new Map<string, Blob>();
+const unpackedSources = new WeakMap<Blob, string>();
 let passwordTaskActive = false;
 
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
@@ -52,7 +54,7 @@ const safeName = (value: string): string => {
 
 const directDownload = (name: string, bytes: Uint8Array): void => {
   const copy = bytes.slice();
-  const blob = new Blob([copy.buffer], { type: "application/octet-stream" });
+  const blob = new Blob([copy.buffer as ArrayBuffer], { type: "application/octet-stream" });
   const url = originalCreateObjectUrl(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -115,10 +117,10 @@ const ensureDialog = (): PasswordDialog => {
         </div>
         <p id="astralPackageExplanation"></p>
         <label>Password
-          <input id="astralPackagePassword" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
+          <input id="astralPackagePassword" type="password" autocomplete="off" autocapitalize="none" spellcheck="false">
         </label>
         <label id="astralPackageConfirmLabel">Confirm password
-          <input id="astralPackageConfirm" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
+          <input id="astralPackageConfirm" type="password" autocomplete="off" autocapitalize="none" spellcheck="false">
         </label>
         <p id="astralPackageError" class="astral-package-error" role="alert"></p>
         <p id="astralPackageStatus" class="astral-package-status" aria-live="polite"></p>
@@ -259,11 +261,8 @@ const redispatchInput = (input: HTMLInputElement): void => {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
-const replaceInputFile = (input: HTMLInputElement, file: File): void => {
-  const transfer = new DataTransfer();
-  transfer.items.add(file);
-  input.files = transfer.files;
-  redispatchInput(input);
+const attachUnpackedSource = (file: File, source: string): void => {
+  unpackedSources.set(file, source);
 };
 
 const unpackFile = async (input: HTMLInputElement, file: File, bytes: Uint8Array): Promise<void> => {
@@ -275,10 +274,8 @@ const unpackFile = async (input: HTMLInputElement, file: File, bytes: Uint8Array
       progress("Decrypting and reconstructing the chart…");
       const result = await openPackage(bytes, password);
       try {
-        replaceInputFile(input, new File([result.source], file.name, {
-          type: "application/json;charset=utf-8",
-          lastModified: file.lastModified,
-        }));
+        attachUnpackedSource(file, result.source);
+        redispatchInput(input);
       } finally {
         result.id.drop();
       }
@@ -294,6 +291,11 @@ const handleSelectedFile = async (input: HTMLInputElement, file: File): Promise<
     return;
   }
   redispatchInput(input);
+};
+
+Blob.prototype.text = function astralUnpackedText(): Promise<string> {
+  const source = unpackedSources.get(this);
+  return source === undefined ? originalBlobText.call(this) : Promise.resolve(source);
 };
 
 URL.createObjectURL = ((object: Blob | MediaSource): string => {
