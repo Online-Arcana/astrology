@@ -10,12 +10,25 @@
 
 ## Models
 
+Each paid lane has one entry model and one escalation model. Every candidate is parsed and audited locally before acceptance. The routing mechanism does not depend on particular model families, so all four roles remain configurable here.
+
+- `OPENAI_SMALL_MODEL`: short-output entry model, default `gpt-5-nano`
+- `OPENAI_SMALL_ESCALATION_MODEL`: short-output escalation model, default `gpt-5.6-luna`
+- `OPENAI_BIG_MODEL`: long-output entry model, default `gpt-5.6-luna`
+- `OPENAI_BIG_ESCALATION_MODEL`: long-output escalation model, default `gpt-5.6-luna`
 - `OPENAI_API_KEY`: required only for interpreted chart generation
-- `OPENAI_BIG_MODEL`: broad fields and syntheses
-- `OPENAI_SMALL_MODEL`: leaf fields, utilities and truncation condensation
 - `OPENAI_REASONING`: `none`, `low`, `medium` or `high`
 - `OPENAI_MAX_OUTPUT_TOKENS`: global upper bound for routed field budgets
-- `ASTRAL_MAX_RETRIES`: maximum attempts per interpretation unit
+
+Using Luna for both long-output stages is intentional. The second call receives the deterministic NLP findings from the first attempt and is therefore a correction pass even though the model ID is unchanged.
+
+`ASTRAL_MAX_RETRIES` remains a recovery compatibility bound. New generation performs at most two paid attempts per unit: entry and escalation.
+
+## Guaranteed completion and debugging
+
+After an escalation candidate fails its deterministic NLP audit, the unit is reconstructed locally. Valid fields from either candidate are preserved, ambiguous or malformed fields are replaced individually, and the pre-generated XML catalogue is used only for unresolved fields.
+
+`ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE=true` disables customer-safe completion and throws when deterministic reconstruction would otherwise be used. This is intended only for CLI and core debugging. It defaults to `false`, and the browser runtime fixes it to `false`.
 
 ## Bounded orchestration
 

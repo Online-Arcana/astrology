@@ -209,7 +209,7 @@ class FakeClient implements SchemaClient {
   }
 }
 
-await test("fixed plan keeps one bounded foundation conversation and routes fields by cost", async () => {
+await test("fixed plan audits both paid tiers and routes short and long fields by cost", async () => {
   const client = new FakeClient();
   const result = await runInterpretationPlan(
     calculation,
@@ -230,13 +230,13 @@ await test("fixed plan keeps one bounded foundation conversation and routes fiel
   );
   equal(
     client.models.join(","),
-    "gpt-5.4-nano,gpt-5.4-nano,gpt-5.4-mini,gpt-5.4-mini,gpt-5.4-nano",
-    "leaf audit repair section synthesis and utility model routing",
+    "gpt-5-nano,gpt-5.6-luna,gpt-5.6-luna,gpt-5.6-luna,gpt-5-nano",
+    "short escalation long interpretation and utility model routing",
   );
   equal(
     client.efforts.join(","),
-    "none,none,low,low,none",
-    "per-field reasoning and audit repair effort",
+    "none,low,low,low,none",
+    "entry and escalation reasoning effort",
   );
   equal(
     client.tokens.join(","),
@@ -244,21 +244,12 @@ await test("fixed plan keeps one bounded foundation conversation and routes fiel
     "per-field token ceilings",
   );
   equal(result.run.calls, 5, "OpenAI call count");
-  equal(result.run.retries, 1, "small audit repair count");
-  const repairInput = client.inputs[1] as { auditErrors?: string[] };
-  const failures = repairInput.auditErrors ?? [];
-  assert(failures.length > 0, "small repair must include audit findings");
-  equal(result.run.units["tropical.point.sun"]?.model, "gpt-5.4-nano", "accepted primary model");
-  equal(
-    result.run.units["tropical.point.sun"]?.provenance?.repairedBy,
-    "gpt-5.4-nano",
-    "audit repair model",
-  );
-  equal(
-    result.run.units["tropical.point.sun"]?.provenance?.repairKind,
-    "audit_correction",
-    "audit repair provenance",
-  );
+  equal(result.run.retries, 1, "short escalation count");
+  const escalationInput = client.inputs[1] as { correction?: { auditFailures?: string[] } };
+  const failures = escalationInput.correction?.auditFailures ?? [];
+  assert(failures.length > 0, "escalation must include audit findings");
+  equal(result.run.units["tropical.point.sun"]?.model, "gpt-5.6-luna", "accepted escalation model");
+  equal(result.run.units["tropical.point.sun"]?.provenance, undefined, "accepted escalation needs no salvage provenance");
   equal(result.run.units["generated-name"], undefined, "utility result excluded from chart units");
   assert(result.run.units["tropical.point.sun"] !== undefined, "Sun unit retained");
   assert(result.run.units["tropical.life.identityAndPurpose"] !== undefined, "life section retained");

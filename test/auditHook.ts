@@ -20,31 +20,39 @@ const output = {
   value: "Rejected diagnostic candidate",
 };
 
-const unit: InterpretationCall = {
-  id: "diagnostic-unit",
-  label: "Diagnostic unit",
-  kind: "small",
+const unit = (kind: InterpretationCall["kind"]): InterpretationCall => ({
+  id: `diagnostic-${kind}`,
+  label: `Diagnostic ${kind}`,
+  kind,
   shape: strictShape<{ value: string }>(
-    "diagnostic_unit",
+    `diagnostic_${kind}`,
     object({ value: text() }),
   ) as unknown as StrictShape<object>,
   allowedSourceRefs: new Set(),
-  input: () => ({}),
+  input: ({ correction }) => ({ correction }),
   audit: (value) => ({
     valid: false,
     value,
     errors: ["diagnostic audit failure"],
   }),
-};
+});
 
 class FakeClient implements SchemaClient {
-  readonly id = "conv_audit_hook";
+  readonly id: string;
+  readonly models: string[] = [];
+  readonly inputs: unknown[] = [];
+
+  constructor(id: string) {
+    this.id = id;
+  }
 
   async run<T extends object>(
     _shape: StrictShape<T>,
-    _input: unknown,
-    _options: SchemaCall,
+    input: unknown,
+    options: SchemaCall,
   ): Promise<T> {
+    this.models.push(options.body.model);
+    this.inputs.push(input);
     return output as T;
   }
 }
@@ -56,49 +64,69 @@ type Rejection = {
   audit: UnitAudit<object>;
 };
 
-const rejected: Rejection[] = [];
-let failed = false;
+const config = readConfig({ ASTRAL_MAX_RETRIES: "2" });
 
-try {
-  await runInterpretation(
-    {},
-    [unit],
-    readConfig({ ASTRAL_MAX_RETRIES: "1" }),
-    () => new FakeClient(),
-    {
-      onReject: (
-        _unit,
+const rejected: Rejection[] = [];
+const shortClient = new FakeClient("conv_audit_hook_short");
+const shortResult = await runInterpretation(
+  {},
+  [unit("small")],
+  config,
+  () => shortClient,
+  {
+    onReject: (
+      _unit,
+      attempt,
+      model,
+      candidate,
+      audit,
+    ) => {
+      rejected.push({
         attempt,
         model,
-        candidate,
+        output: candidate,
         audit,
-      ) => {
-        rejected.push({
-          attempt,
-          model,
-          output: candidate,
-          audit,
-        });
-      },
+      });
     },
-  );
-} catch (error) {
-  failed = error instanceof Error
-    && error.message.includes("diagnostic audit failure");
-}
-
-assert(failed, "failed audit must remain terminal");
-assert(rejected.length === 1, "rejected output hook must run exactly once");
-
-const capture = rejected[0];
-assert(capture !== undefined, "rejected output hook must provide a capture");
-assert(capture.attempt === 1, "hook must receive the attempt");
-assert(capture.model === "gpt-5.4-nano", "hook must receive the routed model");
-assert(capture.output === output, "hook must receive the exact rejected output");
-assert(
-  capture.audit.errors[0] === "diagnostic audit failure",
-  "hook must receive the exact audit result",
+  },
 );
 
-console.log("ok 1 - rejected interpretation output is exposed to audit hooks");
-console.log("1..1");
+assert(rejected.length === 2, "entry and escalation outputs must both reach the audit hook");
+assert(rejected[0]?.attempt === 1, "entry hook must receive attempt one");
+assert(rejected[0]?.model === "gpt-5-nano", "entry hook must receive the short entry model");
+assert(rejected[1]?.attempt === 2, "escalation hook must receive attempt two");
+assert(rejected[1]?.model === "gpt-5.6-luna", "escalation hook must receive the short escalation model");
+assert(rejected.every((capture) => capture.output === output), "hook must receive the exact rejected output");
+assert(
+  rejected.every((capture) => capture.audit.errors[0] === "diagnostic audit failure"),
+  "hook must receive the exact audit result for both tiers",
+);
+assert(
+  shortResult.units["diagnostic-small"]?.provenance?.repairedBy === "deterministic",
+  "production must complete through deterministic reconstruction",
+);
+
+const longClient = new FakeClient("conv_audit_hook_long");
+const longResult = await runInterpretation(
+  {},
+  [unit("big")],
+  config,
+  () => longClient,
+);
+assert(
+  longClient.models.join(",") === "gpt-5.6-luna,gpt-5.6-luna",
+  "long entry and escalation must both use Luna",
+);
+const longEscalationInput = longClient.inputs[1] as { correction?: readonly string[] };
+assert(
+  longEscalationInput.correction?.includes("diagnostic audit failure") === true,
+  "the second Luna call must receive the deterministic NLP failure",
+);
+assert(
+  longResult.units["diagnostic-big"]?.provenance?.repairedBy === "deterministic",
+  "failed long escalation must complete deterministically",
+);
+
+console.log("ok 1 - short entry and Luna escalation are both audited");
+console.log("ok 2 - long Luna escalation receives NLP correction context");
+console.log("1..2");

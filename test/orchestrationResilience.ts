@@ -38,7 +38,10 @@ class Client implements SchemaClient {
   }
 }
 
-const config = readConfig({ ASTRAL_MAX_RETRIES: "2" });
+const config = (debug = false) => readConfig({
+  ASTRAL_MAX_RETRIES: "2",
+  ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE: String(debug),
+});
 
 const unit = (
   error: string,
@@ -62,7 +65,7 @@ const unit = (
   ...(onAccept === undefined ? {} : { onAccept }),
 });
 
-test("a generic semantic warning is accepted without another primary attempt", async () => {
+test("soft audit findings still pass through escalation before deterministic acceptance", async () => {
   const client = new Client({ summary: "A source-grounded interpretation." });
   const soft: string[][] = [];
   const accepted: object[] = [];
@@ -70,47 +73,66 @@ test("a generic semantic warning is accepted without another primary attempt", a
   const result = await runInterpretation(
     {},
     [unit("summary does not fit its semantic field", true, (value) => accepted.push(value))],
-    config,
+    config(),
     () => client,
     {
       onSoftAccept: (_call, _attempt, warnings) => soft.push([...warnings]),
     },
   );
 
-  assert.equal(client.calls, 1);
-  assert.equal(result.calls, 1);
-  assert.equal(result.retries, 0);
-  assert.equal(result.units["tropical.aspect.moon_south_node_mean_sextile"]?.attempts, 1);
+  assert.equal(client.calls, 2);
+  assert.equal(result.calls, 2);
+  assert.equal(result.retries, 1);
+  assert.equal(result.units["tropical.aspect.moon_south_node_mean_sextile"]?.attempts, 2);
+  assert.equal(result.units["tropical.aspect.moon_south_node_mean_sextile"]?.provenance?.repairedBy, "deterministic");
   assert.equal(soft.length, 1);
   assert.equal(accepted.length, 1);
 });
 
-test("hard audit failures remain terminal", async () => {
+test("hard audit failures reconstruct instead of terminating production", async () => {
+  const client = new Client({ summary: "I will now analyse the chart." });
+
+  const result = await runInterpretation(
+    {},
+    [unit("summary contains process narration", false)],
+    config(),
+    () => client,
+  );
+
+  assert.equal(client.calls, 2);
+  assert.equal(result.units["tropical.aspect.moon_south_node_mean_sextile"]?.provenance?.repairedBy, "deterministic");
+});
+
+test("the same hard failure throws only when debug mode is explicitly enabled", async () => {
   const client = new Client({ summary: "I will now analyse the chart." });
 
   await assert.rejects(
     () => runInterpretation(
       {},
       [unit("summary contains process narration", false)],
-      config,
+      config(true),
       () => client,
     ),
-    /contains process narration/u,
+    /required deterministic reconstruction/u,
   );
 
   assert.equal(client.calls, 2);
 });
 
-test("soft-accepted recovered fields rebuild accepted context", async () => {
+test("deterministically recovered fields rebuild accepted context", async () => {
   let accepted = 0;
   const recovery: InterpretationRecovery = {
     conversationId: "conv_resilience",
     units: {
       "tropical.aspect.moon_south_node_mean_sextile": {
         id: "tropical.aspect.moon_south_node_mean_sextile",
-        value: { summary: "Recovered source-grounded interpretation." },
+        value: { summary: "You may understand this pattern through changing context." },
         attempts: 2,
         model: "gpt-test",
+        provenance: {
+          repairedBy: "deterministic",
+          repairKind: "deterministic_reconstruction",
+        },
       },
     },
     calls: 2,
@@ -122,7 +144,7 @@ test("soft-accepted recovered fields rebuild accepted context", async () => {
   const result = await runInterpretation(
     {},
     [unit("summary does not fit its semantic field", true, () => { accepted += 1; })],
-    config,
+    config(),
     () => client,
     {},
     recovery,

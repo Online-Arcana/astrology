@@ -62,7 +62,10 @@ export type InterpretationRepairKind =
   | "truncation_condensation"
   | "completion_condensation"
   | "audit_correction"
-  | "coherence_correction";
+  | "coherence_correction"
+  | "deterministic_reconstruction"
+  | "xml_fallback"
+  | "coherence_reconstruction";
 
 export interface UnitResult<T extends object> {
   id: string;
@@ -73,6 +76,8 @@ export interface UnitResult<T extends object> {
     repairedBy?: string;
     repairKind?: InterpretationRepairKind;
     migratedFromVersion?: string;
+    fallbackFields?: string[];
+    auditWarnings?: string[];
   };
 }
 

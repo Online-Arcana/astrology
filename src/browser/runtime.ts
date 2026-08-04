@@ -24,14 +24,13 @@ export interface BrowserGeneratedChart extends Omit<GeneratedChart, "file" | "bi
 
 const configFor = (apiKey: string, options: CalculationOptions): Config => readConfig({
   OPENAI_API_KEY: apiKey,
-  OPENAI_BIG_MODEL: "gpt-5.4-mini",
-  OPENAI_SMALL_MODEL: "gpt-5.4-nano",
   OPENAI_REASONING: "low",
   OPENAI_MAX_OUTPUT_TOKENS: "12000",
   ASTRAL_PRIMARY_ZODIAC: options.primaryZodiac,
   ASTRAL_INTERPRETATION_MODE: options.interpretationMode,
   ASTRAL_SIDEREAL_AYANAMSHA: options.ayanamsha,
-  ASTRAL_MAX_RETRIES: "3",
+  ASTRAL_MAX_RETRIES: "2",
+  ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE: "false",
   ASTRAL_FOUNDATION_UNITS: "10",
   ASTRAL_LANE_COUNT: "4",
   ASTRAL_LANE_UNITS: "10",

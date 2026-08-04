@@ -1,14 +1,15 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { dirname, relative, resolve } from "node:path";
+import { dirname, extname, relative, resolve } from "node:path";
 import { build } from "esbuild";
 
 const publicDir = resolve("public");
 const placeSource = resolve("vendor/places/packages/countries/dist/data");
 const placeOutput = resolve(publicDir, "places/data");
-const keyExportPath = resolve(publicDir, "key-export.js");
 const usabilityStylePath = resolve(publicDir, "usability.css");
 const chartViewPath = resolve(publicDir, "chart-view.js");
 const chartViewStylePath = resolve(publicDir, "chart-view.css");
+const browserToolsPath = resolve(publicDir, "browser-tools.js");
+const browserToolsStylePath = resolve(publicDir, "test-tools.css");
 const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
 
 const finalCode = (name) => name.split("-").at(-1) ?? "";
@@ -37,28 +38,28 @@ const placeManifest = async () => {
   };
 };
 
-const htmlFiles = async (directory) => {
+const matchingFiles = async (directory, extensions) => {
   const files = [];
   for (const item of await readdir(directory, { withFileTypes: true })) {
     const path = resolve(directory, item.name);
     if (item.isDirectory()) {
-      files.push(...await htmlFiles(path));
+      files.push(...await matchingFiles(path, extensions));
       continue;
     }
-    if (item.isFile() && item.name.toLowerCase().endsWith(".html")) files.push(path);
+    if (item.isFile() && extensions.has(extname(item.name).toLowerCase())) files.push(path);
   }
   return files;
 };
+
+const htmlFiles = (directory) => matchingFiles(directory, new Set([".html"]));
 
 const assetSource = (file, assetPath) => {
   const path = relative(dirname(file), assetPath).replaceAll("\\", "/");
   return path.startsWith(".") ? path : `./${path}`;
 };
 
-const keyExportTag = (file) => `<script type="module" src="${assetSource(file, keyExportPath)}"></script>`;
-const chartViewTag = (file) => `<script type="module" src="${assetSource(file, chartViewPath)}"></script>`;
-const usabilityStyleTag = (file) => `<link rel="stylesheet" href="${assetSource(file, usabilityStylePath)}">`;
-const chartViewStyleTag = (file) => `<link rel="stylesheet" href="${assetSource(file, chartViewStylePath)}">`;
+const scriptTag = (file, path) => `<script type="module" src="${assetSource(file, path)}"></script>`;
+const styleTag = (file, path) => `<link rel="stylesheet" href="${assetSource(file, path)}">`;
 
 const applyPageDefaults = async () => {
   const viewportPattern = /<meta\s+name=["']viewport["'][^>]*>/iu;
@@ -66,27 +67,30 @@ const applyPageDefaults = async () => {
   const headClosePattern = /<\/head\s*>/iu;
   const bodyPattern = /<\/body\s*>/iu;
   const minuteTimePattern = /(<input\b[^>]*\bid=["']time["'][^>]*\bstep=["'])1(["'][^>]*>)/iu;
+  const staleKeyExportPattern = /^\s*<script\b[^>]*\bsrc=["'][^"']*key-export\.js["'][^>]*><\/script>\s*$/gimu;
   for (const file of await htmlFiles(publicDir)) {
     const content = await readFile(file, "utf8");
-    let updated = viewportPattern.test(content)
-      ? content.replace(viewportPattern, viewport)
-      : content.replace(headPattern, (head) => `${head}\n  ${viewport}`);
+    let updated = content.replace(staleKeyExportPattern, "");
+    updated = viewportPattern.test(updated)
+      ? updated.replace(viewportPattern, viewport)
+      : updated.replace(headPattern, (head) => `${head}\n  ${viewport}`);
     updated = updated.replace(minuteTimePattern, (_match, before, after) => `${before}60${after}`);
-    if (!updated.includes("usability.css")) {
+    for (const [needle, path] of [
+      ["usability.css", usabilityStylePath],
+      ["chart-view.css", chartViewStylePath],
+      ["test-tools.css", browserToolsStylePath],
+    ]) {
+      if (updated.includes(needle)) continue;
       if (!headClosePattern.test(updated)) throw new Error(`Public HTML page has no closing head tag: ${file}`);
-      updated = updated.replace(headClosePattern, `  ${usabilityStyleTag(file)}\n</head>`);
+      updated = updated.replace(headClosePattern, `  ${styleTag(file, path)}\n</head>`);
     }
-    if (!updated.includes("chart-view.css")) {
-      if (!headClosePattern.test(updated)) throw new Error(`Public HTML page has no closing head tag: ${file}`);
-      updated = updated.replace(headClosePattern, `  ${chartViewStyleTag(file)}\n</head>`);
-    }
-    if (!updated.includes("key-export.js")) {
+    for (const [needle, path] of [
+      ["chart-view.js", chartViewPath],
+      ["browser-tools.js", browserToolsPath],
+    ]) {
+      if (updated.includes(needle)) continue;
       if (!bodyPattern.test(updated)) throw new Error(`Public HTML page has no closing body tag: ${file}`);
-      updated = updated.replace(bodyPattern, `  ${keyExportTag(file)}\n</body>`);
-    }
-    if (!updated.includes("chart-view.js")) {
-      if (!bodyPattern.test(updated)) throw new Error(`Public HTML page has no closing body tag: ${file}`);
-      updated = updated.replace(bodyPattern, `  ${chartViewTag(file)}\n</body>`);
+      updated = updated.replace(bodyPattern, `  ${scriptTag(file, path)}\n</body>`);
     }
     if (updated === content) continue;
     await writeFile(file, updated, "utf8");
@@ -95,6 +99,8 @@ const applyPageDefaults = async () => {
 
 await mkdir(publicDir, { recursive: true });
 await rm(resolve(publicDir, "places"), { recursive: true, force: true });
+await rm(resolve(publicDir, "chunks"), { recursive: true, force: true });
+await rm(resolve(publicDir, "key-export.js"), { force: true });
 await mkdir(resolve(publicDir, "places"), { recursive: true });
 await cp(placeSource, placeOutput, { recursive: true });
 await writeFile(
@@ -109,9 +115,15 @@ const aliases = {
 };
 
 await build({
-  entryPoints: ["src/browser/app.ts"],
-  outfile: "public/app.js",
+  entryPoints: {
+    app: "src/browser/app.ts",
+    "browser-tools": "src/browser/browserTools.ts",
+  },
+  outdir: "public",
+  entryNames: "[name]",
+  chunkNames: "chunks/[name]-[hash]",
   bundle: true,
+  splitting: true,
   format: "esm",
   platform: "browser",
   target: ["es2022"],
@@ -137,31 +149,17 @@ await applyPageDefaults();
 await writeFile("public/.nojekyll", "", "utf8");
 
 const privateIpv4 = /(?:^|[^0-9])(?:10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?:[^0-9]|$)/u;
-const files = [
-  ...await htmlFiles(publicDir),
-  "public/style.css",
-  "public/usability.css",
-  "public/chart-view.css",
-  "public/app.js",
-  "public/key-export.js",
-  "public/chart-view.js",
-];
+const plaintextCredentialWrite = /localStorage\.setItem\(\s*["']astral\.(?:openai-key|signing-key)["']/u;
+const files = await matchingFiles(publicDir, new Set([".html", ".css", ".js"]));
 for (const file of files) {
   const content = await readFile(file, "utf8");
   const findings = [];
 
-  if (/\/home\/[A-Za-z0-9._-]+/u.test(content)) {
-    findings.push("local home path");
-  }
-  if (privateIpv4.test(content)) {
-    findings.push("private network address");
-  }
-  if (/(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(content)) {
-    findings.push("literal credential assignment");
-  }
-  if (/id=["']cityQuery["'][^>]*\svalue=/u.test(content)) {
-    findings.push("prefilled city");
-  }
+  if (/\/home\/[A-Za-z0-9._-]+/u.test(content)) findings.push("local home path");
+  if (privateIpv4.test(content)) findings.push("private network address");
+  if (/(?:OPENAI_API_KEY|SIGNATURE_KEY)\s*=/u.test(content)) findings.push("literal credential assignment");
+  if (plaintextCredentialWrite.test(content)) findings.push("plaintext credential persistence");
+  if (/id=["']cityQuery["'][^>]*\svalue=/u.test(content)) findings.push("prefilled city");
 
   if (findings.length > 0) {
     throw new Error(`Public Pages asset failed privacy audit (${findings.join(", ")}): ${file}`);

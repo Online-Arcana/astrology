@@ -40,15 +40,16 @@ const usage = (model: string, clientId: string, input = 1_000, cached = 200, out
 });
 
 await test("official catalogue prices uncached cached and output tokens", () => {
-  near(priceUsage("gpt-5.4-nano", usage("gpt-5.4-nano", "a").usage) ?? -1, 0.000539, "nano price");
-  near(priceUsage("gpt-5.4-mini-2026-03-17", usage("gpt-5.4-mini", "b").usage) ?? -1, 0.001965, "dated mini price");
+  near(priceUsage("gpt-5.4-nano", usage("gpt-5.4-nano", "a").usage) ?? -1, 0.000539, "5.4 nano price");
+  near(priceUsage("gpt-5.4-mini-2026-03-17", usage("gpt-5.4-mini", "b").usage) ?? -1, 0.001965, "dated 5.4 mini price");
+  near(priceUsage("gpt-5.6-luna", usage("gpt-5.6-luna", "luna").usage) ?? -1, 0.000524, "Luna price");
   equal(priceUsage("unknown-model", usage("unknown-model", "c").usage), null, "unknown model is unpriced");
 });
 
 await test("collector groups usage by model and lane", () => {
   const collector = new BillCollector(`sha256:${"1".repeat(64)}`, null, () => "2026-08-03T12:00:00.000Z");
-  collector.add(usage("gpt-5.4-nano", "lane-1"));
-  collector.add(usage("gpt-5.4-mini", "lane-2", 2_000, 0, 500));
+  collector.add(usage("gpt-5-nano", "lane-1"));
+  collector.add(usage("gpt-5.6-luna", "lane-2", 2_000, 0, 500));
   const bill = collector.finish("completed", "2026-08-03T12:01:00.000Z");
   equal(bill.total.requests, 2, "request count");
   equal(bill.total.totalTokens, 3_800, "total tokens");
@@ -62,10 +63,10 @@ await test("bill store persists history and computes completed average", async (
   try {
     const store = new BillStore(dir);
     const first = new BillCollector(`sha256:${"2".repeat(64)}`, null, () => "2026-08-03T12:00:00.000Z");
-    first.add(usage("gpt-5.4-nano", "lane-1"));
+    first.add(usage("gpt-5.6-luna", "lane-1"));
     const firstBill = first.finish("completed", "2026-08-03T12:01:00.000Z");
     const second = new BillCollector(`sha256:${"3".repeat(64)}`, null, () => "2026-08-03T13:00:00.000Z");
-    second.add(usage("gpt-5.4-nano", "lane-1"));
+    second.add(usage("gpt-5.6-luna", "lane-1"));
     const secondBill = second.finish("failed", "2026-08-03T13:01:00.000Z");
     await store.save(firstBill);
     await store.save(secondBill);
@@ -92,7 +93,7 @@ await test("OpenAI schema runtime emits authoritative response usage", async () 
     }
     return new Response(JSON.stringify({
       id: "resp_usage",
-      model: "gpt-5.4-nano-2026-03-17",
+      model: "gpt-5.6-luna",
       status: "completed",
       usage: {
         input_tokens: 321,
@@ -128,7 +129,7 @@ await test("OpenAI schema runtime emits authoritative response usage", async () 
     },
     parse: (value) => value as { value: string },
   };
-  await client.run(shape, { field: "fixture" }, { body: { model: "gpt-5.4-nano", store: false } });
+  await client.run(shape, { field: "fixture" }, { body: { model: "gpt-5.6-luna", store: false } });
   equal(events.length, 1, "usage event count");
   equal(events[0]?.usage.inputTokens, 321, "input tokens");
   equal(events[0]?.usage.cachedInputTokens, 123, "cached input tokens");
