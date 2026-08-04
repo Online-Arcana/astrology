@@ -20,6 +20,7 @@ initialiseVaultUi();
 // the static page controls exist but before the user can interact with them.
 await import("./packageWording.js");
 await import("./packageFlow.js");
+await import("./authorityUi.js");
 
 // This observer is scoped to the formatted chart host and only performs
 // idempotent category moves after a chart has been rendered.
