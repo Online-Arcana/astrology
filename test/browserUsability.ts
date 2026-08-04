@@ -13,6 +13,7 @@ const safeguards = await readFile("public/usability.css", "utf8");
 const chartView = await readFile("public/chart-view.js", "utf8");
 const chartStyles = await readFile("public/chart-view.css", "utf8");
 const toolStyles = await readFile("public/test-tools.css", "utf8");
+const browserEntry = await readFile("src/browser/browserTools.ts", "utf8");
 const browserTools = await readFile("src/browser/testTools.ts", "utf8");
 const credentialLabels = await readFile("src/browser/credentialLabels.ts", "utf8");
 const synthesisCategory = await readFile("src/browser/synthesisCategory.ts", "utf8");
@@ -31,7 +32,8 @@ const checks: readonly [condition: boolean, message: string][] = [
   [/extensions:\s*\{\s*prf/u.test(vault) && /userVerification:\s*"required"/u.test(vault), "credential vault must derive its encryption key through verified WebAuthn PRF"],
   [/#writes/u.test(vault) && /pending\.catch/u.test(vault), "encrypted credential updates must be serialised"],
   [/legacySnapshot/u.test(vaultUi) && /migrate/u.test(vaultUi), "vault UI must offer one-time migration of legacy plaintext credentials"],
-  [/addedGuardedControl/u.test(vaultUi) && /mutation\.addedNodes/u.test(vaultUi) && !/new MutationObserver\(enforceLockedControls\)/u.test(vaultUi), "vault observer must ignore its own status text mutations"],
+  [!/MutationObserver/u.test(vaultUi), "credential vault startup must not observe the page DOM"],
+  [/await import\("\.\/testTools\.js"\)[\s\S]*initialiseVaultUi\(\)/u.test(browserEntry), "credential controls must exist before vault initialisation"],
   [/pagehide/u.test(vaultLifecycle) && /event\.persisted/u.test(vaultLifecycle), "navigation and browser cache restoration must clear decrypted credential memory"],
   [/timeInput\.step = "60"/u.test(formPersistence), "browser birth time must use minute precision"],
   [/signingIssuer/u.test(browserTools) && /signingPrivatePkcs8/u.test(browserTools) && /signingPublicRaw/u.test(browserTools), "signing bundle must be presented as three separate fields"],
