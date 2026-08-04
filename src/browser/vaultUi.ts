@@ -17,8 +17,9 @@ let inactivityTimer = 0;
 const setStatus = (message: string, warning = false): void => {
   const status = element<HTMLElement>("#credentialVaultStatus");
   if (status === null) return;
-  status.textContent = message;
-  status.className = warning ? "notice warning vault-status" : "muted vault-status";
+  if (status.textContent !== message) status.textContent = message;
+  const className = warning ? "notice warning vault-status" : "muted vault-status";
+  if (status.className !== className) status.className = className;
 };
 
 const syncSigningFields = (text: string): void => {
@@ -96,6 +97,8 @@ const credentialFieldSelectors = [
   "#showSigningKeyFields",
 ];
 
+const guardedSelector = [...sensitiveSelectors, ...credentialFieldSelectors].join(",");
+
 const vaultExists = (): boolean => element<HTMLElement>("#credentialVault")?.dataset["exists"] === "true";
 const lockedByVault = (): boolean => vaultExists() && !unlocked;
 
@@ -117,8 +120,10 @@ const enforceLockedControls = (): void => {
 
   const badge = element<HTMLElement>("#credentialVaultBadge");
   if (badge !== null) {
-    badge.textContent = !exists ? "Not protected" : unlocked ? "Unlocked" : "Locked";
-    badge.className = `badge ${!exists ? "warn" : unlocked ? "good" : "neutral"}`;
+    const text = !exists ? "Not protected" : unlocked ? "Unlocked" : "Locked";
+    const className = `badge ${!exists ? "warn" : unlocked ? "good" : "neutral"}`;
+    if (badge.textContent !== text) badge.textContent = text;
+    if (badge.className !== className) badge.className = className;
   }
   const unlock = element<HTMLButtonElement>("#unlockCredentialVault");
   const protect = element<HTMLButtonElement>("#protectCredentialVault");
@@ -129,6 +134,10 @@ const enforceLockedControls = (): void => {
   if (lock !== null) lock.hidden = !exists || !unlocked;
   if (remove !== null) remove.hidden = !exists;
 };
+
+const addedGuardedControl = (mutations: readonly MutationRecord[]): boolean => mutations.some((mutation) =>
+  [...mutation.addedNodes].some((node) =>
+    node instanceof Element && (node.matches(guardedSelector) || node.querySelector(guardedSelector) !== null)));
 
 const updateState = async (): Promise<void> => {
   const host = element<HTMLElement>("#credentialVault");
@@ -258,7 +267,9 @@ const createUi = (): void => {
     event.stopImmediatePropagation();
     setStatus("Unlock the credential vault before using this action.", true);
   }, true);
-  new MutationObserver(enforceLockedControls).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver((mutations) => {
+    if (addedGuardedControl(mutations)) enforceLockedControls();
+  }).observe(document.body, { childList: true, subtree: true });
 };
 
 export const initialiseVaultUi = (): void => {
