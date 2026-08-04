@@ -17,7 +17,14 @@ interface PlaceManifest {
   states: Record<string, Record<string, string>>;
 }
 
-const base = new URL("./places/", import.meta.url);
+export const browserStaticRoot = (moduleUrl: string): URL => {
+  const current = new URL(moduleUrl);
+  return current.pathname.includes("/chunks/")
+    ? new URL("../", current)
+    : new URL("./", current);
+};
+
+const base = new URL("places/", browserStaticRoot(import.meta.url));
 const fold = (value: string): string => value.normalize("NFKD").replace(/\p{M}/gu, "").toLocaleLowerCase("en-GB");
 const order = <T extends { name: string }>(items: T[]): T[] => items.sort((left, right) => left.name.localeCompare(right.name, "en-GB"));
 

@@ -18,6 +18,15 @@ const ensureOutput = (): HTMLElement | null => {
   return output;
 };
 
+const setActionStatus = (message: string, warning = false): void => {
+  const status = element<HTMLElement>("#canonicaliseStatus");
+  if (status === null) return;
+  status.textContent = message;
+  status.className = warning
+    ? "notice warning canonicalise-analysis"
+    : "canonicalise-analysis";
+};
+
 const render = (): boolean => {
   const output = ensureOutput();
   if (output === null) return false;
@@ -143,9 +152,11 @@ export const initialiseMaintenanceAuditUi = (): void => {
     if (!auditReady) {
       event.preventDefault();
       event.stopImmediatePropagation();
+      setActionStatus("The interpretation audit is still running. Wait for it to finish before creating the updated copy.", true);
       renderSoon();
       return;
     }
     requireRegeneration();
+    setActionStatus("Starting canonical regeneration. Loading the embedded place and current calculation data…");
   }, true);
 };
