@@ -27,6 +27,12 @@ const setActionStatus = (message: string, warning = false): void => {
     : "canonicalise-analysis";
 };
 
+const regenerationSelected = (): boolean =>
+  element<HTMLInputElement>("#canonicaliseComplete")?.checked === true;
+
+const signingSelected = (): boolean =>
+  element<HTMLInputElement>("#canonicaliseSign")?.checked === true;
+
 const render = (): boolean => {
   const output = ensureOutput();
   if (output === null) return false;
@@ -43,8 +49,11 @@ const render = (): boolean => {
   }
   const examples = latest.invalidUnitIds.slice(0, 8);
   const remaining = latest.invalidUnitIds.length - examples.length;
+  const action = regenerationSelected()
+    ? "Regeneration is selected, so these units will be rebuilt."
+    : "Recalculation is off, so the existing calculations and interpretations will be preserved unchanged; signing will attest to those exact existing contents.";
   output.className = "notice warning canonicalise-interpretation-audit";
-  output.textContent = `${latest.invalidUnitIds.length} interpretation unit${latest.invalidUnitIds.length === 1 ? "" : "s"} require regeneration: ${examples.join(", ")}${remaining > 0 ? ` and ${remaining} more` : ""}.`;
+  output.textContent = `${latest.invalidUnitIds.length} interpretation unit${latest.invalidUnitIds.length === 1 ? "" : "s"} do not pass the current maintenance audit: ${examples.join(", ")}${remaining > 0 ? ` and ${remaining} more` : ""}. ${action}`;
   return true;
 };
 
@@ -83,10 +92,10 @@ const refreshMaintenancePlan = (attempt = 0): void => {
   analyse.click();
 };
 
-const requireRegeneration = (): void => {
+const selectRecommendedRegeneration = (): void => {
   if (latest?.complete !== false) return;
   const complete = element<HTMLInputElement>("#canonicaliseComplete");
-  if (complete === null) return;
+  if (complete === null || complete.checked) return;
   complete.checked = true;
   complete.dispatchEvent(new Event("change", { bubbles: true }));
 };
@@ -94,7 +103,7 @@ const requireRegeneration = (): void => {
 const applyAudit = (audit: OpenedInterpretationAudit): void => {
   latest = audit;
   auditReady = true;
-  requireRegeneration();
+  selectRecommendedRegeneration();
   renderSoon();
   refreshMaintenancePlan();
 };
@@ -110,7 +119,7 @@ const markLegacyAuditComplete = (): void => {
     }
     if (output === null) return;
     output.className = "notice warning canonicalise-interpretation-audit";
-    output.textContent = "This file is not current-schema complete, so the maintenance tool will rebuild the full chart rather than attempting a partial patch.";
+    output.textContent = "This file is not current-schema complete, so the maintenance tool must rebuild the full chart rather than attempting a sign-only copy.";
     refreshMaintenancePlan();
   };
   show();
@@ -123,6 +132,16 @@ const auditFile = async (file: File): Promise<void> => {
     return;
   }
   applyAudit(auditOpenedInterpretations(raw));
+};
+
+const actionMessage = (): string => {
+  if (regenerationSelected()) {
+    return "Starting canonical regeneration. Loading the embedded place and current calculation data…";
+  }
+  if (signingSelected()) {
+    return "Signing the current chart without recalculating it. Preparing the signed download…";
+  }
+  return "Preparing a canonical copy without recalculating the current chart…";
 };
 
 export const initialiseMaintenanceAuditUi = (): void => {
@@ -148,6 +167,8 @@ export const initialiseMaintenanceAuditUi = (): void => {
     });
   });
   element<HTMLButtonElement>("#canonicaliseAnalyse")?.addEventListener("click", () => setTimeout(renderSoon, 0));
+  element<HTMLInputElement>("#canonicaliseComplete")?.addEventListener("change", renderSoon);
+  element<HTMLInputElement>("#canonicaliseSign")?.addEventListener("change", renderSoon);
   element<HTMLButtonElement>("#canonicaliseRun")?.addEventListener("click", (event) => {
     if (!auditReady) {
       event.preventDefault();
@@ -156,7 +177,6 @@ export const initialiseMaintenanceAuditUi = (): void => {
       renderSoon();
       return;
     }
-    requireRegeneration();
-    setActionStatus("Starting canonical regeneration. Loading the embedded place and current calculation data…");
+    setActionStatus(actionMessage());
   }, true);
 };
