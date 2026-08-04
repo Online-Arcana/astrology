@@ -16,5 +16,8 @@ await import("./credentialStatus.js");
 await import("./credentialWording.js");
 initialiseVaultUi();
 
+// This observer is scoped to the formatted chart host and only performs
+// idempotent category moves after a chart has been rendered.
+await import("./synthesisCategory.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
