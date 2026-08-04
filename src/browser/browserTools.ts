@@ -16,8 +16,9 @@ await import("./credentialStatus.js");
 await import("./credentialWording.js");
 initialiseVaultUi();
 
-// Install packaged download and encrypted open interception after the static
-// page controls exist but before the user can interact with them.
+// Install the packaged-file wording and local pack/unpack interception after
+// the static page controls exist but before the user can interact with them.
+await import("./packageWording.js");
 await import("./packageFlow.js");
 
 // This observer is scoped to the formatted chart host and only performs
