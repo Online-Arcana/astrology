@@ -97,8 +97,6 @@ const credentialFieldSelectors = [
   "#showSigningKeyFields",
 ];
 
-const guardedSelector = [...sensitiveSelectors, ...credentialFieldSelectors].join(",");
-
 const vaultExists = (): boolean => element<HTMLElement>("#credentialVault")?.dataset["exists"] === "true";
 const lockedByVault = (): boolean => vaultExists() && !unlocked;
 
@@ -134,10 +132,6 @@ const enforceLockedControls = (): void => {
   if (lock !== null) lock.hidden = !exists || !unlocked;
   if (remove !== null) remove.hidden = !exists;
 };
-
-const addedGuardedControl = (mutations: readonly MutationRecord[]): boolean => mutations.some((mutation) =>
-  [...mutation.addedNodes].some((node) =>
-    node instanceof Element && (node.matches(guardedSelector) || node.querySelector(guardedSelector) !== null)));
 
 const updateState = async (): Promise<void> => {
   const host = element<HTMLElement>("#credentialVault");
@@ -267,9 +261,6 @@ const createUi = (): void => {
     event.stopImmediatePropagation();
     setStatus("Unlock the credential vault before using this action.", true);
   }, true);
-  new MutationObserver((mutations) => {
-    if (addedGuardedControl(mutations)) enforceLockedControls();
-  }).observe(document.body, { childList: true, subtree: true });
 };
 
 export const initialiseVaultUi = (): void => {
