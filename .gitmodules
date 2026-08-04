@@ -10,3 +10,6 @@
 [submodule "vendor/time"]
 	path = vendor/time
 	url = https://github.com/kitty-crow/ts-joda.git
+[submodule "vendor/astral-packager"]
+	path = vendor/astral-packager
+	url = https://github.com/kitty-crow/astral-packager.git
