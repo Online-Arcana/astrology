@@ -9,7 +9,7 @@
     "astrology": "./dist/cli.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.15.0"
   },
   "scripts": {
     "check": "tsc -p tsconfig.json --noEmit",
@@ -23,12 +23,14 @@
     "vendor:places": "npm --prefix vendor/places/packages/countries install --ignore-scripts --workspaces=false --no-audit && npm --prefix vendor/places/packages/countries audit --audit-level=low --workspaces=false && npm --prefix vendor/places/packages/countries run build",
     "vendor:time": "npm --prefix vendor/time ci && npm --prefix vendor/time run build",
     "vendor:schema": "npm --prefix vendor/openai-schema install && npm --prefix vendor/openai-schema run build",
-    "vendor:build": "npm run vendor:astronomy && npm run vendor:places && npm run vendor:time && npm run vendor:schema"
+    "vendor:packager": "npm --prefix vendor/astral-packager run build",
+    "vendor:build": "npm run vendor:astronomy && npm run vendor:places && npm run vendor:time && npm run vendor:schema && npm run vendor:packager"
   },
   "dependencies": {
     "@countrystatecity/countries": "file:vendor/places/packages/countries",
     "@js-joda/core": "file:vendor/time/packages/core",
     "@js-joda/timezone": "file:vendor/time/packages/timezone",
+    "astral-packager": "file:vendor/astral-packager",
     "astronomia": "file:vendor/astronomy",
     "openai-schema": "file:vendor/openai-schema"
   },
