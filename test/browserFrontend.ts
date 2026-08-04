@@ -105,4 +105,15 @@ await test("opened files use an explicit copy-only maintenance path", async () =
   assert(/canonicaliseSign/u.test(tools), "maintenance action must offer explicit signing");
 });
 
+await test("current files may be signed without forced regeneration", async () => {
+  const auditUi = await readFile("src/browser/maintenanceAuditUi.ts", "utf8");
+  const marker = 'element<HTMLButtonElement>("#canonicaliseRun")?.addEventListener("click"';
+  const start = auditUi.indexOf(marker);
+  assert(start >= 0, "maintenance run handler must exist");
+  const runHandler = auditUi.slice(start);
+  assert(!runHandler.includes("selectRecommendedRegeneration();"), "run action must not re-enable regeneration after the user unticks it");
+  assert(/Signing the current chart without recalculating it/u.test(auditUi), "sign-only action must report that existing content is preserved");
+  assert(/do not pass the current maintenance audit/u.test(auditUi), "audit warning must not claim every rejected unit is missing");
+});
+
 console.log(`1..${passed}`);
