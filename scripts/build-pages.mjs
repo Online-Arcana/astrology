@@ -143,7 +143,7 @@ await build({
       // astral-packager shares one source graph between its Node CLI and browser
       // API. The guarded Node compression branch is unreachable in browsers,
       // but esbuild still needs its built-in import left external.
-      context.onResolve({ filter: /^node:zlib$/u }, () => ({ path: "node:zlib", external: true }));
+      context.onResolve({ filter: /^node:zlib$/ }, () => ({ path: "node:zlib", external: true }));
     },
   }],
   logLevel: "info",
