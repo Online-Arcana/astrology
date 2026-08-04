@@ -5,6 +5,7 @@ import {
   generationRecoverySchema,
   isLegacyAstralFile,
   loadChartGenerationService,
+  modelRoutingProfile,
   parseCalculationRequest,
   parseCliArgs,
   readConfig,
@@ -22,6 +23,12 @@ const config = readConfig({});
 equal(config.chart.primaryZodiac, "tropical", "public configuration default zodiac");
 equal(config.chart.interpretationMode, "tropical", "public configuration interpretation default");
 equal(config.chart.ayanamsha, "lahiri", "public configuration sidereal default");
+equal(config.openai.smallModel, "gpt-5-nano", "public short entry model");
+equal(config.openai.smallEscalationModel, "gpt-5.6-luna", "public short escalation model");
+equal(config.openai.bigModel, "gpt-5.6-luna", "public long entry model");
+equal(config.openai.bigEscalationModel, "gpt-5.6-luna", "public long escalation model");
+equal(config.chart.throwOnInterpretationFailure, false, "public customer-safe completion default");
+equal(modelRoutingProfile, "astral-model-routing/1.2.0", "public bounded Luna routing profile");
 
 const request = parseCalculationRequest({
   birth: {

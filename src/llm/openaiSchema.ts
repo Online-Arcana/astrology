@@ -10,6 +10,7 @@ import type {
   StrictShape,
   UploadedFile,
 } from "./orchestrate/types.js";
+import { salvagePartialJsonObject } from "./reconstruct/partialJson.js";
 
 export interface OpenAISchemaRuntimeOptions {
   apiKey: string;
@@ -73,6 +74,15 @@ const responseError = (cause: unknown): { id: string; incomplete: boolean } | nu
   return typeof id === "string" && id.length > 0
     ? { id, incomplete: status === "incomplete" }
     : null;
+};
+
+const normaliseRawText = (cause: unknown): void => {
+  if (!record(cause) || typeof cause["rawText"] !== "string") return;
+  const raw = cause["rawText"];
+  const salvaged = salvagePartialJsonObject(raw);
+  if (salvaged === null) return;
+  cause["partialRawText"] = raw;
+  cause["rawText"] = JSON.stringify(salvaged);
 };
 
 const errorText = (cause: unknown, depth = 0): string => {
@@ -430,6 +440,7 @@ class OpenAISchemaClient implements SchemaClient {
             // The original transport failure remains authoritative when retrieval is unavailable.
           }
         }
+        normaliseRawText(cause);
 
         if (!contextWindowFailure(cause)) throw cause;
         contextFailures += 1;

@@ -9,5 +9,7 @@ coverage/
 
 # Generated static frontend assets
 /public/app.js
+/public/browser-tools.js
+/public/chunks/
 /public/.nojekyll
 /public/places/

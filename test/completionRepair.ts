@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { readConfig } from "../src/config.js";
 import { auditStructured } from "../src/llm/audit/structured.js";
@@ -6,10 +7,17 @@ import type { FieldProfile } from "../src/llm/audit/field.js";
 import { runInterpretation } from "../src/llm/orchestrate/run.js";
 import type {
   InterpretationCall,
+  InterpretationRecovery,
   SchemaCall,
   SchemaClient,
   StrictShape,
 } from "../src/llm/orchestrate/types.js";
+import {
+  fallbackCatalogue,
+  fallbackCatalogueVersion,
+  type FallbackFamily,
+} from "../src/llm/reconstruct/catalogue.js";
+import { salvagePartialJsonObject } from "../src/llm/reconstruct/partialJson.js";
 
 const shape: StrictShape<{ detail: string }> = {
   name: "completion_repair_fixture",
@@ -23,237 +31,196 @@ const shape: StrictShape<{ detail: string }> = {
   },
 };
 
-const record = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
 class Client implements SchemaClient {
-  readonly id: string;
+  id: string | undefined;
 
   constructor(
-    id: string,
-    private readonly onRun: (input: unknown, options: SchemaCall) => object,
-  ) {
-    this.id = id;
-  }
+    private readonly onRun: (options: SchemaCall) => object,
+  ) {}
 
   async run<T extends object>(
     _shape: StrictShape<T>,
-    input: unknown,
+    _input: unknown,
     options: SchemaCall,
   ): Promise<T> {
-    return this.onRun(input, options) as T;
+    this.id ??= "conv_fixture";
+    return this.onRun(options) as T;
   }
 }
 
-const config = () => readConfig({
-  ASTRAL_MAX_RETRIES: "1",
-  OPENAI_SMALL_MODEL: "gpt-small",
-  OPENAI_BIG_MODEL: "gpt-big",
+const config = (debug = false) => readConfig({
+  ASTRAL_MAX_RETRIES: "2",
+  OPENAI_SMALL_MODEL: "gpt-small-entry",
+  OPENAI_SMALL_ESCALATION_MODEL: "gpt-small-escalation",
+  OPENAI_BIG_MODEL: "gpt-big-entry",
+  OPENAI_BIG_ESCALATION_MODEL: "gpt-big-escalation",
+  ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE: String(debug),
 });
 
-const houseProfile = (): FieldProfile => ({
+const profile = (): FieldProfile => ({
   id: "tropical.house.7",
   lexicon: ["trust", "relationship", "distance", "close"],
   minLength: 2,
   maxLength: 4_000,
 });
 
-test("parsed prose truncation is condensed and completed by the small model", async () => {
-  let clients = 0;
-  let primaryCalls = 0;
-  let repairCalls = 0;
-  const repairModels: string[] = [];
-  const repairEvents: string[][] = [];
+const unit = (): InterpretationCall => ({
+  id: "tropical.house.7",
+  label: "House 7",
+  kind: "small",
+  effort: "none",
+  tokens: 256,
+  shape,
+  allowedSourceRefs: new Set(),
+  input: () => ({ field: "house.7" }),
+  audit: (value) => auditStructured(value, {}, new Set(), profile()),
+});
 
-  const createClient = (): SchemaClient => {
-    clients += 1;
-    return new Client(`conv_${clients}`, (input, options) => {
-      if (record(input) && typeof input["instruction"] === "string") {
-        repairCalls += 1;
-        repairModels.push(options.body.model);
-        assert.deepEqual(input["partialCandidate"], {
-          detail: "You seek depth and trust because",
-        });
-        return {
-          detail: "You seek depth and trust because dependable intimacy matters to you.",
-        };
-      }
-      primaryCalls += 1;
-      return { detail: "You seek depth and trust because" };
-    });
-  };
+const xmlText = (value: string): string => value
+  .replaceAll("&lt;", "<")
+  .replaceAll("&gt;", ">")
+  .replaceAll("&quot;", "\"")
+  .replaceAll("&apos;", "'")
+  .replaceAll("&amp;", "&");
 
-  const unit: InterpretationCall = {
-    id: "tropical.life.sexuality",
-    label: "Sexuality",
-    kind: "small",
-    effort: "none",
-    tokens: 256,
-    shape,
-    allowedSourceRefs: new Set(),
-    input: () => ({ field: "sexuality" }),
-    audit: (value) => {
-      const detail = (value as { detail?: unknown }).detail;
-      if (typeof detail === "string" && /because\s*$/iu.test(detail)) {
-        return {
-          valid: false,
-          value,
-          errors: ["tropical.life.sexuality.detail ends with an unfinished clause"],
-          repair: "completion",
-        };
-      }
-      return { valid: true, value, errors: [] };
-    },
-  };
+const xmlCatalogue = (xml: string): Record<string, Record<string, string>> => {
+  const output: Record<string, Record<string, string>> = {};
+  for (const match of xml.matchAll(/<case id="([^"]+)">([\s\S]*?)<\/case>/gu)) {
+    const family = match[1];
+    const body = match[2];
+    if (family === undefined || body === undefined) continue;
+    const fields: Record<string, string> = {};
+    for (const field of body.matchAll(/<field name="([^"]+)">([\s\S]*?)<\/field>/gu)) {
+      const name = field[1];
+      const value = field[2];
+      if (name !== undefined && value !== undefined) fields[name] = xmlText(value.trim());
+    }
+    output[family] = fields;
+  }
+  return output;
+};
 
-  const result = await runInterpretation(
-    {},
-    [unit],
-    config(),
-    createClient,
+test("the XML and runtime fallback catalogues remain identical", async () => {
+  const xml = await readFile("src/llm/reconstruct/fallbacks.xml", "utf8");
+  assert.match(xml, new RegExp(`schema="${fallbackCatalogueVersion}"`, "u"));
+  const parsed = xmlCatalogue(xml);
+  const families = Object.keys(fallbackCatalogue) as FallbackFamily[];
+  assert.deepEqual(Object.keys(parsed).sort(), [...families].sort());
+  for (const family of families) assert.deepEqual(parsed[family], fallbackCatalogue[family]);
+});
+
+test("partial JSON salvage preserves only complete top-level fields", () => {
+  const salvaged = salvagePartialJsonObject([
+    "```json",
+    "{\"summary\":\"You communicate directly.\",",
+    "\"detail\":\"You prefer explicit expectations, even when a sentence is incomplete",
+  ].join("\n"));
+  assert.deepEqual(salvaged, {
+    summary: "You communicate directly.",
+  });
+
+  assert.deepEqual(
+    salvagePartialJsonObject("{\"summary\":\"You stay clear, even with commas.\",\"themes\":[\"one\",\"two\"],\"detail\":\"cut"),
     {
-      onRepair: (_unit, _attempt, model, errors) => {
-        assert.equal(model, "gpt-small");
-        repairEvents.push([...errors]);
-      },
+      summary: "You stay clear, even with commas.",
+      themes: ["one", "two"],
     },
-  );
-
-  assert.equal(primaryCalls, 1);
-  assert.equal(repairCalls, 1);
-  assert.deepEqual(repairModels, ["gpt-small"]);
-  assert.equal(repairEvents.length, 1);
-  assert.equal(result.calls, 2);
-  assert.equal(result.retries, 1);
-  assert.equal(
-    result.units["tropical.life.sexuality"]?.provenance?.repairKind,
-    "completion_condensation",
-  );
-  assert.equal(
-    (result.units["tropical.life.sexuality"]?.value as { detail?: string }).detail,
-    "You seek depth and trust because dependable intimacy matters to you.",
   );
 });
 
-test("ordinary NLP findings are handed to the small model and do not fail the run", async () => {
-  let clients = 0;
-  let primaryCalls = 0;
-  let repairCalls = 0;
-  const repairEvents: string[][] = [];
+test("entry rejection escalates once and audits the escalation output", async () => {
+  const models: string[] = [];
+  let calls = 0;
+  const createClient = (): SchemaClient => new Client((options) => {
+    models.push(options.body.model);
+    calls += 1;
+    return calls === 1
+      ? { detail: "Difficulty trusting another person can create distance in close relationships." }
+      : { detail: "You may create distance in close relationships when trusting another person feels uncertain." };
+  });
 
-  const createClient = (): SchemaClient => {
-    clients += 1;
-    return new Client(`conv_audit_${clients}`, (input, options) => {
-      if (record(input) && Array.isArray(input["auditErrors"])) {
-        repairCalls += 1;
-        assert.equal(options.body.model, "gpt-small");
-        assert(
-          (input["auditErrors"] as unknown[]).some((error) =>
-            typeof error === "string" && error.includes("direct second-person language")),
-          "repair must receive the exact NLP finding",
-        );
-        return {
-          detail: "You may create distance in close relationships when trusting another person feels uncertain.",
-        };
-      }
-      primaryCalls += 1;
-      return {
-        detail: "Difficulty trusting another person can create distance in close relationships.",
-      };
-    });
-  };
-
-  const unit: InterpretationCall = {
-    id: "tropical.house.7",
-    label: "House 7",
-    kind: "small",
-    effort: "none",
-    tokens: 256,
-    shape,
-    allowedSourceRefs: new Set(),
-    input: () => ({ field: "house.7" }),
-    audit: (value) => auditStructured(
-      value,
-      {},
-      new Set(),
-      houseProfile(),
-    ),
-  };
-
-  const result = await runInterpretation(
-    {},
-    [unit],
-    config(),
-    createClient,
-    {
-      onRepair: (_unit, _attempt, model, errors) => {
-        assert.equal(model, "gpt-small");
-        repairEvents.push([...errors]);
-      },
-    },
-  );
-
-  assert.equal(primaryCalls, 1);
-  assert.equal(repairCalls, 1);
-  assert.equal(repairEvents.length, 1);
+  const result = await runInterpretation({}, [unit()], config(), createClient);
+  assert.deepEqual(models, ["gpt-small-entry", "gpt-small-escalation"]);
   assert.equal(result.calls, 2);
   assert.equal(result.retries, 1);
-  assert.equal(
-    (result.units["tropical.house.7"]?.value as { detail?: string }).detail,
-    "You may create distance in close relationships when trusting another person feels uncertain.",
-  );
+  assert.equal(result.units["tropical.house.7"]?.model, "gpt-small-escalation");
+  assert.equal(result.units["tropical.house.7"]?.provenance, undefined);
 });
 
-test("an imperfect NLP repair is soft-accepted instead of aborting the chart", async () => {
-  let clients = 0;
-  let repairCalls = 0;
-  const unchanged = {
-    detail: "Difficulty trusting another person can create distance in close relationships.",
-  };
+test("failed escalation is reconstructed deterministically without a third model call", async () => {
+  const models: string[] = [];
+  const createClient = (): SchemaClient => new Client((options) => {
+    models.push(options.body.model);
+    return { detail: "Difficulty trusting another person can create distance in close relationships." };
+  });
 
-  const createClient = (): SchemaClient => {
-    clients += 1;
-    return new Client(`conv_fallback_${clients}`, (input, options) => {
-      if (record(input) && Array.isArray(input["auditErrors"])) {
-        repairCalls += 1;
-        assert.equal(options.body.model, "gpt-small");
-      }
-      return unchanged;
-    });
-  };
+  const result = await runInterpretation({}, [unit()], config(), createClient);
+  const completed = result.units["tropical.house.7"];
+  assert.deepEqual(models, ["gpt-small-entry", "gpt-small-escalation"]);
+  assert.equal(result.calls, 2);
+  assert.equal(result.retries, 1);
+  assert.equal(completed?.provenance?.repairedBy, "deterministic");
+  assert.equal(completed?.provenance?.repairKind, "deterministic_reconstruction");
+  assert.match((completed?.value as { detail: string }).detail, /^You\b/u);
+});
 
-  const unit: InterpretationCall = {
-    id: "tropical.house.7",
-    label: "House 7",
-    kind: "small",
-    effort: "none",
-    tokens: 256,
-    shape,
-    allowedSourceRefs: new Set(),
-    input: () => ({ field: "house.7" }),
-    audit: (value) => auditStructured(
-      value,
-      {},
-      new Set(),
-      houseProfile(),
-    ),
-  };
+test("transport failure on both paid tiers uses XML-backed field fallback", async () => {
+  const models: string[] = [];
+  const createClient = (): SchemaClient => new Client((options) => {
+    models.push(options.body.model);
+    throw new Error("transport unavailable");
+  });
 
-  const warnings: string[][] = [];
-  const result = await runInterpretation(
-    {},
-    [unit],
-    config(),
-    createClient,
-    {
-      onSoftAccept: (_unit, _attempt, errors) => {
-        warnings.push([...errors]);
+  const result = await runInterpretation({}, [unit()], config(), createClient);
+  const completed = result.units["tropical.house.7"];
+  assert.deepEqual(models, ["gpt-small-entry", "gpt-small-escalation"]);
+  assert.equal(result.calls, 2);
+  assert.equal(completed?.model, "deterministic");
+  assert.equal(completed?.provenance?.repairKind, "xml_fallback");
+  assert.deepEqual(completed?.provenance?.fallbackFields, ["detail"]);
+  assert.match((completed?.value as { detail: string }).detail, /^You\b/u);
+});
+
+test("the outer production fallback reconstructs a corrupt recovery checkpoint", async () => {
+  const recovery: InterpretationRecovery = {
+    conversationId: "conv_corrupt",
+    units: {
+      "tropical.house.7": {
+        id: "tropical.house.7",
+        value: { unexpected: "damaged checkpoint" },
+        attempts: 0,
+        model: "",
       },
     },
-  );
+    calls: 1,
+    retries: 0,
+    active: null,
+  };
+  const createClient = (): SchemaClient => new Client(() => {
+    throw new Error("client must not be needed for corrupt recovery fallback");
+  });
 
-  assert.equal(repairCalls, 2, "bounded repair passes");
-  assert.equal(warnings.length, 1, "unresolved warning must be retained diagnostically");
-  assert.equal(result.calls, 3, "one primary call plus two small repair calls");
-  assert.deepEqual(result.units["tropical.house.7"]?.value, unchanged);
+  const result = await runInterpretation(
+    {},
+    [unit()],
+    config(),
+    createClient,
+    { onComplete: () => { throw new Error("diagnostic hook failed"); } },
+    recovery,
+  );
+  const completed = result.units["tropical.house.7"];
+  assert.equal(completed?.attempts, 1);
+  assert.equal(completed?.model, "deterministic");
+  assert.equal(completed?.provenance?.repairedBy, "deterministic");
+  assert.match((completed?.value as { detail: string }).detail, /^You\b/u);
+});
+
+test("throwing is available only through the explicit debug option", async () => {
+  const createClient = (): SchemaClient => new Client(() => {
+    throw new Error("transport unavailable");
+  });
+  await assert.rejects(
+    () => runInterpretation({}, [unit()], config(true), createClient),
+    /required deterministic reconstruction/u,
+  );
 });

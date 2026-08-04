@@ -24,11 +24,17 @@ export const sectionUnit = (input: SectionUnitInput): InterpretationCall => {
     kind: input.kind ?? "big",
     shape: sectionShape(input.id) as unknown as InterpretationCall["shape"],
     allowedSourceRefs: allowed,
-    input: ({ earlier }) => ({
+    input: ({ earlier, correction }) => ({
       instructions: sectionPrompt(input.task),
       deterministicData: input.data,
       permittedSourceRefs: input.refs,
       earlierConclusions: earlier,
+      ...(correction.length === 0 ? {} : {
+        correction: {
+          instruction: "Correct only the rejected fields, preserve valid content and return the same strict schema.",
+          auditFailures: correction,
+        },
+      }),
     }),
     audit: (value, { calculation }) => auditSection(value as Section, calculation, allowed, input.profile),
   };

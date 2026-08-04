@@ -7,7 +7,9 @@ export interface Config {
     apiKey: string;
     adminKey: string | null;
     bigModel: string;
+    bigEscalationModel: string;
     smallModel: string;
+    smallEscalationModel: string;
     reasoning: "none" | "low" | "medium" | "high";
     maxOutputTokens: number;
   };
@@ -16,6 +18,7 @@ export interface Config {
     ayanamsha: Ayanamsha;
     interpretationMode: Zodiac;
     maxRetries: number;
+    throwOnInterpretationFailure: boolean;
     foundationUnits?: number;
     laneCount?: number;
     laneUnits?: number;
@@ -88,8 +91,10 @@ export const readConfig = (env: Env): Config => {
     openai: {
       apiKey: env["OPENAI_API_KEY"] ?? "",
       adminKey: env["OPENAI_ADMIN_KEY"] || null,
-      bigModel: env["OPENAI_BIG_MODEL"] ?? "gpt-5.4-mini",
-      smallModel: env["OPENAI_SMALL_MODEL"] ?? "gpt-5.4-nano",
+      bigModel: env["OPENAI_BIG_MODEL"] ?? "gpt-5.6-luna",
+      bigEscalationModel: env["OPENAI_BIG_ESCALATION_MODEL"] ?? "gpt-5.6-luna",
+      smallModel: env["OPENAI_SMALL_MODEL"] ?? "gpt-5-nano",
+      smallEscalationModel: env["OPENAI_SMALL_ESCALATION_MODEL"] ?? "gpt-5.6-luna",
       reasoning: oneOf(env["OPENAI_REASONING"], "low", ["none", "low", "medium", "high"] as const, "OPENAI_REASONING"),
       maxOutputTokens: ints(env["OPENAI_MAX_OUTPUT_TOKENS"], 12000, "OPENAI_MAX_OUTPUT_TOKENS"),
     },
@@ -97,7 +102,12 @@ export const readConfig = (env: Env): Config => {
       primaryZodiac,
       ayanamsha: oneOf(env["ASTRAL_SIDEREAL_AYANAMSHA"], "lahiri", ["lahiri", "fagan_bradley", "krishnamurti", "raman"] as const, "ASTRAL_SIDEREAL_AYANAMSHA"),
       interpretationMode,
-      maxRetries: ints(env["ASTRAL_MAX_RETRIES"], 3, "ASTRAL_MAX_RETRIES"),
+      maxRetries: bounded(env["ASTRAL_MAX_RETRIES"], 2, "ASTRAL_MAX_RETRIES", 3),
+      throwOnInterpretationFailure: bool(
+        env["ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE"],
+        false,
+        "ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE",
+      ),
       foundationUnits: bounded(env["ASTRAL_FOUNDATION_UNITS"], 10, "ASTRAL_FOUNDATION_UNITS", 10),
       laneCount: bounded(env["ASTRAL_LANE_COUNT"], 4, "ASTRAL_LANE_COUNT", 4),
       laneUnits: bounded(env["ASTRAL_LANE_UNITS"], 10, "ASTRAL_LANE_UNITS", 10),

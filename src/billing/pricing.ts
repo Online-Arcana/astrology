@@ -1,11 +1,26 @@
 import type { PriceCatalogue, PriceRate, TokenUsage } from "./types.js";
 
 export const openAiPriceCatalogue: PriceCatalogue = {
-  id: "openai-standard-2026-03-17",
+  id: "openai-standard-2026-08-04",
   currency: "USD",
-  effectiveAt: "2026-03-17",
-  source: "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
+  effectiveAt: "2026-08-04",
+  source: "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
   models: {
+    "gpt-5": {
+      inputUsdPerMillion: 1.25,
+      cachedInputUsdPerMillion: 0.125,
+      outputUsdPerMillion: 10.00,
+    },
+    "gpt-5-mini": {
+      inputUsdPerMillion: 0.25,
+      cachedInputUsdPerMillion: 0.025,
+      outputUsdPerMillion: 2.00,
+    },
+    "gpt-5-nano": {
+      inputUsdPerMillion: 0.05,
+      cachedInputUsdPerMillion: 0.005,
+      outputUsdPerMillion: 0.40,
+    },
     "gpt-5.4": {
       inputUsdPerMillion: 2.50,
       cachedInputUsdPerMillion: 0.25,
@@ -20,6 +35,11 @@ export const openAiPriceCatalogue: PriceCatalogue = {
       inputUsdPerMillion: 0.20,
       cachedInputUsdPerMillion: 0.020,
       outputUsdPerMillion: 1.25,
+    },
+    "gpt-5.6-luna": {
+      inputUsdPerMillion: 0.20,
+      cachedInputUsdPerMillion: 0.020,
+      outputUsdPerMillion: 1.20,
     },
   },
 };

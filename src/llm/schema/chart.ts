@@ -28,7 +28,9 @@ import {
 
 const refs = (
   allowed: readonly JsonRef[],
-): Schema => list(textEnum(allowed), 1);
+): Schema => allowed.length === 0
+  ? list(text(), 0, 0)
+  : list(textEnum(allowed), 1);
 
 const sectionProperties = (
   allowed: readonly JsonRef[],

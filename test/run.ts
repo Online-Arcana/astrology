@@ -36,11 +36,14 @@ test("CRC-32C matches the standard vector", () => {
   equal(crc32c(new TextEncoder().encode("123456789")), "e3069283", "CRC-32C");
 });
 
-test("configuration uses separate default models", () => {
+test("configuration uses entry and escalation models for both output sizes", () => {
   const config = readConfig({});
-  equal(config.openai.bigModel, "gpt-5.4-mini", "big model");
-  equal(config.openai.smallModel, "gpt-5.4-nano", "small model");
-  equal(config.chart.maxRetries, 3, "retry count");
+  equal(config.openai.bigModel, "gpt-5.6-luna", "big entry model");
+  equal(config.openai.bigEscalationModel, "gpt-5.6-luna", "big escalation model");
+  equal(config.openai.smallModel, "gpt-5-nano", "small entry model");
+  equal(config.openai.smallEscalationModel, "gpt-5.6-luna", "small escalation model");
+  equal(config.chart.maxRetries, 2, "retry compatibility bound");
+  equal(config.chart.throwOnInterpretationFailure, false, "customer-safe completion default");
 });
 
 test("signing configuration requires both keys", () => {
@@ -155,7 +158,7 @@ test("JSON references must resolve and remain in the permitted set", () => {
   ok(!refsValid(root, [ref], new Set()), "disallowed reference");
 });
 
-test("interpretation reuses one bounded conversation, repairs narrowly and routes models", async () => {
+test("interpretation audits entry and escalation outputs and routes by output size", async () => {
   const ref = "#/systems/tropical/points/mars" as const;
   const calculation = { systems: { tropical: { points: { mars: { status: "exact", value: 17 } } } } };
   const bad = {
@@ -212,9 +215,10 @@ test("interpretation reuses one bounded conversation, repairs narrowly and route
   );
   equal(result.conversationId, "conv_chart_one", "foundation conversation");
   equal(result.calls, 3, "call count");
-  equal(result.retries, 1, "small repair count");
-  equal(result.units["tropical-sexuality"]?.attempts, 1, "section primary attempts");
-  equal(seenModels.join(","), "gpt-5.4-mini,gpt-5.4-nano,gpt-5.4-nano", "model routing");
+  equal(result.retries, 1, "escalation count");
+  equal(result.units["tropical-sexuality"]?.attempts, 2, "section escalation attempts");
+  equal(result.units["tropical-sexuality"]?.model, "gpt-5.6-luna", "accepted escalation model");
+  equal(seenModels.join(","), "gpt-5.6-luna,gpt-5.6-luna,gpt-5-nano", "model routing");
 });
 
 test("separate chart runs never share a conversation", async () => {

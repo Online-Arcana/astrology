@@ -8,6 +8,7 @@ import type { NarrativeEntry } from "../audit/field.js";
 import { auditStructured } from "../audit/structured.js";
 import type { FieldProfile } from "../audit/field.js";
 import { fieldProfiles } from "../audit/profiles.js";
+import { reconstructUnit } from "../reconstruct/reconstruct.js";
 import { object, strictShape, text } from "../schema/build.js";
 import { shapeForUnit } from "../schema/chart.js";
 import { sectionPrompt } from "./prompt.js";
@@ -25,7 +26,7 @@ import type {
 export const promptCatalogue = "astral-prompts/1.3.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.1.0" as const;
 export const nlpAuditProfile = "astral-nlp-audit/1.1.0" as const;
-export const modelRoutingProfile = "astral-model-routing/1.1.0" as const;
+export const modelRoutingProfile = "astral-model-routing/1.2.0" as const;
 
 export interface PlanInterpretationResult {
   run: InterpretationRun;
@@ -52,6 +53,9 @@ const useful = (calculation: AstralCalculation, ref: JsonRef): boolean =>
 
 const sources = (calculation: AstralCalculation, refs: readonly JsonRef[]): SourceValue[] =>
   refs.filter((ref) => useful(calculation, ref)).map((ref) => ({ ref, value: resolveRef(root(calculation), ref) }));
+
+const sourceRefsFor = (calculation: AstralCalculation, unit: InterpretationUnit): JsonRef[] =>
+  sources(calculation, unit.allowedSourceRefs).map(({ ref }) => ref);
 
 const human = (value: string): string => value
   .replaceAll(/([a-z])([A-Z])/gu, "$1 $2")
@@ -154,7 +158,7 @@ const genericUnavailable = (unit: InterpretationUnit): UnitResult<object> => {
   return { id: unit.id, value, attempts: 1, model: "deterministic" };
 };
 
-const syntheticAllowed = (unit: InterpretationUnit): boolean => ![
+const unavailableSectionAllowed = (unit: InterpretationUnit): boolean => ![
   "life.romance",
   "life.sexuality",
   "life.careerAndVocation",
@@ -165,6 +169,54 @@ const syntheticAllowed = (unit: InterpretationUnit): boolean => ![
   "finalSynthesis",
 ].includes(unit.section);
 
+const fallbackCall = (
+  unit: InterpretationUnit,
+  refs: readonly JsonRef[],
+): InterpretationCall => ({
+  id: unit.id,
+  label: human(unit.id),
+  ...route(unit),
+  shape: shapeForUnit(unit, refs),
+  allowedSourceRefs: new Set(refs),
+  input: () => ({}),
+  audit: (value) => ({ valid: true, value, errors: [] }),
+});
+
+const genericFallback = (
+  unit: InterpretationUnit,
+  refs: readonly JsonRef[],
+  warning: string,
+): UnitResult<object> => {
+  const call = fallbackCall(unit, refs);
+  const rebuilt = reconstructUnit({ unit: call, candidates: [] });
+  return {
+    id: unit.id,
+    value: rebuilt.value,
+    attempts: 1,
+    model: "deterministic",
+    provenance: {
+      repairedBy: "deterministic",
+      repairKind: "xml_fallback",
+      fallbackFields: rebuilt.fallbackFields,
+      auditWarnings: [...rebuilt.warnings, warning],
+    },
+  };
+};
+
+const noSourceFallback = (unit: InterpretationUnit): UnitResult<object> =>
+  unavailableSectionAllowed(unit)
+    ? genericUnavailable(unit)
+    : genericFallback(unit, [], "No unambiguous deterministic source was available for this unit");
+
+const sourceAwareFallback = (
+  calculation: AstralCalculation,
+  unit: InterpretationUnit,
+  warning: string,
+): UnitResult<object> => {
+  const refs = sourceRefsFor(calculation, unit);
+  return refs.length === 0 ? noSourceFallback(unit) : genericFallback(unit, refs, warning);
+};
+
 const substantiveCalls = (
   calculation: AstralCalculation,
 ): { calls: InterpretationCall[]; synthetic: Record<string, UnitResult<object>> } => {
@@ -174,8 +226,7 @@ const substantiveCalls = (
   for (const unit of calculation.interpretationPlan.units) {
     const unitSources = sources(calculation, unit.allowedSourceRefs);
     if (unitSources.length === 0) {
-      if (!syntheticAllowed(unit)) throw new Error(`Interpretation unit ${unit.id} has no available deterministic source`);
-      synthetic[unit.id] = genericUnavailable(unit);
+      synthetic[unit.id] = noSourceFallback(unit);
       continue;
     }
 
@@ -309,6 +360,78 @@ const recoveryAwareCalls = (
   };
 });
 
+const localRun = (
+  units: Readonly<Record<string, UnitResult<object>>>,
+  cause: string,
+): InterpretationRun => {
+  const id = `local-plan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  const annotated = Object.fromEntries(Object.entries(units).map(([key, result]) => [key, {
+    ...result,
+    provenance: {
+      ...(result.provenance ?? {}),
+      auditWarnings: [...(result.provenance?.auditWarnings ?? []), cause],
+    },
+  }]));
+  return {
+    conversationId: id,
+    units: annotated,
+    calls: 0,
+    retries: 0,
+    orchestration: "waves",
+    conversationIds: [id],
+    snapshotRevision: 0,
+    waves: 0,
+  };
+};
+
+const deterministicPlan = (
+  calculation: AstralCalculation,
+  hooks: RunHooks,
+  cause: unknown,
+): PlanInterpretationResult => {
+  const warning = `Deterministic plan fallback: ${cause instanceof Error ? cause.message : String(cause)}`;
+  const units: Record<string, UnitResult<object>> = {};
+  for (const unit of calculation.interpretationPlan.units) {
+    const result = sourceAwareFallback(calculation, unit, warning);
+    units[unit.id] = result;
+    try { hooks.onComplete?.(result); } catch { /* Diagnostics must not block customer delivery. */ }
+  }
+  return {
+    run: localRun(units, warning),
+    generatedName: calculation.subject.providedName === null ? "Cosmic-pattern-portrait" : null,
+  };
+};
+
+const runPlan = async (
+  calculation: AstralCalculation,
+  config: Config,
+  createClient: SchemaClientFactory,
+  hooks: RunHooks,
+  recovery: InterpretationRecovery | null,
+): Promise<PlanInterpretationResult> => {
+  const prepared = interpretationCalls(calculation);
+  const calls = recoveryAwareCalls(prepared.calls, recovery);
+  const raw = calls.length === 0
+    ? localRun(prepared.synthetic, "All interpretation units used deterministic fallback")
+    : await runInterpretation(root(calculation), calls, config, createClient, hooks, recovery);
+  const generated = raw.units["generated-name"]?.value as { value?: unknown } | undefined;
+  const generatedName = calculation.subject.providedName === null
+    ? typeof generated?.value === "string" && generatedNamePattern.test(generated.value)
+      ? generated.value
+      : "Cosmic-pattern-portrait"
+    : null;
+
+  const units: Record<string, UnitResult<object>> = {};
+  for (const unit of calculation.interpretationPlan.units) {
+    const value = raw.units[unit.id]
+      ?? prepared.synthetic[unit.id]
+      ?? sourceAwareFallback(calculation, unit, "Interpretation assembly supplied the final field fallback");
+    units[unit.id] = value;
+  }
+
+  return { run: { ...raw, units }, generatedName };
+};
+
 export const runInterpretationPlan = async (
   calculation: AstralCalculation,
   config: Config,
@@ -316,25 +439,10 @@ export const runInterpretationPlan = async (
   hooks: RunHooks = {},
   recovery: InterpretationRecovery | null = null,
 ): Promise<PlanInterpretationResult> => {
-  const prepared = interpretationCalls(calculation);
-  if (prepared.calls.length === 0) throw new Error("Interpretation plan contains no callable units");
-
-  const calls = recoveryAwareCalls(prepared.calls, recovery);
-  const raw = await runInterpretation(root(calculation), calls, config, createClient, hooks, recovery);
-  const generated = raw.units["generated-name"]?.value as { value?: unknown } | undefined;
-  const generatedName = calculation.subject.providedName === null
-    ? typeof generated?.value === "string" ? generated.value : null
-    : null;
-  if (calculation.subject.providedName === null && generatedName === null) {
-    throw new Error("Interpretation did not produce the required generated chart name");
+  try {
+    return await runPlan(calculation, config, createClient, hooks, recovery);
+  } catch (cause: unknown) {
+    if (config.chart.throwOnInterpretationFailure) throw cause;
+    return deterministicPlan(calculation, hooks, cause);
   }
-
-  const units: Record<string, UnitResult<object>> = {};
-  for (const unit of calculation.interpretationPlan.units) {
-    const value = raw.units[unit.id] ?? prepared.synthetic[unit.id];
-    if (!value) throw new Error(`Interpretation result is missing ${unit.id}`);
-    units[unit.id] = value;
-  }
-
-  return { run: { ...raw, units }, generatedName };
 };

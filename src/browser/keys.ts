@@ -2,14 +2,16 @@ import { base64url, ownedBuffer, unbase64url } from "../file/codec.js";
 import { digest } from "../file/hash.js";
 import type { AuthorityKeys } from "../file/authority.js";
 import type { KeyId } from "../types/file.js";
+import { browserVault, type BrowserSecretSnapshot } from "./vault.js";
 
-const openAiStorageKey = "astral.openai-key";
-const signingStorageKey = "astral.signing-key";
 const defaultIssuer = "astral-browser/local";
 
 export interface BrowserSigningKey extends AuthorityKeys {
   issuer: string;
 }
+
+let sessionOpenAiKey = "";
+let sessionSigningKey: BrowserSigningKey | null = null;
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -101,24 +103,42 @@ export const generateSigningKey = async (
   };
 };
 
-export const loadOpenAiKey = (): string => localStorage.getItem(openAiStorageKey) ?? "";
-export const saveOpenAiKey = (value: string): void => {
-  const selected = value.trim();
-  if (selected.length === 0) localStorage.removeItem(openAiStorageKey);
-  else localStorage.setItem(openAiStorageKey, selected);
+const snapshot = (): BrowserSecretSnapshot => ({
+  openAiKey: sessionOpenAiKey,
+  signingKeyText: sessionSigningKey === null ? null : signingKeyText(sessionSigningKey),
+});
+
+const persist = (): void => {
+  void browserVault.save(snapshot()).catch(() => {
+    // The current page session remains usable if encrypted persistence fails.
+    // Vault controls report unlock/create failures explicitly to the user.
+  });
 };
 
-export const loadSigningKey = (): BrowserSigningKey | null => {
-  const text = localStorage.getItem(signingStorageKey);
-  if (text === null || text.trim().length === 0) return null;
-  try {
-    return parseSigningKey(text);
-  } catch {
-    return null;
-  }
+export const loadOpenAiKey = (): string => sessionOpenAiKey;
+
+export const saveOpenAiKey = (value: string): void => {
+  sessionOpenAiKey = value.trim();
+  persist();
 };
+
+export const loadSigningKey = (): BrowserSigningKey | null => sessionSigningKey;
 
 export const saveSigningKey = (key: BrowserSigningKey | null): void => {
-  if (key === null) localStorage.removeItem(signingStorageKey);
-  else localStorage.setItem(signingStorageKey, signingKeyText(key));
+  sessionSigningKey = key;
+  persist();
+};
+
+export const browserSecretSnapshot = (): BrowserSecretSnapshot => snapshot();
+
+export const applyBrowserSecretSnapshot = (value: BrowserSecretSnapshot): void => {
+  sessionOpenAiKey = value.openAiKey.trim();
+  sessionSigningKey = value.signingKeyText === null || value.signingKeyText.trim().length === 0
+    ? null
+    : parseSigningKey(value.signingKeyText);
+};
+
+export const clearBrowserSecretSession = (): void => {
+  sessionOpenAiKey = "";
+  sessionSigningKey = null;
 };
