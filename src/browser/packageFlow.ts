@@ -441,10 +441,14 @@ const runTask = async (task: Task): Promise<boolean> => {
       finish(false);
     };
     const passwordInput = (): void => {
+      ui.error.textContent = "";
       if (task.mode === "pack") showAudit(ui);
       checkMatch(ui);
     };
-    const confirmInput = (): void => { checkMatch(ui); };
+    const confirmInput = (): void => {
+      ui.error.textContent = "";
+      checkMatch(ui);
+    };
     const revealPassword = (): void => {
       const shown = ui.password.type === "password";
       setReveal(ui.passwordReveal, ui.password, shown);
@@ -482,11 +486,11 @@ const runTask = async (task: Task): Promise<boolean> => {
       void task.run(password, (message) => { ui.status.textContent = message; })
         .then(() => finish(true))
         .catch((cause: unknown) => {
+          resetFields(ui, task.mode);
           ui.error.textContent = cause instanceof Error ? cause.message : String(cause);
           ui.status.textContent = task.mode === "pack"
             ? "No file was downloaded. Choose a password and try again."
             : "The file remains unopened. Check the password and try again.";
-          resetFields(ui, task.mode);
           working(ui, false);
           ui.password.focus();
         })
