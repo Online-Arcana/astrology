@@ -21,10 +21,6 @@ initialiseVaultUi();
 await import("./packageWording.js");
 await import("./packageFlow.js");
 
-// Keep the authority badge tied to the current shared in-memory signing key,
-// including keys imported or generated after app.ts first initialised.
-await import("./authorityLabel.js");
-
 // This observer is scoped to the formatted chart host and only performs
 // idempotent category moves after a chart has been rendered.
 await import("./synthesisCategory.js");
