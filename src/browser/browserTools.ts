@@ -21,3 +21,4 @@ initialiseVaultUi();
 await import("./synthesisCategory.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
+await import("./maintenancePolicy.js");
