@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { open, pack, readMeta } from "astral-packager";
 
 const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
@@ -43,7 +44,7 @@ assert(meta.signs.imumCoeli === "aries", "public Imum Coeli sign must survive pa
 
 const restored = await open(packed.bytes, password);
 try {
-  assert(JSON.stringify(restored.json) === JSON.stringify(value), "open must reconstruct the complete semantic JSON value");
+  assert(isDeepStrictEqual(restored.json, value), "open must reconstruct the complete semantic JSON value");
   assert(restored.pub === packed.pub, "open must regenerate the package identity");
   assert(restored.pubRaw.every((byte, index) => byte === packed.pubRaw[index]), "open must regenerate the exact public-key bytes");
 } finally {
