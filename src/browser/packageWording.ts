@@ -5,6 +5,12 @@ if (completeNotice !== null) {
   completeNotice.textContent = "The final .astral download is a password-encrypted package containing the complete chart. The password is never stored by this page.";
 }
 
+const generated = element<HTMLButtonElement>("#downloadGenerated");
+if (generated !== null) generated.textContent = "Package and download .astral";
+
+const opened = element<HTMLButtonElement>("#downloadOpened");
+if (opened !== null) opened.textContent = "Package and download .astral";
+
 const fileInput = element<HTMLInputElement>("#astralFile");
 if (fileInput !== null) {
   fileInput.accept = ".astral,application/octet-stream,application/json";
@@ -17,6 +23,21 @@ if (validation !== null) {
 
 const rawTab = element<HTMLButtonElement>('.subtab[data-view="rawView"]');
 if (rawTab !== null) rawTab.textContent = "Reconstructed JSON";
+
+const labelHistoryDownloads = (): void => {
+  for (const button of document.querySelectorAll<HTMLButtonElement>("#chartHistory button")) {
+    if (button.textContent?.trim() === "Download") button.textContent = "Package and download";
+  }
+};
+
+const history = element<HTMLElement>("#chartHistory");
+if (history !== null) {
+  labelHistoryDownloads();
+  new MutationObserver(labelHistoryDownloads).observe(history, {
+    childList: true,
+    subtree: true,
+  });
+}
 
 const footer = element<HTMLElement>("footer p");
 if (footer !== null) {
