@@ -33,6 +33,13 @@ const regenerationSelected = (): boolean =>
 const signingSelected = (): boolean =>
   element<HTMLInputElement>("#canonicaliseSign")?.checked === true;
 
+const showNonRegenerationPlan = (): void => {
+  if (regenerationSelected()) return;
+  setActionStatus(signingSelected()
+    ? "Recalculation is off. The existing calculations and interpretations will be preserved without an API call; the new copy will update selected metadata, integrity and signature only."
+    : "Recalculation is off. The existing calculations and interpretations will be preserved without an API call; the new copy will update selected metadata and integrity only.");
+};
+
 const render = (): boolean => {
   const output = ensureOutput();
   if (output === null) return false;
@@ -51,7 +58,7 @@ const render = (): boolean => {
   const remaining = latest.invalidUnitIds.length - examples.length;
   const action = regenerationSelected()
     ? "Regeneration is selected, so these units will be rebuilt."
-    : "Recalculation is off, so the existing calculations and interpretations will be preserved unchanged; signing will attest to those exact existing contents.";
+    : "Recalculation is off, so calculations and interpretations will be preserved; only selected metadata, integrity and signature may change in the new copy.";
   output.className = "notice warning canonicalise-interpretation-audit";
   output.textContent = `${latest.invalidUnitIds.length} interpretation unit${latest.invalidUnitIds.length === 1 ? "" : "s"} do not pass the current maintenance audit: ${examples.join(", ")}${remaining > 0 ? ` and ${remaining} more` : ""}. ${action}`;
   return true;
@@ -90,20 +97,12 @@ const refreshMaintenancePlan = (attempt = 0): void => {
   }
   delete run.dataset["auditPending"];
   analyse.click();
-};
-
-const selectRecommendedRegeneration = (): void => {
-  if (latest?.complete !== false) return;
-  const complete = element<HTMLInputElement>("#canonicaliseComplete");
-  if (complete === null || complete.checked) return;
-  complete.checked = true;
-  complete.dispatchEvent(new Event("change", { bubbles: true }));
+  setTimeout(showNonRegenerationPlan, 0);
 };
 
 const applyAudit = (audit: OpenedInterpretationAudit): void => {
   latest = audit;
   auditReady = true;
-  selectRecommendedRegeneration();
   renderSoon();
   refreshMaintenancePlan();
 };
@@ -119,7 +118,7 @@ const markLegacyAuditComplete = (): void => {
     }
     if (output === null) return;
     output.className = "notice warning canonicalise-interpretation-audit";
-    output.textContent = "This file is not current-schema complete, so the maintenance tool must rebuild the full chart rather than attempting a sign-only copy.";
+    output.textContent = "This file is not current-schema complete. Recalculation remains off until you explicitly enable it, and no new copy can be produced from this file without rebuilding it.";
     refreshMaintenancePlan();
   };
   show();
@@ -139,9 +138,9 @@ const actionMessage = (): string => {
     return "Starting canonical regeneration. Loading the embedded place and current calculation data…";
   }
   if (signingSelected()) {
-    return "Signing the current chart without recalculating it. Preparing the signed download…";
+    return "Signing the current chart without recalculating or reinterpreting it…";
   }
-  return "Preparing a canonical copy without recalculating the current chart…";
+  return "Preparing a canonical copy without recalculating or reinterpreting it…";
 };
 
 export const initialiseMaintenanceAuditUi = (): void => {
