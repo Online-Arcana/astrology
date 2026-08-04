@@ -112,7 +112,7 @@ await test("current files may be signed without forced regeneration", async () =
   assert(start >= 0, "maintenance run handler must exist");
   const runHandler = auditUi.slice(start);
   assert(!runHandler.includes("selectRecommendedRegeneration();"), "run action must not re-enable regeneration after the user unticks it");
-  assert(/Signing the current chart without recalculating it/u.test(auditUi), "sign-only action must report that existing content is preserved");
+  assert(/Signing the current chart without recalculating or reinterpreting it/u.test(auditUi), "sign-only action must report that calculations and interpretations are preserved");
   assert(/do not pass the current maintenance audit/u.test(auditUi), "audit warning must not claim every rejected unit is missing");
 });
 

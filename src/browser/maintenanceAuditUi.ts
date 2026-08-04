@@ -166,8 +166,8 @@ export const initialiseMaintenanceAuditUi = (): void => {
     });
   });
   element<HTMLButtonElement>("#canonicaliseAnalyse")?.addEventListener("click", () => setTimeout(renderSoon, 0));
-  element<HTMLInputElement>("#canonicaliseComplete")?.addEventListener("change", renderSoon);
-  element<HTMLInputElement>("#canonicaliseSign")?.addEventListener("change", renderSoon);
+  element<HTMLInputElement>("#canonicaliseComplete")?.addEventListener("change", () => renderSoon());
+  element<HTMLInputElement>("#canonicaliseSign")?.addEventListener("change", () => renderSoon());
   element<HTMLButtonElement>("#canonicaliseRun")?.addEventListener("click", (event) => {
     if (!auditReady) {
       event.preventDefault();
