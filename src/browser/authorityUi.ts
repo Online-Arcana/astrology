@@ -106,8 +106,14 @@ const refresh = async (): Promise<void> => {
   }
 };
 
+const runRefresh = (): void => {
+  void refresh().catch(() => {
+    // The ordinary file validator owns malformed-file errors.
+  });
+};
+
 const refreshSoon = (): void => {
-  setTimeout(() => void refresh(), 0);
+  setTimeout(runRefresh, 0);
 };
 
 const fileInput = element<HTMLInputElement>("#astralFile");
@@ -126,7 +132,7 @@ for (const selector of [
   "#lockCredentialVault",
 ]) {
   element<HTMLButtonElement>(selector)?.addEventListener("click", () => {
-    setTimeout(() => void refresh(), 150);
+    setTimeout(runRefresh, 150);
   });
 }
 
