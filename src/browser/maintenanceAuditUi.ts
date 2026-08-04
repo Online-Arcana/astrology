@@ -33,6 +33,13 @@ const regenerationSelected = (): boolean =>
 const signingSelected = (): boolean =>
   element<HTMLInputElement>("#canonicaliseSign")?.checked === true;
 
+const showNonRegenerationPlan = (): void => {
+  if (regenerationSelected()) return;
+  setActionStatus(signingSelected()
+    ? "Recalculation is off. The existing calculations and interpretations will be preserved without an API call; the new copy will update selected metadata, integrity and signature only."
+    : "Recalculation is off. The existing calculations and interpretations will be preserved without an API call; the new copy will update selected metadata and integrity only.");
+};
+
 const render = (): boolean => {
   const output = ensureOutput();
   if (output === null) return false;
@@ -90,6 +97,7 @@ const refreshMaintenancePlan = (attempt = 0): void => {
   }
   delete run.dataset["auditPending"];
   analyse.click();
+  setTimeout(showNonRegenerationPlan, 0);
 };
 
 const applyAudit = (audit: OpenedInterpretationAudit): void => {
