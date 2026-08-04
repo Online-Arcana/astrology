@@ -16,6 +16,7 @@ const toolStyles = await readFile("public/test-tools.css", "utf8");
 const browserEntry = await readFile("src/browser/browserTools.ts", "utf8");
 const browserTools = await readFile("src/browser/testTools.ts", "utf8");
 const credentialLabels = await readFile("src/browser/credentialLabels.ts", "utf8");
+const credentialRevealPolicy = await readFile("src/browser/credentialRevealPolicy.ts", "utf8");
 const synthesisCategory = await readFile("src/browser/synthesisCategory.ts", "utf8");
 const vault = await readFile("src/browser/vault.ts", "utf8");
 const vaultUi = await readFile("src/browser/vaultUi.ts", "utf8");
@@ -39,6 +40,7 @@ const checks: readonly [condition: boolean, message: string][] = [
   [/signingIssuer/u.test(browserTools) && /signingPrivatePkcs8/u.test(browserTools) && /signingPublicRaw/u.test(browserTools), "signing bundle must be presented as three separate fields"],
   [/privatePkcs8/u.test(credentialLabels) && /publicRaw/u.test(credentialLabels), "visible signing labels must use canonical JSON field names"],
   [/showSigningKeyFields/u.test(browserTools) && /password-toggle/u.test(browserTools), "signing key fields must use an in-field reveal control"],
+  [/\[issuer, privateKey, publicKey\]/u.test(credentialRevealPolicy) && /field\.type = visible \? "text" : "password"/u.test(credentialRevealPolicy), "all signing bundle fields must be masked and unlocked together"],
   [/copySigningKeyBundle/u.test(signingActions) && /downloadSigningKeyBundle/u.test(signingActions) && /importSigningKeyBundle/u.test(signingActions), "signing key must offer copy, download and import controls"],
   [/copyOpenAiKey/u.test(browserTools) && /downloadOpenAiKey/u.test(browserTools) && /importOpenAiKey/u.test(browserTools), "OpenAI key must offer copy, download and import controls"],
   [/canonicaliseCard/u.test(browserTools) && /Canonicalise or update this chart/u.test(browserTools), "browser test tool must offer chart canonicalisation and update"],
