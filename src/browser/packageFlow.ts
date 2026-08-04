@@ -4,11 +4,25 @@ import {
   pack,
 } from "astral-packager";
 
-interface PasswordRequest {
+interface PasswordTask {
   mode: "open" | "pack";
   title: string;
   explanation: string;
-  error?: string;
+  run(password: string, progress: (message: string) => void): Promise<void>;
+}
+
+interface PasswordDialog {
+  dialog: HTMLDialogElement;
+  form: HTMLFormElement;
+  title: HTMLElement;
+  explanation: HTMLElement;
+  password: HTMLInputElement;
+  confirm: HTMLInputElement;
+  confirmLabel: HTMLElement;
+  error: HTMLElement;
+  status: HTMLElement;
+  cancel: HTMLButtonElement;
+  submit: HTMLButtonElement;
 }
 
 const packagedPrefix = "ASTRPKG";
@@ -16,7 +30,7 @@ const originalCreateObjectUrl = URL.createObjectURL.bind(URL);
 const originalRevokeObjectUrl = URL.revokeObjectURL.bind(URL);
 const originalAnchorClick = HTMLAnchorElement.prototype.click;
 const trackedBlobs = new Map<string, Blob>();
-let promptActive = false;
+let passwordTaskActive = false;
 
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
 
@@ -37,13 +51,27 @@ const safeName = (value: string): string => {
 };
 
 const directDownload = (name: string, bytes: Uint8Array): void => {
-  const blob = new Blob([bytes], { type: "application/octet-stream" });
+  const copy = bytes.slice();
+  const blob = new Blob([copy.buffer], { type: "application/octet-stream" });
   const url = originalCreateObjectUrl(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = safeName(name);
   originalAnchorClick.call(anchor);
   setTimeout(() => originalRevokeObjectUrl(url), 0);
+};
+
+const reportPageError = (cause: unknown): void => {
+  const message = cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
+  const card = element<HTMLElement>("#errorCard");
+  const output = element<HTMLElement>("#errorMessage");
+  if (card === null || output === null) {
+    console.error(message);
+    return;
+  }
+  output.textContent = message;
+  card.classList.remove("hidden");
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const ensureStyle = (): void => {
@@ -72,48 +100,36 @@ const ensureStyle = (): void => {
   document.head.append(style);
 };
 
-const ensureDialog = (): HTMLDialogElement => {
-  const existing = element<HTMLDialogElement>("#astralPackageDialog");
-  if (existing !== null) return existing;
-  ensureStyle();
-  const dialog = document.createElement("dialog");
-  dialog.id = "astralPackageDialog";
-  dialog.className = "astral-package-dialog";
-  dialog.innerHTML = `
-    <form method="dialog" autocomplete="off">
-      <div>
-        <p class="eyebrow">Encrypted .astral container</p>
-        <h2 id="astralPackageTitle">Password required</h2>
-      </div>
-      <p id="astralPackageExplanation"></p>
-      <label>Password
-        <input id="astralPackagePassword" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
-      </label>
-      <label id="astralPackageConfirmLabel">Confirm password
-        <input id="astralPackageConfirm" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
-      </label>
-      <p id="astralPackageError" class="astral-package-error" role="alert"></p>
-      <p id="astralPackageStatus" class="astral-package-status" aria-live="polite"></p>
-      <div class="actions">
-        <button id="astralPackageCancel" type="button" class="ghost">Cancel</button>
-        <button id="astralPackageContinue" type="submit">Continue</button>
-      </div>
-    </form>`;
-  document.body.append(dialog);
-  return dialog;
-};
+const ensureDialog = (): PasswordDialog => {
+  let dialog = element<HTMLDialogElement>("#astralPackageDialog");
+  if (dialog === null) {
+    ensureStyle();
+    dialog = document.createElement("dialog");
+    dialog.id = "astralPackageDialog";
+    dialog.className = "astral-package-dialog";
+    dialog.innerHTML = `
+      <form method="dialog" autocomplete="off">
+        <div>
+          <p class="eyebrow">Encrypted .astral container</p>
+          <h2 id="astralPackageTitle">Password required</h2>
+        </div>
+        <p id="astralPackageExplanation"></p>
+        <label>Password
+          <input id="astralPackagePassword" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
+        </label>
+        <label id="astralPackageConfirmLabel">Confirm password
+          <input id="astralPackageConfirm" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false">
+        </label>
+        <p id="astralPackageError" class="astral-package-error" role="alert"></p>
+        <p id="astralPackageStatus" class="astral-package-status" aria-live="polite"></p>
+        <div class="actions">
+          <button id="astralPackageCancel" type="button" class="ghost">Cancel</button>
+          <button id="astralPackageContinue" type="submit">Continue</button>
+        </div>
+      </form>`;
+    document.body.append(dialog);
+  }
 
-const clearDialogSecrets = (): void => {
-  const password = element<HTMLInputElement>("#astralPackagePassword");
-  const confirm = element<HTMLInputElement>("#astralPackageConfirm");
-  if (password !== null) password.value = "";
-  if (confirm !== null) confirm.value = "";
-};
-
-const requestPassword = async (request: PasswordRequest): Promise<string | null> => {
-  if (promptActive) throw new Error("Finish the current password request first");
-  promptActive = true;
-  const dialog = ensureDialog();
   const form = dialog.querySelector<HTMLFormElement>("form");
   const title = element<HTMLElement>("#astralPackageTitle");
   const explanation = element<HTMLElement>("#astralPackageExplanation");
@@ -126,69 +142,98 @@ const requestPassword = async (request: PasswordRequest): Promise<string | null>
   const submit = element<HTMLButtonElement>("#astralPackageContinue");
   if (form === null || title === null || explanation === null || password === null || confirm === null
     || confirmLabel === null || error === null || status === null || cancel === null || submit === null) {
-    promptActive = false;
     throw new Error("Password dialog is incomplete");
   }
+  return { dialog, form, title, explanation, password, confirm, confirmLabel, error, status, cancel, submit };
+};
 
-  clearDialogSecrets();
-  title.textContent = request.title;
-  explanation.textContent = request.explanation;
-  error.textContent = request.error ?? "";
-  status.textContent = request.mode === "pack"
+const clearSecrets = ({ password, confirm }: PasswordDialog): void => {
+  password.value = "";
+  confirm.value = "";
+};
+
+const setWorking = (ui: PasswordDialog, working: boolean): void => {
+  ui.password.disabled = working;
+  ui.confirm.disabled = working;
+  ui.cancel.disabled = working;
+  ui.submit.disabled = working;
+};
+
+const runPasswordTask = async (task: PasswordTask): Promise<boolean> => {
+  if (passwordTaskActive) throw new Error("Finish the current password operation first");
+  passwordTaskActive = true;
+  const ui = ensureDialog();
+  clearSecrets(ui);
+  setWorking(ui, false);
+  ui.title.textContent = task.title;
+  ui.explanation.textContent = task.explanation;
+  ui.confirmLabel.hidden = task.mode === "open";
+  ui.error.textContent = "";
+  ui.status.textContent = task.mode === "pack"
     ? "The password is used only for this package and is never saved."
     : "The password is used only to open this file and is never saved.";
-  confirmLabel.hidden = request.mode === "open";
-  submit.textContent = request.mode === "pack" ? "Package" : "Open";
+  ui.submit.textContent = task.mode === "pack" ? "Package" : "Open";
 
-  return new Promise<string | null>((resolve) => {
+  return new Promise<boolean>((resolve) => {
     let settled = false;
-    const finish = (value: string | null): void => {
+    const finish = (completed: boolean): void => {
       if (settled) return;
       settled = true;
-      form.removeEventListener("submit", onSubmit);
-      cancel.removeEventListener("click", onCancel);
-      dialog.removeEventListener("cancel", onDialogCancel);
-      clearDialogSecrets();
-      if (dialog.open) dialog.close();
-      promptActive = false;
-      resolve(value);
+      ui.form.removeEventListener("submit", onSubmit);
+      ui.cancel.removeEventListener("click", onCancel);
+      ui.dialog.removeEventListener("cancel", onDialogCancel);
+      clearSecrets(ui);
+      setWorking(ui, false);
+      if (ui.dialog.open) ui.dialog.close();
+      passwordTaskActive = false;
+      resolve(completed);
     };
-    const onCancel = (): void => finish(null);
+    const onCancel = (): void => finish(false);
     const onDialogCancel = (event: Event): void => {
       event.preventDefault();
-      finish(null);
+      finish(false);
     };
     const onSubmit = (event: SubmitEvent): void => {
       event.preventDefault();
-      const entered = password.value;
+      let entered = ui.password.value;
       if (entered.length === 0) {
-        error.textContent = "Password is required.";
+        ui.error.textContent = "Password is required.";
         return;
       }
-      if (request.mode === "pack") {
-        if (entered !== confirm.value) {
-          error.textContent = "The passwords do not match.";
-          return;
-        }
+      if (task.mode === "pack" && entered !== ui.confirm.value) {
+        ui.error.textContent = "The passwords do not match.";
+        return;
+      }
+      if (task.mode === "pack") {
         const audit = auditPwd(entered);
         if (!audit.ok) {
-          error.textContent = audit.warning;
+          ui.error.textContent = audit.warning;
           return;
         }
       }
-      finish(entered);
-    };
-    form.addEventListener("submit", onSubmit);
-    cancel.addEventListener("click", onCancel);
-    dialog.addEventListener("cancel", onDialogCancel);
-    dialog.showModal();
-    password.focus();
-  });
-};
 
-const showProgress = (message: string): void => {
-  const status = element<HTMLElement>("#astralPackageStatus");
-  if (status !== null) status.textContent = message;
+      ui.error.textContent = "";
+      setWorking(ui, true);
+      void task.run(entered, (message) => { ui.status.textContent = message; })
+        .then(() => finish(true))
+        .catch((cause: unknown) => {
+          ui.error.textContent = cause instanceof Error ? cause.message : String(cause);
+          ui.status.textContent = task.mode === "pack"
+            ? "No file was downloaded. Choose a password and try again."
+            : "The file remains unopened. Check the password and try again.";
+          clearSecrets(ui);
+          setWorking(ui, false);
+          ui.password.focus();
+        })
+        .finally(() => { entered = ""; });
+    };
+
+    ui.form.addEventListener("submit", onSubmit);
+    ui.cancel.addEventListener("click", onCancel);
+    ui.dialog.addEventListener("cancel", onDialogCancel);
+    ui.dialog.showModal();
+    ui.password.focus();
+  });
 };
 
 const packageBlob = async (name: string, blob: Blob): Promise<void> => {
@@ -198,47 +243,36 @@ const packageBlob = async (name: string, blob: Blob): Promise<void> => {
     return;
   }
   const source = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-  let password = await requestPassword({
+  await runPasswordTask({
     mode: "pack",
     title: "Protect this .astral file",
     explanation: "Choose the password required to decrypt this packaged chart. It will not be stored anywhere.",
+    run: async (password, progress) => {
+      const result = await pack(source, password, ({ pct, stage }) => progress(`${pct}% · ${stage}`));
+      directDownload(name, result.bytes);
+    },
   });
-  if (password === null) return;
-  try {
-    showProgress("Preparing encrypted package…");
-    const result = await pack(source, password, ({ pct, stage }) => {
-      showProgress(`${pct}% · ${stage}`);
-    });
-    directDownload(name, result.bytes);
-  } finally {
-    password = "";
-    clearDialogSecrets();
-  }
+};
+
+const redispatchInput = (input: HTMLInputElement): void => {
+  input.dataset["astralUnpacked"] = "true";
+  input.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
 const replaceInputFile = (input: HTMLInputElement, file: File): void => {
   const transfer = new DataTransfer();
   transfer.items.add(file);
   input.files = transfer.files;
-  input.dataset["astralUnpacked"] = "true";
-  input.dispatchEvent(new Event("change", { bubbles: true }));
+  redispatchInput(input);
 };
 
 const unpackFile = async (input: HTMLInputElement, file: File, bytes: Uint8Array): Promise<void> => {
-  let lastError: string | undefined;
-  for (;;) {
-    let password = await requestPassword({
-      mode: "open",
-      title: "Open encrypted .astral file",
-      explanation: "Enter the package password. Decryption, decompression and protobuf decoding happen locally in this browser.",
-      ...(lastError === undefined ? {} : { error: lastError }),
-    });
-    if (password === null) {
-      input.value = "";
-      return;
-    }
-    try {
-      showProgress("Decrypting and reconstructing the chart…");
+  const opened = await runPasswordTask({
+    mode: "open",
+    title: "Open encrypted .astral file",
+    explanation: "Enter the package password. Decryption, decompression and protobuf decoding happen locally in this browser.",
+    run: async (password, progress) => {
+      progress("Decrypting and reconstructing the chart…");
       const result = await openPackage(bytes, password);
       try {
         replaceInputFile(input, new File([result.source], file.name, {
@@ -248,23 +282,18 @@ const unpackFile = async (input: HTMLInputElement, file: File, bytes: Uint8Array
       } finally {
         result.id.drop();
       }
-      return;
-    } catch (cause: unknown) {
-      lastError = cause instanceof Error ? cause.message : String(cause);
-    } finally {
-      password = "";
-      clearDialogSecrets();
-    }
-  }
+    },
+  });
+  if (!opened) input.value = "";
 };
 
 const handleSelectedFile = async (input: HTMLInputElement, file: File): Promise<void> => {
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (!packaged(bytes)) {
-    replaceInputFile(input, file);
+  if (packaged(bytes)) {
+    await unpackFile(input, file, bytes);
     return;
   }
-  await unpackFile(input, file, bytes);
+  redispatchInput(input);
 };
 
 URL.createObjectURL = ((object: Blob | MediaSource): string => {
@@ -284,15 +313,7 @@ HTMLAnchorElement.prototype.click = function packageAstralClick(): void {
     originalAnchorClick.call(this);
     return;
   }
-  void packageBlob(this.download, blob).catch((cause: unknown) => {
-    const message = cause instanceof Error ? cause.message : String(cause);
-    void requestPassword({
-      mode: "open",
-      title: "Packaging failed",
-      explanation: "The chart was not downloaded because packaging failed.",
-      error: message,
-    });
-  });
+  void packageBlob(this.download, blob).catch(reportPageError);
 };
 
 document.addEventListener("change", (event) => {
@@ -307,13 +328,7 @@ document.addEventListener("change", (event) => {
   event.stopImmediatePropagation();
   void handleSelectedFile(target, file).catch((cause: unknown) => {
     target.value = "";
-    const message = cause instanceof Error ? cause.message : String(cause);
-    void requestPassword({
-      mode: "open",
-      title: "Could not open .astral file",
-      explanation: "The selected chart could not be unpacked.",
-      error: message,
-    });
+    reportPageError(cause);
   });
 }, true);
 
@@ -322,10 +337,31 @@ const updateDownloadLabels = (): void => {
   const opened = element<HTMLButtonElement>("#downloadOpened");
   if (generated !== null) generated.textContent = "Package and download .astral";
   if (opened !== null) opened.textContent = "Package and download .astral";
-  for (const button of document.querySelectorAll<HTMLButtonElement>("#chartHistory button")) {
-    if (button.textContent?.trim() === "Download") button.textContent = "Package and download";
+  for (const value of document.querySelectorAll<HTMLButtonElement>("#chartHistory button")) {
+    if (value.textContent?.trim() === "Download") value.textContent = "Package and download";
   }
+};
+
+const initialiseAutomaticPackaging = (): void => {
+  const card = element<HTMLElement>("#completeCard");
+  const button = element<HTMLButtonElement>("#downloadGenerated");
+  if (card === null || button === null) return;
+  const packageCompletedChart = (): void => {
+    if (card.classList.contains("hidden")) {
+      delete card.dataset["packagePrompted"];
+      return;
+    }
+    if (card.dataset["packagePrompted"] === "true") return;
+    card.dataset["packagePrompted"] = "true";
+    setTimeout(() => button.click(), 0);
+  };
+  new MutationObserver(packageCompletedChart).observe(card, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  packageCompletedChart();
 };
 
 updateDownloadLabels();
 new MutationObserver(updateDownloadLabels).observe(document.body, { childList: true, subtree: true });
+initialiseAutomaticPackaging();
