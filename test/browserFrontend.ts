@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { correctionSummary, unitLabel } from "../src/browser/labels.js";
+import { browserStaticRoot } from "../src/browser/places.js";
 import { preferredGenderOf } from "../src/types/base.js";
 import { parseCalculationRequest } from "../src/interface/request.js";
 
@@ -50,6 +51,19 @@ await test("preferred gender is optional and legacy metadata defaults to male", 
     ayanamsha: "lahiri",
   });
   equal(request.birth.preferredGender, "non-binary", "parsed preference");
+});
+
+await test("split browser chunks resolve static place assets from the Pages root", () => {
+  equal(
+    browserStaticRoot("https://kitty-crow.github.io/astrology/chunks/chunk-ABC.js").href,
+    "https://kitty-crow.github.io/astrology/",
+    "split chunk asset root",
+  );
+  equal(
+    browserStaticRoot("https://kitty-crow.github.io/astrology/app.js").href,
+    "https://kitty-crow.github.io/astrology/",
+    "direct entry asset root",
+  );
 });
 
 await test("public frontend contains no local identity or embedded secret", async () => {
