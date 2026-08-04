@@ -140,6 +140,10 @@ await build({
     setup(context) {
       context.onResolve({ filter: /(?:^|\/)vendor\/load\.js$/ }, () => ({ path: aliases["vendor/load.js"] }));
       context.onResolve({ filter: /(?:^|\/)place\/csc\.js$/ }, () => ({ path: aliases["place/csc.js"] }));
+      // astral-packager shares one source graph between its Node CLI and browser
+      // API. The guarded Node compression branch is unreachable in browsers,
+      // but esbuild still needs its built-in import left external.
+      context.onResolve({ filter: /^node:zlib$/u }, () => ({ path: "node:zlib", external: true }));
     },
   }],
   logLevel: "info",
