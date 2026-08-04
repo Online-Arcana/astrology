@@ -1,12 +1,14 @@
 # Browser frontend
 
-The `public/` application runs chart calculation, interpretation, recovery, billing, file viewing, maintenance and optional local authority signing in the visitor's browser. It is suitable for static GitHub Pages hosting and does not require the Node HTTP server.
+The `public/` application runs chart calculation, interpretation, recovery, billing, file viewing, maintenance, optional local authority signing, packaging and unpacking in the visitor's browser. It is suitable for static GitHub Pages hosting and does not require the Node HTTP server.
 
 ## Local state
 
 Non-secret chart-form values are stored in this origin's `localStorage` so the selected place, birth data and chart settings survive reloads. Recoverable generation checkpoints, completed charts and usage bills are stored in IndexedDB under `astral-browser`.
 
 API and signing keys are never saved as plaintext by the current browser frontend. Without an encrypted vault they remain in JavaScript memory for the current page session and disappear when the page is closed or refreshed.
+
+Package passwords are different from saved credentials. A package password is used only for the active packaging or opening operation. It is never written to `localStorage`, IndexedDB, session storage, Cache Storage or the generated file, and the password fields are cleared after each attempt.
 
 No credential is compiled into the Pages assets. Clearing site data removes the encrypted vault, form draft and chart data. The frontend intentionally has no analytics, tag manager, remote font, advertising or third-party script dependency.
 
@@ -34,17 +36,48 @@ The Ed25519 bundle remains JSON internally, but the normal interface presents th
 - **Private PKCS8**
 - **Public raw key**
 
-The private and public values remain masked and locked until the eye button is used. Revealing them also makes the fields editable. **Copy bundle**, **Download bundle** and **Import bundle** preserve the hidden JSON structure containing `issuer`, `privatePkcs8` and `publicRaw`.
+All three fields remain masked and locked until the eye button is used. Revealing them also makes the fields editable. **Copy bundle**, **Download bundle** and **Import bundle** preserve the hidden JSON structure containing `issuer`, `privatePkcs8` and `publicRaw`.
+
+## Packaging dependency
+
+`vendor/astral-packager` is a pinned git submodule and root package dependency. Its build exposes the same `pack()` and `open()` core used by the `astral-pack` CLI and the packager's own GitHub Pages application.
+
+A browser cannot spawn a Node CLI process. The Pages frontend therefore calls that exact shared core directly rather than reimplementing the format.
+
+New containers use ASTRPKG4:
+
+```text
+strict JSON
+  → canonical semantic value
+  → typed protobuf
+  → balanced lossless compression
+  → AES-256-GCM
+  → authenticated public header + ciphertext
+```
+
+The complete raw chart, including its CRC and optional authority signature, remains inside the encrypted payload.
 
 ## Generation and signing
 
-Normal chart generation may sign the newly assembled `.astral` file with the currently loaded Ed25519 key. It never replaces the authority on an existing file through the ordinary open/view path.
+Normal chart generation may sign the newly assembled raw chart with the currently loaded Ed25519 key. After generation completes, the browser automatically enters the packaging stage and asks for a package password. The only final `.astral` download is the encrypted package.
+
+The package password must pass the packager's local password audit and is requested twice. Packaging progress remains visible during compression, password-key derivation and encryption.
 
 A verified authority fingerprint matching the loaded key is labelled **Made by this browser key**. GitHub Actions secrets are deliberately not passed to the static build. A deployed browser page cannot use a workflow secret without publishing it.
 
+## Opening a packaged chart
+
+Selecting an ASTRPKG1, ASTRPKG2, ASTRPKG3 or ASTRPKG4 file intercepts the ordinary JSON open path before it runs. The page asks for the password and then calls the packager's `open()` procedure locally.
+
+That procedure authenticates and decrypts the container, decompresses its payload, decodes the typed protobuf, reconstructs canonical JSON, regenerates the private identity and verifies the public identity metadata. The temporary identity object is explicitly dropped immediately after reconstruction.
+
+A wrong password or damaged package leaves the file unopened and keeps the password dialog available for another attempt. The reconstructed JSON exists only in page memory and is then passed to the existing validator, formatted viewer and maintenance tools.
+
+Legacy raw JSON `.astral` files remain readable for migration and maintenance. Any new download from them is packaged.
+
 ## Test maintenance tool
 
-Opening an `.astral` file exposes an explicit test-only maintenance card. It always creates a new copy and never mutates the uploaded bytes in place.
+Opening an `.astral` file exposes an explicit maintenance card. It always creates a new copy and never mutates the uploaded bytes in place.
 
 The analyser checks:
 
@@ -57,15 +90,19 @@ The analyser checks:
 - deterministic NLP quality and completion checks;
 - permitted, resolvable source references.
 
-A complete current file may be re-canonicalised or newly signed without an API call. A legacy, modified, incomplete or NLP-invalid file is fully recalculated and regenerated from its embedded birth data using the configured model routing. This adds current required fields, writes the selected preferred gender, completes missing interpretations, recalculates integrity values and optionally signs the resulting copy with the loaded Ed25519 key.
+Interpretation regeneration is always off by default. Audit findings are advisory and never turn it on automatically.
 
-The maintenance tool refuses automatic regeneration when the old file does not contain enough unambiguous birth and place data. It does not invent missing deterministic facts.
+With regeneration off, current calculations and interpretations are preserved without an API call. The tool may update selected preferred-gender metadata, recalculate integrity values, replace or add the selected Ed25519 authority signature, and then package the new copy.
+
+Regeneration runs only when the user explicitly checks **Recalculate and complete all missing or invalid fields**. It then rebuilds deterministic data and interpretations from embedded birth information using the configured model routing before the result is packaged.
+
+The maintenance tool refuses regeneration when the old file does not contain enough unambiguous birth and place data. It does not invent missing deterministic facts.
 
 ## Recovery and stopping
 
 Every accepted checkpoint is written to IndexedDB. Stopping generation aborts current requests and leaves the latest accepted checkpoint available after reload. Resuming reuses accepted work and its accumulated bill.
 
-Temporary checkpoints may be compact. Final customer `.astral` downloads are always indented JSON.
+Temporary checkpoints and saved in-browser chart objects remain internal implementation data. Final customer `.astral` downloads are always encrypted packages.
 
 ## Usage bills
 
@@ -73,29 +110,34 @@ Completed model responses contribute authoritative input, cached-input, output, 
 
 ## Customer file view
 
-Current `.astral` files have two views:
+After a package has been opened, its reconstructed chart has two views:
 
 - **Formatted** presents customer-readable sections;
-- **Raw** shows the complete indented document, including provenance, integrity and authority metadata.
+- **Reconstructed JSON** shows the complete indented raw document in page memory, including provenance, integrity and authority metadata.
 
 The formatted view groups readings into canonical front-end categories such as general themes, relationships, work, growth, points, houses, aspects, compatibilities, synthesis and technical chart data. Every category starts collapsed, and every reading inside it starts collapsed. A sticky left-hand index links to each category and reading through stable `#section` anchors and automatically opens the selected containers.
 
-The front-end titles are descriptive presentation labels only. They do not rename or modify fields inside the `.astral` JSON.
+The front-end titles are descriptive presentation labels only. They do not rename or modify fields inside the reconstructed JSON.
 
 ## Responsive layout
 
 The Pages build injects shared usability safeguards into every HTML page. Form controls and their flex/grid parents are allowed to shrink, capped to their container width and protected against horizontal page overflow. Mobile layouts wrap long labels and action controls instead of allowing any field to escape its card.
 
-The formatted index becomes a single-column block on smaller screens. Signing fields also collapse from a desktop row into a contained vertical layout.
+The formatted index becomes a single-column block on smaller screens. Signing fields and the package password dialog also collapse into contained mobile layouts.
 
 ## Build and deploy
 
 ```sh
+git submodule update --init --recursive
 npm run vendor:build
 npm install
 npm run build:pages
 ```
 
-The output is written to `public/`. The main application and browser tools are built as one split ESM graph so they share a single in-memory credential and runtime state. The build audits all emitted HTML, JavaScript and CSS, including shared chunks, for known local paths, private-network addresses, location defaults and literal credential assignments.
+The vendor build compiles `astral-packager` before the root package installs the local file dependency. The output is written to `public/`.
+
+The main application and browser tools are built as one split ESM graph so they share in-memory credential, file and packaging state. The guarded `node:zlib` import used only by the packager CLI is left external in the browser bundle; the browser executes its CompressionStream-based branch.
+
+The build audits all emitted HTML, JavaScript and CSS, including shared chunks, for known local paths, private-network addresses, location defaults and literal credential assignments.
 
 `.github/workflows/pages.yml` deploys `public/` from `main`. Select **GitHub Actions** as the Pages source in repository settings. The deployed page needs no server-side runtime configuration.
