@@ -31,18 +31,19 @@ const authorityCopy = async (file: AstralFile): Promise<{
   detail: string;
 }> => {
   const validation = await validateAstralFile(file);
+  const validationText = `Structure ${validation.structure}; integrity ${validation.integrity}.`;
   if (file.authority === null) {
     return {
       badge: "Unsigned",
       className: "badge warn",
-      detail: "This chart is unsigned.",
+      detail: `${validationText} This chart is unsigned.`,
     };
   }
   if (validation.authority === "invalid") {
     return {
       badge: "Invalid signature",
       className: "badge bad",
-      detail: `The authority signature from ${file.authority.issuer} is invalid.`,
+      detail: `${validationText} The authority signature from ${file.authority.issuer} is invalid.`,
     };
   }
 
@@ -51,7 +52,7 @@ const authorityCopy = async (file: AstralFile): Promise<{
     return {
       badge: "Signature verified",
       className: "badge good",
-      detail: `Signature verified. Issuer: ${file.authority.issuer}. No signing key is currently loaded, so this page cannot compare ownership.`,
+      detail: `${validationText} Signature verified. Issuer: ${file.authority.issuer}. No signing key is currently loaded, so this page cannot compare ownership.`,
     };
   }
   const matches = file.authority.keyId === await signingKeyId(key);
@@ -59,12 +60,12 @@ const authorityCopy = async (file: AstralFile): Promise<{
     ? {
         badge: "Made by this browser key",
         className: "badge good",
-        detail: `Signature verified. Issuer: ${file.authority.issuer}. It matches the signing key currently loaded.`,
+        detail: `${validationText} Signature verified. Issuer: ${file.authority.issuer}. It matches the signing key currently loaded.`,
       }
     : {
         badge: "Signature verified",
         className: "badge good",
-        detail: `Signature verified. Issuer: ${file.authority.issuer}. It uses a different key from the one currently loaded; that does not identify which tool created it.`,
+        detail: `${validationText} Signature verified. Issuer: ${file.authority.issuer}. It uses a different key from the one currently loaded; that does not identify which tool created it.`,
       };
 };
 
@@ -72,9 +73,9 @@ const replaceFalseClaims = (detail: string): void => {
   const roots = [element<HTMLElement>("#viewerCard"), element<HTMLElement>("#formattedChart")]
     .filter((value): value is HTMLElement => value !== null);
   for (const root of roots) {
-    for (const node of root.querySelectorAll<HTMLElement>("p, span, dd, div")) {
+    for (const node of root.querySelectorAll<HTMLElement>("p, span, dd, small")) {
       const value = node.textContent?.trim() ?? "";
-      if (!/signature created elsewhere|signed by another authority/iu.test(value)) continue;
+      if (!/^(?:signature created elsewhere|signed by another authority)/iu.test(value)) continue;
       if (node.textContent !== detail) node.textContent = detail;
     }
   }
