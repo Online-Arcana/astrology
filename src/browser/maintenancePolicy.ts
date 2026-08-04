@@ -54,12 +54,18 @@ const regenerationSelected = (): boolean =>
 const signingSelected = (): boolean =>
   element<HTMLInputElement>("#canonicaliseSign")?.checked === true;
 
-const syncPolicyUi = (): void => {
+const syncPolicyUi = (showPlan = true): void => {
   const complete = element<HTMLInputElement>("#canonicaliseComplete");
   const run = element<HTMLButtonElement>("#canonicaliseRun");
-  if (complete === null || run === null || complete.checked) return;
+  if (complete === null || run === null) return;
+
+  if (complete.checked) {
+    run.textContent = "Recalculate and download";
+    return;
+  }
 
   run.textContent = signingSelected() ? "Sign and download" : "Canonicalise and download";
+  if (!showPlan) return;
   setStatus(signingSelected()
     ? "Recalculation is off. The existing calculations and interpretations will be preserved without an API call; the new copy will update selected metadata, integrity and signature only."
     : "Recalculation is off. The existing calculations and interpretations will be preserved without an API call; the new copy will update selected metadata and integrity only.");
@@ -143,6 +149,6 @@ document.addEventListener("click", (event) => {
     .catch((cause: unknown) => setStatus(cause instanceof Error ? cause.message : String(cause), true))
     .finally(() => {
       target.disabled = false;
-      syncPolicyUi();
+      syncPolicyUi(false);
     });
 }, true);
