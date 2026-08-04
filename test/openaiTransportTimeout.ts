@@ -22,6 +22,7 @@ test(
   async () => {
     let posts = 0;
     let polls = 0;
+    let firstResponsePolls = 0;
     let cancels = 0;
     const idempotency: string[] = [];
 
@@ -57,6 +58,14 @@ test(
       polls += 1;
 
       if (url.includes("resp_1")) {
+        firstResponsePolls += 1;
+        if (firstResponsePolls === 1) {
+          return response({
+            id: "resp_1",
+            status: "queued",
+          });
+        }
+
         return new Promise<Response>((_resolve, reject) => {
           const signal = init?.signal;
 
@@ -85,8 +94,8 @@ test(
     const fetcher = createOpenAITransport({
       fetch: fake,
       pollIntervalMs: 1,
-      pollTimeoutMs: 5,
-      createTimeoutMs: 100,
+      pollTimeoutMs: 100,
+      createTimeoutMs: 500,
       responseAttempts: 2,
       retryAttempts: 2,
       retryDelayMs: 1,
@@ -110,7 +119,8 @@ test(
     assert.equal(value["status"], "completed");
     assert.equal(posts, 2);
     assert.equal(cancels, 1);
-    assert.ok(polls >= 2);
+    assert.equal(firstResponsePolls, 2);
+    assert.equal(polls, 3);
     assert.ok(idempotency[0]);
     assert.ok(idempotency[1]);
     assert.notEqual(
