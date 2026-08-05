@@ -139,25 +139,25 @@ export const saveSigningKey = (key: BrowserSigningKey | null): void => {
   persist();
 };
 
-export const loadPackagePassword = (contentSha256: string): string | null =>
-  sessionPackagePasswords[contentSha256] ?? null;
+export const loadPackagePassword = (encryptedPackageSha256: string): string | null =>
+  sessionPackagePasswords[encryptedPackageSha256] ?? null;
 
-export const savePackagePassword = (contentSha256: string, password: string): void => {
-  if (!/^sha256:[a-f0-9]{64}$/u.test(contentSha256)) {
-    throw new Error("Package content SHA-256 is invalid");
+export const savePackagePassword = (encryptedPackageSha256: string, password: string): void => {
+  if (!/^sha256:[a-f0-9]{64}$/u.test(encryptedPackageSha256)) {
+    throw new Error("Encrypted package SHA-256 is invalid");
   }
   if (password.length === 0) throw new Error("Package password is empty");
   sessionPackagePasswords = {
     ...sessionPackagePasswords,
-    [contentSha256]: password,
+    [encryptedPackageSha256]: password,
   };
   persist();
 };
 
-export const forgetPackagePassword = (contentSha256: string): void => {
-  if (!(contentSha256 in sessionPackagePasswords)) return;
+export const forgetPackagePassword = (encryptedPackageSha256: string): void => {
+  if (!(encryptedPackageSha256 in sessionPackagePasswords)) return;
   const next = { ...sessionPackagePasswords };
-  delete next[contentSha256];
+  delete next[encryptedPackageSha256];
   sessionPackagePasswords = next;
   persist();
 };
