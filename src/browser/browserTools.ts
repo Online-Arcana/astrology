@@ -32,8 +32,9 @@ const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js")
 initialiseMaintenanceAuditUi();
 
 // Recalculation uses the original generation screen and its full checkpoint,
-// lane, stage, ETA and billing presentation. The ETA adapter measures only the
-// unfinished units rather than counting recovered work as newly generated.
+// lane, stage, ETA and billing presentation. The guards initialise first so an
+// active generation cannot receive a queued maintenance checkpoint.
 await import("./maintenanceProgress.js");
+await import("./maintenanceAvailability.js");
 await import("./maintenanceResume.js");
 await import("./maintenancePolicy.js");
