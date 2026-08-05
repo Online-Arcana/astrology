@@ -4,6 +4,7 @@ import {
   clearBrowserSecretSession,
   parseSigningKey,
   saveOpenAiKey,
+  savePackagePassword,
   saveSigningKey,
   signingKeyText,
 } from "./keys.js";
@@ -64,15 +65,23 @@ const signingKeyTextFromInput = (value: string): string => signingKeyText(parseS
 
 const currentSnapshot = (): BrowserSecretSnapshot => {
   const legacy = browserVault.legacySnapshot();
+  const session = browserSecretSnapshot();
   const openAi = element<HTMLInputElement>("#openAiKey")?.value.trim()
-    || browserSecretSnapshot().openAiKey
+    || session.openAiKey
     || legacy?.openAiKey
     || "";
   const enteredSigning = element<HTMLInputElement>("#signingKey")?.value.trim() ?? "";
   const selectedSigning = enteredSigning.length > 0
     ? signingKeyTextFromInput(enteredSigning)
-    : browserSecretSnapshot().signingKeyText ?? legacy?.signingKeyText ?? null;
-  return { openAiKey: openAi, signingKeyText: selectedSigning };
+    : session.signingKeyText ?? legacy?.signingKeyText ?? null;
+  return {
+    openAiKey: openAi,
+    signingKeyText: selectedSigning,
+    packagePasswords: {
+      ...(legacy?.packagePasswords ?? {}),
+      ...(session.packagePasswords ?? {}),
+    },
+  };
 };
 
 const sensitiveSelectors = [
@@ -149,12 +158,12 @@ const updateState = async (): Promise<void> => {
   const legacy = browserVault.legacySnapshot();
   if (exists) {
     setStatus(unlocked
-      ? "Credentials are decrypted only for this page session. Lock them when finished."
-      : "Unlock with your passkey, biometric or security key before using, copying or exporting saved credentials.");
+      ? "Credentials and remembered chart passwords are decrypted only for this page session. Lock them when finished."
+      : "Unlock with your passkey, biometric or security key before using saved credentials or remembered chart passwords.");
   } else if (legacy !== null) {
     setStatus("Plaintext credentials from the earlier browser version were detected. Protect them now to migrate them into the encrypted passkey vault.", true);
   } else {
-    setStatus("Keys entered without a vault remain memory-only and disappear when this page closes. Protect them to save encrypted copies.");
+    setStatus("Keys and chart passwords entered without a vault remain memory-only and disappear when this page closes. Protect them to save encrypted copies.");
   }
   enforceLockedControls();
 };
@@ -175,7 +184,7 @@ const clearPageSecrets = (): void => {
   syncSigningFields("");
 };
 
-const lockVault = (message = "Credential vault locked. Decrypted keys were removed from this page."): void => {
+const lockVault = (message = "Credential vault locked. Decrypted keys and chart passwords were removed from this page."): void => {
   browserVault.lock();
   clearTimeout(inactivityTimer);
   clearPageSecrets();
@@ -186,8 +195,9 @@ const lockVault = (message = "Credential vault locked. Decrypted keys were remov
 
 const protectVault = async (): Promise<void> => {
   const snapshot = currentSnapshot();
-  if (snapshot.openAiKey.length === 0 && snapshot.signingKeyText === null) {
-    throw new Error("Enter or import at least one credential before creating the encrypted vault");
+  const packageCount = Object.keys(snapshot.packagePasswords ?? {}).length;
+  if (snapshot.openAiKey.length === 0 && snapshot.signingKeyText === null && packageCount === 0) {
+    throw new Error("Enter or import at least one credential or open one encrypted chart before creating the encrypted vault");
   }
   if (snapshot.signingKeyText !== null) parseSigningKey(snapshot.signingKeyText);
   setStatus("Creating a passkey-protected encryption key. Complete the browser verification prompt.");
@@ -198,13 +208,14 @@ const protectVault = async (): Promise<void> => {
   await updateState();
 };
 
-const unlockVault = async (): Promise<void> => {
+const unlockVault = async (): Promise<BrowserSecretSnapshot> => {
   setStatus("Waiting for passkey or biometric verification…");
   const snapshot = await browserVault.unlock();
   unlocked = true;
   applySnapshotToPage(snapshot);
   resetInactivity();
   await updateState();
+  return snapshot;
 };
 
 const removeVault = async (): Promise<void> => {
@@ -229,14 +240,14 @@ const createUi = (): void => {
     <div class="vault-heading">
       <div>
         <strong>Encrypted browser credential vault</strong>
-        <span>WebAuthn PRF + AES-GCM · no saved plaintext keys</span>
+        <span>WebAuthn PRF + AES-GCM · no saved plaintext keys or chart passwords</span>
       </div>
       <span id="credentialVaultBadge" class="badge warn">Checking</span>
     </div>
     <div class="actions vault-actions">
-      <button id="protectCredentialVault" type="button" class="secondary">Protect keys with passkey</button>
-      <button id="unlockCredentialVault" type="button" class="secondary" hidden>Unlock keys</button>
-      <button id="lockCredentialVault" type="button" class="ghost" hidden>Lock keys</button>
+      <button id="protectCredentialVault" type="button" class="secondary">Protect secrets with passkey</button>
+      <button id="unlockCredentialVault" type="button" class="secondary" hidden>Unlock secrets</button>
+      <button id="lockCredentialVault" type="button" class="ghost" hidden>Lock secrets</button>
       <button id="removeCredentialVault" type="button" class="ghost" hidden>Delete encrypted vault</button>
     </div>
     <p id="credentialVaultStatus" class="muted vault-status">Checking browser support…</p>`;
@@ -261,6 +272,36 @@ const createUi = (): void => {
     event.stopImmediatePropagation();
     setStatus("Unlock the credential vault before using this action.", true);
   }, true);
+};
+
+/**
+ * Unlock the passkey vault as the direct continuation of another protected
+ * action. A recognised encrypted chart calls this and then decrypts immediately
+ * with the recovered password; no password form is populated or displayed.
+ */
+export const unlockCredentialVaultForUse = async (): Promise<BrowserSecretSnapshot> => {
+  if (browserVault.unlocked) {
+    resetInactivity();
+    return browserSecretSnapshot();
+  }
+  return unlockVault();
+};
+
+/** Save a chart password only after it is protected by the same biometric vault. */
+export const rememberPackagePasswordWithBiometrics = async (
+  contentSha256: string,
+  password: string,
+): Promise<void> => {
+  const exists = await browserVault.exists();
+  if (exists && !browserVault.unlocked) await unlockVault();
+  savePackagePassword(contentSha256, password);
+  if (!exists) {
+    await protectVault();
+    return;
+  }
+  await browserVault.save(browserSecretSnapshot());
+  resetInactivity();
+  await updateState();
 };
 
 export const initialiseVaultUi = (): void => {
