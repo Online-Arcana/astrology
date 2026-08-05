@@ -2,6 +2,7 @@ import { open as openPackage } from "astral-packager";
 import {
   forgetPackagePassword,
   loadPackagePassword,
+  savePackagePassword,
 } from "./keys.js";
 import {
   encryptedPackageFingerprint,
@@ -206,10 +207,17 @@ document.addEventListener("change", (event) => {
     pendingRemember = null;
     selectedPackage = null;
     if (pending !== null && file === pending.file) {
+      const fingerprint = pending.fingerprint;
+      const previous = loadPackagePassword(fingerprint);
       let password = pending.password;
-      void rememberPackagePasswordWithBiometrics(pending.fingerprint, password)
-        .then(() => rememberPackageFingerprint(pending.fingerprint))
-        .catch(report)
+      pending.password = "";
+      void rememberPackagePasswordWithBiometrics(fingerprint, password)
+        .then(() => rememberPackageFingerprint(fingerprint))
+        .catch((cause: unknown) => {
+          if (previous === null) forgetPackagePassword(fingerprint);
+          else savePackagePassword(fingerprint, previous);
+          report(cause);
+        })
         .finally(() => { password = ""; });
     }
     return;
