@@ -179,10 +179,14 @@ HTMLDialogElement.prototype.showModal = function biometricPackageDialog(): void 
     const label = rememberUi(this);
     const checkbox = label.querySelector<HTMLInputElement>("#astralRememberPassword");
     const action = this.querySelector<HTMLButtonElement>("#astralPackageContinue")?.textContent?.trim() ?? "";
+    const status = this.querySelector<HTMLElement>("#astralPackageStatus");
     const opening = action === "Open";
     label.hidden = !opening;
     label.style.display = opening ? "grid" : "none";
     if (checkbox !== null) checkbox.checked = false;
+    if (opening && status !== null) {
+      status.textContent = "The password is discarded after opening unless you explicitly protect it with the optional biometric vault.";
+    }
   }
   nativeShowModal.call(this);
 };
