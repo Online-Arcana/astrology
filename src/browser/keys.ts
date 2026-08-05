@@ -12,6 +12,7 @@ export interface BrowserSigningKey extends AuthorityKeys {
 
 let sessionOpenAiKey = "";
 let sessionSigningKey: BrowserSigningKey | null = null;
+let sessionPackagePasswords: Record<string, string> = {};
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -19,6 +20,14 @@ const record = (value: unknown): value is Record<string, unknown> =>
 const required = (value: unknown, name: string): string => {
   if (typeof value !== "string" || value.trim().length === 0) throw new Error(`${name} is required`);
   return value.trim();
+};
+
+const packagePasswords = (value: unknown): Record<string, string> => {
+  if (!record(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([id, password]) =>
+    /^sha256:[a-f0-9]{64}$/u.test(id)
+    && typeof password === "string"
+    && password.length > 0)) as Record<string, string>;
 };
 
 export const parseSigningKey = (text: string): BrowserSigningKey => {
@@ -106,6 +115,7 @@ export const generateSigningKey = async (
 const snapshot = (): BrowserSecretSnapshot => ({
   openAiKey: sessionOpenAiKey,
   signingKeyText: sessionSigningKey === null ? null : signingKeyText(sessionSigningKey),
+  packagePasswords: { ...sessionPackagePasswords },
 });
 
 const persist = (): void => {
@@ -129,6 +139,33 @@ export const saveSigningKey = (key: BrowserSigningKey | null): void => {
   persist();
 };
 
+export const loadPackagePassword = (encryptedPackageSha256: string): string | null =>
+  sessionPackagePasswords[encryptedPackageSha256] ?? null;
+
+export const savePackagePassword = (encryptedPackageSha256: string, password: string): void => {
+  if (!/^sha256:[a-f0-9]{64}$/u.test(encryptedPackageSha256)) {
+    throw new Error("Encrypted package SHA-256 is invalid");
+  }
+  if (password.length === 0) throw new Error("Package password is empty");
+  sessionPackagePasswords = {
+    ...sessionPackagePasswords,
+    [encryptedPackageSha256]: password,
+  };
+  persist();
+};
+
+export const forgetPackagePassword = (encryptedPackageSha256: string): void => {
+  if (!(encryptedPackageSha256 in sessionPackagePasswords)) return;
+  const next = { ...sessionPackagePasswords };
+  delete next[encryptedPackageSha256];
+  sessionPackagePasswords = next;
+  persist();
+};
+
+export const packagePasswordSnapshot = (): Readonly<Record<string, string>> => ({
+  ...sessionPackagePasswords,
+});
+
 export const browserSecretSnapshot = (): BrowserSecretSnapshot => snapshot();
 
 export const applyBrowserSecretSnapshot = (value: BrowserSecretSnapshot): void => {
@@ -136,9 +173,11 @@ export const applyBrowserSecretSnapshot = (value: BrowserSecretSnapshot): void =
   sessionSigningKey = value.signingKeyText === null || value.signingKeyText.trim().length === 0
     ? null
     : parseSigningKey(value.signingKeyText);
+  sessionPackagePasswords = packagePasswords(value.packagePasswords);
 };
 
 export const clearBrowserSecretSession = (): void => {
   sessionOpenAiKey = "";
   sessionSigningKey = null;
+  sessionPackagePasswords = {};
 };

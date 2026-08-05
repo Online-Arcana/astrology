@@ -8,23 +8,27 @@ Non-secret chart-form values are stored in this origin's `localStorage` so the s
 
 API and signing keys are never saved as plaintext by the current browser frontend. Without an encrypted vault they remain in JavaScript memory for the current page session and disappear when the page is closed or refreshed.
 
-Package passwords are different from saved credentials. A package password is used only for the active packaging or opening operation. It is never written to `localStorage`, IndexedDB, session storage, Cache Storage or the generated file, and the password fields are cleared after each attempt.
+Package passwords follow the same rule by default: they are used only for the current open operation, kept in memory briefly and discarded. Remembering a package password is optional. When the user explicitly selects **Remember this password behind biometrics on this browser**, the password is added to the same passkey-encrypted credential vault used for the OpenAI key and Ed25519 signing key.
 
-No credential is compiled into the Pages assets. Clearing site data removes the encrypted vault, form draft and chart data. The frontend intentionally has no analytics, tag manager, remote font, advertising or third-party script dependency.
+For an opted-in chart, `localStorage` contains only the SHA-256 fingerprint of the exact encrypted package bytes. That non-secret fingerprint identifies the selected file before decryption. The password itself, chart JSON, OpenAI key and signing key are never written to `localStorage`.
+
+No credential is compiled into the Pages assets. Clearing site data removes the encrypted vault, remembered encrypted-file fingerprints, form draft and chart data. The frontend intentionally has no analytics, tag manager, remote font, advertising or third-party script dependency.
 
 ## Encrypted credential vault
 
 The optional credential vault uses a user-verified WebAuthn passkey or authenticator PRF result to derive an AES-GCM encryption key. The browser may satisfy verification through Face ID, Touch ID, Windows Hello, an Android biometric prompt, a platform passkey or a compatible security key.
 
-Only ciphertext, IVs, PRF salt, credential identifier and non-secret timestamps are stored in IndexedDB under `astral-secure-vault`. The derived AES key is non-extractable and remains in memory only while the page is unlocked. Locking, refreshing or closing the page clears the decrypted API and signing credentials from application memory.
+Only ciphertext, IVs, PRF salt, credential identifier and non-secret timestamps are stored in IndexedDB under `astral-secure-vault`. The encrypted snapshot may contain the OpenAI key, Ed25519 bundle and explicitly remembered package passwords. The derived AES key is non-extractable and remains in memory only while the page is unlocked.
 
-Browsers or authenticators without WebAuthn PRF support remain usable in memory-only mode. They do not fall back to persistent plaintext storage.
+Locking, refreshing or closing the page clears all decrypted API, signing and package-password values from application memory. The encrypted-file fingerprints remain available so a selected file can be recognised immediately and prompt for biometric verification.
+
+Browsers or authenticators without WebAuthn PRF support remain usable in password-only, memory-only mode. They do not fall back to persistent plaintext storage.
 
 When an older deployed version left `astral.openai-key` or `astral.signing-key` in `localStorage`, the upgraded page captures those values into the current session, removes the plaintext entries immediately and offers to migrate them into the encrypted vault. Closing the page before migration discards that captured copy.
 
 Copy, download, generation and signing controls require the vault to be unlocked when an encrypted vault exists. The page automatically locks after fifteen minutes without pointer or keyboard activity.
 
-Biometric or passkey protection secures credentials at rest. While unlocked, the page necessarily holds the decrypted credentials briefly in memory to call OpenAI or create an Ed25519 signature.
+Biometric or passkey protection secures secrets at rest. While unlocked, the page necessarily holds the decrypted values briefly in memory to call OpenAI, create an Ed25519 signature or decrypt a recognised package.
 
 ## Credential controls
 
@@ -61,17 +65,30 @@ The complete raw chart, including its CRC and optional authority signature, rema
 
 Normal chart generation may sign the newly assembled raw chart with the currently loaded Ed25519 key. After generation completes, the browser automatically enters the packaging stage and asks for a package password. The only final `.astral` download is the encrypted package.
 
-The package password must pass the packager's local password audit and is requested twice. Packaging progress remains visible during compression, password-key derivation and encryption.
+The package password must pass the packager's local password audit. The creation dialog shows the live 0–4 score, suggestions and immediate match status. Confirmation is required while the password is hidden; revealing the password removes the redundant confirmation field. Packaging progress remains visible during compression, password-key derivation and encryption.
 
 A verified authority fingerprint matching the loaded key is labelled **Made by this browser key**. GitHub Actions secrets are deliberately not passed to the static build. A deployed browser page cannot use a workflow secret without publishing it.
 
 ## Opening a packaged chart
 
-Selecting an ASTRPKG1, ASTRPKG2, ASTRPKG3 or ASTRPKG4 file intercepts the ordinary JSON open path before it runs. The page asks for the password and then calls the packager's `open()` procedure locally.
+Selecting an ASTRPKG1, ASTRPKG2, ASTRPKG3 or ASTRPKG4 file intercepts the ordinary JSON open path before it runs.
 
-That procedure authenticates and decrypts the container, decompresses its payload, decodes the typed protobuf, reconstructs canonical JSON, regenerates the private identity and verifies the public identity metadata. The temporary identity object is explicitly dropped immediately after reconstruction.
+For every encrypted package, the browser first computes SHA-256 directly from the selected encrypted bytes. This is only a file fingerprint and does not require or expose decrypted content.
 
-A wrong password or damaged package leaves the file unopened and keeps the password dialog available for another attempt. The reconstructed JSON exists only in page memory and is then passed to the existing validator, formatted viewer and maintenance tools.
+For an unrecognised file, the page asks for one password and calls the packager's `open()` procedure locally. The password dialog includes an unchecked, optional control to remember that password behind biometrics. Leaving it unchecked preserves the ordinary password-only workflow.
+
+For a recognised file whose password was previously protected:
+
+1. selecting the file immediately starts passkey or biometric verification when the vault is locked;
+2. successful verification releases the saved password into the current in-memory session;
+3. the same action passes that password directly to `openPackage(...)`;
+4. the package is decrypted and the chart opens without displaying or populating a password field.
+
+When the vault is already unlocked during the current page session, a recognised file can open directly with the in-memory password. Cancelling or failing biometric verification falls back to the ordinary password dialog, so opting in never removes password access.
+
+The packager procedure authenticates and decrypts the container, decompresses its payload, decodes the typed protobuf, reconstructs canonical JSON, regenerates the private identity and verifies the public identity metadata. The temporary identity object is explicitly dropped immediately after reconstruction.
+
+A wrong stored password removes the stale remembered association and falls back to manual entry. A wrong manually entered password or damaged package leaves the file unopened and keeps the password dialog available for another attempt. The reconstructed JSON exists only in page memory and is then passed to the existing validator, formatted viewer and maintenance tools.
 
 Legacy raw JSON `.astral` files remain readable for migration and maintenance. Any new download from them is packaged.
 
@@ -94,9 +111,11 @@ Interpretation regeneration is always off by default. Audit findings are advisor
 
 With regeneration off, current calculations and interpretations are preserved without an API call. The tool may update selected preferred-gender metadata, recalculate integrity values, replace or add the selected Ed25519 authority signature, and then package the new copy.
 
-Regeneration runs only when the user explicitly checks **Recalculate and complete all missing or invalid fields**. It then rebuilds deterministic data and interpretations from embedded birth information using the configured model routing before the result is packaged.
+Regeneration runs only when the user explicitly checks **Recalculate and complete all missing or invalid fields** and presses the maintenance action. The browser then returns to the normal **Create chart** screen, preloads the embedded birth place, date, time, language, gender and zodiac settings, and uses the ordinary generation interface rather than a reduced maintenance display.
 
-The maintenance tool refuses regeneration when the old file does not contain enough unambiguous birth and place data. It does not invent missing deterministic facts.
+For a current-schema chart whose interpretation basis has not changed, every interpretation that passes the maintenance audit becomes an accepted recovery unit. Only missing or invalid units are omitted from the checkpoint and regenerated. The normal interface therefore shows the real remaining count, stage, lanes, ETA, recovery state, token usage and incremental cost.
+
+When the preferred gender changes, or when a legacy file cannot provide a compatible current checkpoint, the normal generator rebuilds every required interpretation because the interpretation basis has changed. The maintenance tool still refuses recalculation when the old file does not contain enough unambiguous birth and place data. It does not invent missing deterministic facts.
 
 ## Recovery and stopping
 

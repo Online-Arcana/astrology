@@ -16,8 +16,11 @@ await import("./credentialStatus.js");
 await import("./credentialWording.js");
 initialiseVaultUi();
 
-// Install the packaged-file wording and local pack/unpack interception after
-// the static page controls exist but before the user can interact with them.
+// Install the optional biometric package gate before the ordinary package
+// password handler. Recognised encrypted file fingerprints can then unlock and
+// decrypt in one passkey action, while every unrecognised or declined file falls
+// through to the normal password dialog.
+await import("./packageBiometric.js");
 await import("./packageWording.js");
 await import("./packageFlow.js");
 await import("./authorityUi.js");
@@ -27,4 +30,11 @@ await import("./authorityUi.js");
 await import("./synthesisCategory.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
+
+// Recalculation uses the original generation screen and its full checkpoint,
+// lane, stage, ETA and billing presentation. The guards initialise first so an
+// active generation cannot receive a queued maintenance checkpoint.
+await import("./maintenanceProgress.js");
+await import("./maintenanceAvailability.js");
+await import("./maintenanceResume.js");
 await import("./maintenancePolicy.js");
