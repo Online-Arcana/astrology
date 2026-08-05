@@ -32,7 +32,8 @@ const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js")
 initialiseMaintenanceAuditUi();
 
 // Recalculation uses the original generation screen and its full checkpoint,
-// lane, stage, ETA and billing presentation. The ordinary maintenance policy
-// remains responsible for sign-only and canonicalise-only downloads.
+// lane, stage, ETA and billing presentation. The ETA adapter measures only the
+// unfinished units rather than counting recovered work as newly generated.
+await import("./maintenanceProgress.js");
 await import("./maintenanceResume.js");
 await import("./maintenancePolicy.js");
