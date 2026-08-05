@@ -4,9 +4,12 @@ const assert: (condition: unknown, message: string) => asserts condition = (cond
   if (!condition) throw new Error(message);
 };
 
-const policy = await readFile("src/browser/maintenancePolicy.ts", "utf8");
-const audit = await readFile("src/browser/maintenanceAuditUi.ts", "utf8");
-const entry = await readFile("src/browser/browserTools.ts", "utf8");
+const [policy, audit, resume, entry] = await Promise.all([
+  readFile("src/browser/maintenancePolicy.ts", "utf8"),
+  readFile("src/browser/maintenanceAuditUi.ts", "utf8"),
+  readFile("src/browser/maintenanceResume.ts", "utf8"),
+  readFile("src/browser/browserTools.ts", "utf8"),
+]);
 
 const checks: readonly [boolean, string][] = [
   [/complete\.checked = false/u.test(policy), "maintenance regeneration must default to off"],
@@ -16,6 +19,12 @@ const checks: readonly [boolean, string][] = [
   [!/selectRecommendedRegeneration/u.test(audit), "the maintenance audit must remain advisory"],
   [/maintenancePolicy\.js/u.test(entry), "the browser tools entry must load the explicit maintenance policy"],
   [!/localStorage/u.test(policy), "sign-only maintenance must use only the in-memory credential session"],
+  [/auditOpenedInterpretations/u.test(resume) && /invalidUnitIds/u.test(resume), "recalculation must derive the exact missing or invalid units from the maintenance audit"],
+  [/ChartGenerationCheckpoint/u.test(resume) && /units\[unit\.id\] = phaseResult/u.test(resume), "valid existing interpretations must become accepted recovery units"],
+  [/this\.resume\(selected\.checkpoint/u.test(resume), "maintenance recalculation must resume only unfinished units through the normal runtime"],
+  [/\.tab\[data-panel=\\"createPanel\\"\]/u.test(resume) && /#chartForm/u.test(resume), "recalculation must return to and submit the main Create chart screen"],
+  [/#progressCard/u.test(resume) && /scrollIntoView/u.test(resume), "the normal progress, stage, lane, ETA and billing interface must be brought into view"],
+  [/import\("\.\/maintenanceResume\.js"\)/u.test(entry), "browser tools must initialise full-interface maintenance resume before the reduced policy handler"],
 ];
 
 console.log(`1..${checks.length}`);
