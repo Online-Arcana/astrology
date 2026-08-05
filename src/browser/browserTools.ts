@@ -33,8 +33,10 @@ initialiseMaintenanceAuditUi();
 
 // Recalculation uses the original generation screen and its full checkpoint,
 // lane, stage, ETA and billing presentation. The guards initialise first so an
-// active generation cannot receive a queued maintenance checkpoint.
+// active generation cannot receive a queued maintenance checkpoint. The paint
+// gate yields two animation frames before the synchronous hand-off begins.
 await import("./maintenanceProgress.js");
 await import("./maintenanceAvailability.js");
+await import("./maintenancePaint.js");
 await import("./maintenanceResume.js");
 await import("./maintenancePolicy.js");
