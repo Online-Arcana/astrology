@@ -1,15 +1,20 @@
 import { open as openPackage } from "astral-packager";
-import { digest } from "../file/hash.js";
 import {
   forgetPackagePassword,
   loadPackagePassword,
 } from "./keys.js";
 import {
+  encryptedPackageFingerprint,
+  forgetPackageFingerprint,
+  packageFingerprintRemembered,
+  rememberPackageFingerprint,
+} from "./packageFingerprints.js";
+import {
+  credentialVaultExistsForUse,
   rememberPackagePasswordWithBiometrics,
   unlockCredentialVaultForUse,
 } from "./vaultUi.js";
 
-const storageKey = "astral.package-fingerprints/1";
 const magic = "ASTRPKG";
 const nativeBlobText = Blob.prototype.text;
 const nativeShowModal = HTMLDialogElement.prototype.showModal;
@@ -40,44 +45,6 @@ const isPackage = (bytes: Uint8Array): boolean => {
   return true;
 };
 
-const fingerprint = async (bytes: Uint8Array): Promise<string> =>
-  `sha256:${await digest("SHA-256", bytes)}`;
-
-const fingerprintSet = (): Set<string> => {
-  const raw = localStorage.getItem(storageKey);
-  if (raw === null) return new Set();
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return new Set();
-    return new Set(parsed.filter((value): value is string =>
-      typeof value === "string" && /^sha256:[a-f0-9]{64}$/u.test(value)));
-  } catch {
-    return new Set();
-  }
-};
-
-const writeFingerprints = (values: Set<string>): void => {
-  localStorage.setItem(storageKey, JSON.stringify([...values].sort()));
-};
-
-const fingerprintRemembered = (value: string): boolean => fingerprintSet().has(value);
-
-const rememberFingerprint = (value: string): void => {
-  const values = fingerprintSet();
-  values.add(value);
-  writeFingerprints(values);
-};
-
-const forgetFingerprint = (value: string): void => {
-  const values = fingerprintSet();
-  if (!values.delete(value)) return;
-  if (values.size === 0) {
-    localStorage.removeItem(storageKey);
-    return;
-  }
-  writeFingerprints(values);
-};
-
 const report = (cause: unknown): void => {
   const message = cause instanceof Error ? `${cause.name}: ${cause.message}` : String(cause);
   const card = element<HTMLElement>("#errorCard");
@@ -88,6 +55,7 @@ const report = (cause: unknown): void => {
   }
   output.textContent = message;
   card.classList.remove("hidden");
+  card.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const redispatch = (input: HTMLInputElement, unpacked: boolean): void => {
@@ -107,13 +75,20 @@ const seamlessOpen = async (
   selected: SelectedPackage,
 ): Promise<void> => {
   try {
-    await unlockCredentialVaultForUse();
-    let password = loadPackagePassword(selected.fingerprint);
-    if (password === null) {
-      forgetFingerprint(selected.fingerprint);
+    if (!await credentialVaultExistsForUse()) {
+      forgetPackageFingerprint(selected.fingerprint);
       fallBackToPassword(input);
       return;
     }
+
+    await unlockCredentialVaultForUse();
+    let password = loadPackagePassword(selected.fingerprint);
+    if (password === null) {
+      forgetPackageFingerprint(selected.fingerprint);
+      fallBackToPassword(input);
+      return;
+    }
+
     try {
       const result = await openPackage(selected.bytes, password);
       try {
@@ -125,7 +100,7 @@ const seamlessOpen = async (
     } catch (cause: unknown) {
       if (storedPasswordFailure(cause)) {
         forgetPackagePassword(selected.fingerprint);
-        forgetFingerprint(selected.fingerprint);
+        forgetPackageFingerprint(selected.fingerprint);
       }
       fallBackToPassword(input);
     } finally {
@@ -146,10 +121,10 @@ const inspectSelection = async (input: HTMLInputElement, file: File): Promise<vo
     return;
   }
 
-  const value = await fingerprint(bytes);
-  const selected = { file, fingerprint: value, bytes } satisfies SelectedPackage;
+  const fingerprint = await encryptedPackageFingerprint(bytes);
+  const selected = { file, fingerprint, bytes } satisfies SelectedPackage;
   selectedPackage = selected;
-  if (!fingerprintRemembered(value)) {
+  if (!packageFingerprintRemembered(fingerprint)) {
     redispatch(input, false);
     return;
   }
@@ -229,10 +204,11 @@ document.addEventListener("change", (event) => {
   if (input.dataset["astralUnpacked"] === "true") {
     const pending = pendingRemember;
     pendingRemember = null;
+    selectedPackage = null;
     if (pending !== null && file === pending.file) {
       let password = pending.password;
       void rememberPackagePasswordWithBiometrics(pending.fingerprint, password)
-        .then(() => rememberFingerprint(pending.fingerprint))
+        .then(() => rememberPackageFingerprint(pending.fingerprint))
         .catch(report)
         .finally(() => { password = ""; });
     }
