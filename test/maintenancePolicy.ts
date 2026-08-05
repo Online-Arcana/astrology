@@ -4,9 +4,10 @@ const assert: (condition: unknown, message: string) => asserts condition = (cond
   if (!condition) throw new Error(message);
 };
 
-const [policy, audit, resume, entry] = await Promise.all([
+const [policy, auditUi, auditCore, resume, entry] = await Promise.all([
   readFile("src/browser/maintenancePolicy.ts", "utf8"),
   readFile("src/browser/maintenanceAuditUi.ts", "utf8"),
+  readFile("src/browser/maintenanceAudit.ts", "utf8"),
   readFile("src/browser/maintenanceResume.ts", "utf8"),
   readFile("src/browser/browserTools.ts", "utf8"),
 ]);
@@ -16,13 +17,17 @@ const checks: readonly [boolean, string][] = [
   [/event\.stopImmediatePropagation\(\)/u.test(policy), "sign-only clicks must not fall through to the regeneration handler"],
   [/assembleAstralFile/u.test(policy) && /No calculations or interpretations were regenerated/u.test(policy), "sign-only maintenance must reassemble and download without regeneration"],
   [!/BrowserRuntime|openAiKey/u.test(policy), "sign-only maintenance must not load the API generation runtime"],
-  [!/selectRecommendedRegeneration/u.test(audit), "the maintenance audit must remain advisory"],
+  [!/selectRecommendedRegeneration/u.test(auditUi), "the maintenance audit must remain advisory"],
   [/maintenancePolicy\.js/u.test(entry), "the browser tools entry must load the explicit maintenance policy"],
   [!/localStorage/u.test(policy), "sign-only maintenance must use only the in-memory credential session"],
   [/auditOpenedInterpretations/u.test(resume) && /invalidUnitIds/u.test(resume), "recalculation must derive the exact missing or invalid units from the maintenance audit"],
+  [/dependentInvalidUnits/u.test(auditCore) && /invalid\.add\(synthesisId\)/u.test(auditCore), "an invalid upstream interpretation must also invalidate its system synthesis"],
+  [/invalid\.add\("final-synthesis"\)/u.test(auditCore), "a rebuilt system field or synthesis must invalidate the final synthesis"],
   [/ChartGenerationCheckpoint/u.test(resume) && /units\[unit\.id\] = phaseResult/u.test(resume), "valid existing interpretations must become accepted recovery units"],
   [/this\.resume\(selected\.checkpoint/u.test(resume), "maintenance recalculation must resume only unfinished units through the normal runtime"],
-  [/\.tab\[data-panel="createPanel"\]/u.test(resume) && /#chartForm/u.test(resume), "recalculation must return to and submit the main Create chart screen"],
+  [/\.tab\[data-panel="createPanel"\]/u.test(resume) && /#chartForm/u.test(resume), "recalculation must return to the main Create chart screen"],
+  [/form\.requestSubmit\(submitter\)/u.test(resume) && /form\.reportValidity\(\)/u.test(resume), "maintenance must use the original validated chart-form submission path"],
+  [/guardQueuedSubmission/u.test(resume) && /#errorCard/u.test(resume) && /60_000/u.test(resume), "a failed pre-runtime hand-off must not leak into a later generation"],
   [/#progressCard/u.test(resume) && /scrollIntoView/u.test(resume), "the normal progress, stage, lane, ETA and billing interface must be brought into view"],
   [/import\("\.\/maintenanceResume\.js"\)/u.test(entry), "browser tools must initialise full-interface maintenance resume before the reduced policy handler"],
 ];
