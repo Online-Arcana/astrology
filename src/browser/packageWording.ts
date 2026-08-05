@@ -2,7 +2,7 @@ const element = <T extends Element>(selector: string): T | null => document.quer
 
 const completeNotice = element<HTMLElement>("#completeCard > p");
 if (completeNotice !== null) {
-  completeNotice.textContent = "The final .astral download is a password-encrypted package containing the complete chart. The password is never stored by this page.";
+  completeNotice.textContent = "The final .astral download is a password-encrypted package containing the complete chart. Passwords are discarded by default; remembering one behind this browser's biometric vault is always optional.";
 }
 
 const generated = element<HTMLButtonElement>("#downloadGenerated");
@@ -18,7 +18,7 @@ if (fileInput !== null) {
 
 const validation = element<HTMLElement>("#fileValidation");
 if (validation !== null) {
-  validation.textContent = "Encrypted .astral packages are decrypted, decompressed and decoded locally after you enter their password. The password is never stored.";
+  validation.textContent = "Encrypted .astral packages are decrypted, decompressed and decoded locally. Unremembered files ask for their password; recognised files may unlock and decrypt directly through the optional biometric vault.";
 }
 
 const rawTab = element<HTMLButtonElement>('.subtab[data-view="rawView"]');
