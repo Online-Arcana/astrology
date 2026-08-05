@@ -194,17 +194,40 @@ const unitValid = (file: AstralFile, unit: InterpretationUnit): boolean => {
   }
 };
 
+const dependentInvalidUnits = (
+  file: AstralFile,
+  directlyInvalid: readonly string[],
+): string[] => {
+  const invalid = new Set(directlyInvalid);
+  const synthesisId = `${file["astral-calculation"].system.zodiac}.synthesis`;
+  const upstreamInvalid = directlyInvalid.some((id) =>
+    id !== "generated-name" && id !== synthesisId && id !== "final-synthesis");
+
+  // A system synthesis cannot remain accepted when one of the fields it
+  // synthesises is rebuilt. The final synthesis likewise depends on the
+  // current system synthesis and all accepted interpretation fields.
+  if (upstreamInvalid) invalid.add(synthesisId);
+  if (upstreamInvalid || invalid.has(synthesisId)) invalid.add("final-synthesis");
+
+  const order = [
+    ...(file["astral-calculation"].subject.providedName === null ? ["generated-name"] : []),
+    ...file["astral-calculation"].interpretationPlan.units.map(({ id }) => id),
+  ];
+  return order.filter((id) => invalid.has(id));
+};
+
 export const auditOpenedInterpretations = (file: AstralFile): OpenedInterpretationAudit => {
-  const invalidUnitIds = file["astral-calculation"].interpretationPlan.units
+  const directlyInvalid = file["astral-calculation"].interpretationPlan.units
     .filter((unit) => !unitValid(file, unit))
     .map(({ id }) => id);
 
   const calculation = file["astral-calculation"];
   const name = file["astral-chart"].subject.name;
   if (calculation.subject.providedName === null && !generatedNamePattern.test(name.value)) {
-    invalidUnitIds.unshift("generated-name");
+    directlyInvalid.unshift("generated-name");
   }
 
+  const invalidUnitIds = dependentInvalidUnits(file, directlyInvalid);
   return {
     complete: invalidUnitIds.length === 0,
     invalidUnitIds,
