@@ -4,13 +4,17 @@ const assert: (condition: unknown, message: string) => asserts condition = (cond
   if (!condition) throw new Error(message);
 };
 
-const [policy, auditUi, auditCore, resume, entry] = await Promise.all([
+const [policy, auditUi, auditCore, progress, resume, entry] = await Promise.all([
   readFile("src/browser/maintenancePolicy.ts", "utf8"),
   readFile("src/browser/maintenanceAuditUi.ts", "utf8"),
   readFile("src/browser/maintenanceAudit.ts", "utf8"),
+  readFile("src/browser/maintenanceProgress.ts", "utf8"),
   readFile("src/browser/maintenanceResume.ts", "utf8"),
   readFile("src/browser/browserTools.ts", "utf8"),
 ]);
+
+const progressImport = entry.indexOf('import("./maintenanceProgress.js")');
+const resumeImport = entry.indexOf('import("./maintenanceResume.js")');
 
 const checks: readonly [boolean, string][] = [
   [/complete\.checked = false/u.test(policy), "maintenance regeneration must default to off"],
@@ -29,6 +33,9 @@ const checks: readonly [boolean, string][] = [
   [/form\.requestSubmit\(submitter\)/u.test(resume) && /form\.reportValidity\(\)/u.test(resume), "maintenance must use the original validated chart-form submission path"],
   [/guardQueuedSubmission/u.test(resume) && /#errorCard/u.test(resume) && /60_000/u.test(resume), "a failed pre-runtime hand-off must not leak into a later generation"],
   [/#progressCard/u.test(resume) && /scrollIntoView/u.test(resume), "the normal progress, stage, lane, ETA and billing interface must be brought into view"],
+  [/remainingAtStart/u.test(progress) && /total - \(selected\.remainingAtStart/u.test(progress), "maintenance ETA must start from accepted recovered work rather than zero"],
+  [/seenProgress/u.test(progress) && /#errorCard/u.test(progress), "maintenance ETA state must clear after failure or an abandoned run"],
+  [progressImport >= 0 && resumeImport > progressImport, "remaining-work ETA must initialise before the maintenance resume handler"],
   [/import\("\.\/maintenanceResume\.js"\)/u.test(entry), "browser tools must initialise full-interface maintenance resume before the reduced policy handler"],
 ];
 
