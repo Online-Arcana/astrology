@@ -9,15 +9,14 @@ import {
   parseStrictSection,
   parseSystemSynthesis,
 } from "../chart/parse.js";
-import { auditOpenedInterpretations } from "./maintenanceAudit.js";
+import { compatibilityDomains } from "../compat/catalogue.js";
 import { generatedNamePattern } from "../file/invariants.js";
 import { isAstralFile } from "../file/validate.js";
 import type { ChartGenerationCheckpoint } from "../generate/service.js";
 import type { UnitResult } from "../llm/orchestrate/types.js";
+import type { CompatibilityDomain, Sign } from "../types/astro.js";
 import type { PreferredGender } from "../types/base.js";
 import type { AstralFile, InterpretationUnit } from "../types/file.js";
-import type { CompatibilityDomain, Sign } from "../types/astro.js";
-import { compatibilityDomains } from "../compat/catalogue.js";
 import { signs } from "../zodiac/position.js";
 import {
   loadOpenAiKey,
@@ -26,6 +25,7 @@ import {
   validateSigningKey,
   type BrowserSigningKey,
 } from "./keys.js";
+import { auditOpenedInterpretations } from "./maintenanceAudit.js";
 import { BrowserRuntime, browserVersion } from "./runtime.js";
 
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
@@ -129,6 +129,11 @@ const parsedValue = (unitId: string, value: unknown): object => {
   return parseStrictSection(value);
 };
 
+const recoveredAttempts = (value: number | undefined): number =>
+  value !== undefined && Number.isSafeInteger(value) && value > 0
+    ? Math.min(2, value)
+    : 1;
+
 const phaseResult = (
   file: AstralFile,
   unit: InterpretationUnit,
@@ -137,8 +142,11 @@ const phaseResult = (
   return {
     id: unit.id,
     value: parsedValue(unit.id, sectionValue(file, unit.id)),
-    attempts: phase?.attempts ?? 1,
-    model: phase?.model?.trim() || "recovered-chart",
+    attempts: recoveredAttempts(phase?.attempts),
+    model: phase?.model.trim() || "recovered-chart",
+    provenance: {
+      migratedFromVersion: file["astral-calculation"].provenance.astralChartsVersion,
+    },
   };
 };
 
@@ -167,6 +175,9 @@ const checkpointFor = (file: AstralFile): ChartGenerationCheckpoint => {
       value: { value: generatedName },
       attempts: 1,
       model: "recovered-chart",
+      provenance: {
+        migratedFromVersion: calculation.provenance.astralChartsVersion,
+      },
     };
   }
 
@@ -196,15 +207,19 @@ interface QueuedMaintenance {
   signingKey: BrowserSigningKey | null;
 }
 
+type GenerateArgs = Parameters<BrowserRuntime["generate"]>;
+type GenerateResult = Awaited<ReturnType<BrowserRuntime["generate"]>>;
+
 let queued: QueuedMaintenance | null = null;
 const ordinaryGenerate = BrowserRuntime.prototype.generate;
 
-BrowserRuntime.prototype.generate = async function maintenanceAwareGenerate(
-  birth,
-  options,
-  hooks,
-  signingKey,
-) {
+const maintenanceGenerate = async function maintenanceAwareGenerate(
+  this: BrowserRuntime,
+  birth: GenerateArgs[0],
+  options: GenerateArgs[1],
+  hooks: GenerateArgs[2],
+  signingKey: GenerateArgs[3],
+): Promise<GenerateResult> {
   const selected = queued;
   queued = null;
   if (selected === null) return ordinaryGenerate.call(this, birth, options, hooks, signingKey);
@@ -213,6 +228,8 @@ BrowserRuntime.prototype.generate = async function maintenanceAwareGenerate(
   }
   return this.resume(selected.checkpoint, hooks, selected.signingKey);
 };
+
+BrowserRuntime.prototype.generate = maintenanceGenerate;
 
 const queue = (
   checkpoint: ChartGenerationCheckpoint | null,
@@ -240,7 +257,6 @@ const currentSigningKey = async (): Promise<BrowserSigningKey> => {
 
 interface EmbeddedInput {
   current: AstralFile | null;
-  calculation: Record<string, unknown>;
   subject: Record<string, unknown>;
   birth: Record<string, unknown>;
   place: Record<string, unknown>;
@@ -260,7 +276,6 @@ const embeddedInput = (raw: unknown): EmbeddedInput => {
   }
   return {
     current: isAstralFile(raw) ? raw : null,
-    calculation,
     subject,
     birth,
     place,
@@ -275,6 +290,18 @@ const stringValue = (value: unknown, name: string): string => {
 
 const optionalString = (value: unknown): string => typeof value === "string" ? value : "";
 
+const setSelect = (
+  select: HTMLSelectElement,
+  label: string,
+  value: string,
+  item?: object,
+): void => {
+  const option = new Option(label, value, true, true);
+  if (item !== undefined) option.dataset["item"] = JSON.stringify(item);
+  select.replaceChildren(option);
+  select.disabled = false;
+};
+
 const populateMainForm = (input: EmbeddedInput, gender: PreferredGender): void => {
   const providedName = input.subject["providedName"];
   const name = element<HTMLInputElement>("#name");
@@ -283,24 +310,35 @@ const populateMainForm = (input: EmbeddedInput, gender: PreferredGender): void =
   const date = element<HTMLInputElement>("#date");
   const time = element<HTMLInputElement>("#time");
   const timeAccuracy = element<HTMLSelectElement>("#timeAccuracy");
+  const continent = element<HTMLSelectElement>("#continent");
+  const country = element<HTMLSelectElement>("#country");
+  const regionSelect = element<HTMLSelectElement>("#region");
+  const cityQuery = element<HTMLInputElement>("#cityQuery");
   const city = element<HTMLSelectElement>("#city");
   const zodiac = element<HTMLSelectElement>("#zodiac");
   const ayanamsha = element<HTMLSelectElement>("#ayanamsha");
   const selectedPlace = element<HTMLElement>("#selectedPlace");
   if (
     name === null || language === null || selectedGender === null || date === null
-    || time === null || timeAccuracy === null || city === null || zodiac === null
+    || time === null || timeAccuracy === null || continent === null || country === null
+    || regionSelect === null || cityQuery === null || city === null || zodiac === null
     || ayanamsha === null || selectedPlace === null
   ) {
     throw new Error("The main chart form is incomplete");
   }
 
   const placeId = stringValue(input.place["id"], "Embedded place ID");
+  const continentName = stringValue(input.place["continent"], "Embedded continent");
+  const subcontinent = typeof input.place["subcontinent"] === "string"
+    ? input.place["subcontinent"]
+    : null;
   const cityValue = input.place["city"];
   const countryValue = input.place["country"];
   const regionValue = input.place["region"];
   if (!record(cityValue) || !record(countryValue)) throw new Error("Embedded place details are incomplete");
   const cityName = stringValue(cityValue["name"], "Embedded city name");
+  const countryCode = stringValue(countryValue["code"], "Embedded country code");
+  const countryName = stringValue(countryValue["name"], "Embedded country name");
   const region = record(regionValue)
     ? {
         code: optionalString(regionValue["code"]),
@@ -324,8 +362,21 @@ const populateMainForm = (input: EmbeddedInput, gender: PreferredGender): void =
   time.disabled = timeAccuracy.value === "unknown";
   time.required = timeAccuracy.value !== "unknown";
 
-  const option = new Option(cityName, placeId, true, true);
-  option.dataset["item"] = JSON.stringify({
+  setSelect(continent, continentName, continentName);
+  setSelect(country, `${countryName} (${countryCode})`, countryCode, {
+    code: countryCode,
+    name: countryName,
+    continent: continentName,
+    subcontinent,
+  });
+  if (region === null) {
+    regionSelect.replaceChildren(new Option("Search the whole country", "", true, true));
+    regionSelect.disabled = false;
+  } else {
+    setSelect(regionSelect, region.name, region.code, region);
+  }
+  cityQuery.value = cityName;
+  setSelect(city, cityName, placeId, {
     id: placeId,
     name: cityName,
     region,
@@ -333,8 +384,6 @@ const populateMainForm = (input: EmbeddedInput, gender: PreferredGender): void =
     longitude,
     timeZone,
   });
-  city.replaceChildren(option);
-  city.disabled = false;
   selectedPlace.textContent = `${cityName}${region === null ? "" : `, ${region.name}`} · ${latitude.toFixed(4)}, ${longitude.toFixed(4)} · ${timeZone}`;
 
   const selectedZodiac = input.settings["primaryZodiac"] === "sidereal" ? "sidereal" : "tropical";
@@ -378,12 +427,20 @@ const navigateAndSubmit = (): void => {
   reveal();
 };
 
+const remainingUnits = (
+  file: AstralFile,
+  checkpoint: ChartGenerationCheckpoint,
+): number => {
+  const total = file["astral-calculation"].interpretationPlan.units.length
+    + (file["astral-calculation"].subject.providedName === null ? 1 : 0);
+  return Math.max(0, total - Object.keys(checkpoint.interpretation.units).length);
+};
+
 const startMaintenanceRecalculation = async (): Promise<void> => {
   const file = element<HTMLInputElement>("#astralFile")?.files?.[0];
   if (file === undefined) throw new Error("Open an .astral file first");
-  const enteredApiKey = element<HTMLInputElement>("#openAiKey")?.value.trim() ?? "";
-  if (enteredApiKey.length === 0 && loadOpenAiKey().length === 0) {
-    throw new Error("Enter or unlock the OpenAI API key before recalculating this chart");
+  if (loadOpenAiKey().length === 0) {
+    throw new Error("Enter and save, or unlock, the OpenAI API key before recalculating this chart");
   }
 
   const raw: unknown = JSON.parse(await file.text());
@@ -396,16 +453,13 @@ const startMaintenanceRecalculation = async (): Promise<void> => {
   const existingGender = preferredGender(embedded.subject["preferredGender"]);
   const sameInterpretationBasis = embedded.current !== null && existingGender === gender;
   const checkpoint = sameInterpretationBasis ? checkpointFor(embedded.current as AstralFile) : null;
-  const remaining = checkpoint === null
-    ? embedded.current?.["astral-calculation"].interpretationPlan.units.length ?? "all"
-    : embedded.current?.["astral-calculation"].interpretationPlan.units.length
-      ? embedded.current["astral-calculation"].interpretationPlan.units.length
-        - Object.keys(checkpoint.interpretation.units).filter((id) => id !== "generated-name").length
-      : 0;
+  const remaining = checkpoint === null || embedded.current === null
+    ? null
+    : remainingUnits(embedded.current, checkpoint);
 
   setStatus(checkpoint === null
     ? "Opening the full generation screen. The interpretation basis changed or the file is legacy, so every required interpretation will be rebuilt with live ETA, stages, lanes and cost."
-    : `Opening the full generation screen. ${remaining} missing or invalid interpretation unit${remaining === 1 ? "" : "s"} will be rebuilt; valid units remain accepted.`);
+    : `Opening the full generation screen. ${remaining ?? 0} missing or invalid interpretation unit${remaining === 1 ? "" : "s"} will be rebuilt; valid units remain accepted.`);
   const token = queue(checkpoint, key);
   navigateAndSubmit();
   setTimeout(() => expire(token), 10_000);
