@@ -32,6 +32,38 @@ interface ParsedUnit {
   detail?: unknown;
 }
 
+const auditCache = new Map<string, OpenedInterpretationAudit>();
+const maximumCachedAudits = 4;
+
+const auditKey = (file: AstralFile): string => [
+  file.crc.sha256,
+  file["astral-calculation"].provenance.calculationFingerprint,
+  file["astral-chart"].provenance.generatedAt,
+].join(":");
+
+const cloneAudit = (value: OpenedInterpretationAudit): OpenedInterpretationAudit => ({
+  complete: value.complete,
+  invalidUnitIds: [...value.invalidUnitIds],
+});
+
+const cachedAudit = (key: string): OpenedInterpretationAudit | null => {
+  const value = auditCache.get(key);
+  if (value === undefined) return null;
+  auditCache.delete(key);
+  auditCache.set(key, value);
+  return cloneAudit(value);
+};
+
+const rememberAudit = (key: string, value: OpenedInterpretationAudit): void => {
+  auditCache.delete(key);
+  auditCache.set(key, cloneAudit(value));
+  while (auditCache.size > maximumCachedAudits) {
+    const oldest = auditCache.keys().next().value as string | undefined;
+    if (oldest === undefined) return;
+    auditCache.delete(oldest);
+  }
+};
+
 const compatibilityDomainSet = new Set<CompatibilityDomain>(compatibilityDomains);
 
 const compatibilityDomain = (value: string | undefined): CompatibilityDomain | null =>
@@ -217,6 +249,10 @@ const dependentInvalidUnits = (
 };
 
 export const auditOpenedInterpretations = (file: AstralFile): OpenedInterpretationAudit => {
+  const key = auditKey(file);
+  const cached = cachedAudit(key);
+  if (cached !== null) return cached;
+
   const directlyInvalid = file["astral-calculation"].interpretationPlan.units
     .filter((unit) => !unitValid(file, unit))
     .map(({ id }) => id);
@@ -228,8 +264,10 @@ export const auditOpenedInterpretations = (file: AstralFile): OpenedInterpretati
   }
 
   const invalidUnitIds = dependentInvalidUnits(file, directlyInvalid);
-  return {
+  const result = {
     complete: invalidUnitIds.length === 0,
     invalidUnitIds,
-  };
+  } satisfies OpenedInterpretationAudit;
+  rememberAudit(key, result);
+  return cloneAudit(result);
 };
