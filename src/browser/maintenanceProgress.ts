@@ -4,6 +4,7 @@ interface MaintenanceBaseline {
   startedAt: number;
   remainingAtStart: number | null;
   acceptedAtStart: number | null;
+  seenProgress: boolean;
 }
 
 let baseline: MaintenanceBaseline | null = null;
@@ -26,17 +27,38 @@ const readMaintenanceStart = (): void => {
       startedAt: Date.now(),
       remainingAtStart: Number.parseInt(partial[1] ?? "0", 10),
       acceptedAtStart: null,
+      seenProgress: false,
     };
     return;
   }
   if (/Opening the full generation screen\.[\s\S]*every required interpretation will be rebuilt/u.test(message)) {
-    baseline = { startedAt: Date.now(), remainingAtStart: null, acceptedAtStart: 0 };
+    baseline = {
+      startedAt: Date.now(),
+      remainingAtStart: null,
+      acceptedAtStart: 0,
+      seenProgress: false,
+    };
   }
 };
 
 const updateEta = (): void => {
   const selected = baseline;
   if (selected === null) return;
+
+  const error = element<HTMLElement>("#errorCard");
+  if (error !== null && !error.classList.contains("hidden")) {
+    baseline = null;
+    return;
+  }
+
+  const card = element<HTMLElement>("#progressCard");
+  const visible = card !== null && !card.classList.contains("hidden");
+  if (!visible) {
+    if (selected.seenProgress) baseline = null;
+    return;
+  }
+  selected.seenProgress = true;
+
   const progress = element<HTMLElement>("#progressNumbers")?.textContent ?? "";
   const values = /(\d+)\s+of\s+(\d+)/u.exec(progress);
   if (values === null) return;
@@ -74,5 +96,9 @@ const sync = (): void => {
 const observer = new MutationObserver(sync);
 const status = element<HTMLElement>("#canonicaliseStatus");
 const progress = element<HTMLElement>("#progressNumbers");
+const progressCard = element<HTMLElement>("#progressCard");
+const errorCard = element<HTMLElement>("#errorCard");
 if (status !== null) observer.observe(status, { childList: true, characterData: true, subtree: true });
 if (progress !== null) observer.observe(progress, { childList: true, characterData: true, subtree: true });
+if (progressCard !== null) observer.observe(progressCard, { attributes: true, attributeFilter: ["class"] });
+if (errorCard !== null) observer.observe(errorCard, { attributes: true, attributeFilter: ["class"] });
