@@ -244,6 +244,33 @@ const expire = (token: symbol): void => {
   if (queued?.token === token) queued = null;
 };
 
+const guardQueuedSubmission = (token: symbol): void => {
+  const errorCard = element<HTMLElement>("#errorCard");
+  let observer: MutationObserver | null = null;
+  const stop = (): void => {
+    observer?.disconnect();
+    observer = null;
+  };
+  const inspect = (): void => {
+    if (queued?.token !== token) {
+      stop();
+      return;
+    }
+    if (errorCard !== null && !errorCard.classList.contains("hidden")) {
+      expire(token);
+      stop();
+    }
+  };
+  if (errorCard !== null) {
+    observer = new MutationObserver(inspect);
+    observer.observe(errorCard, { attributes: true, attributeFilter: ["class"] });
+  }
+  window.setTimeout(() => {
+    expire(token);
+    stop();
+  }, 60_000);
+};
+
 const preferredGender = (value: unknown): PreferredGender =>
   value === "female" || value === "non-binary" ? value : "male";
 
@@ -411,11 +438,9 @@ const navigateAndSubmit = (): void => {
   const form = element<HTMLFormElement>("#chartForm");
   const submitter = element<HTMLButtonElement>("#generateButton");
   if (form === null || submitter === null) throw new Error("The main chart generator is unavailable");
-  form.dispatchEvent(new SubmitEvent("submit", {
-    bubbles: true,
-    cancelable: true,
-    submitter,
-  }));
+  if (!form.reportValidity()) throw new Error("The embedded chart data could not populate every required generation field");
+  form.requestSubmit(submitter);
+
   const reveal = (attempt = 0): void => {
     const progress = element<HTMLElement>("#progressCard");
     if (progress !== null && !progress.classList.contains("hidden")) {
@@ -460,9 +485,15 @@ const startMaintenanceRecalculation = async (): Promise<void> => {
   setStatus(checkpoint === null
     ? "Opening the full generation screen. The interpretation basis changed or the file is legacy, so every required interpretation will be rebuilt with live ETA, stages, lanes and cost."
     : `Opening the full generation screen. ${remaining ?? 0} missing or invalid interpretation unit${remaining === 1 ? "" : "s"} will be rebuilt; valid units remain accepted.`);
+
   const token = queue(checkpoint, key);
-  navigateAndSubmit();
-  setTimeout(() => expire(token), 10_000);
+  try {
+    guardQueuedSubmission(token);
+    navigateAndSubmit();
+  } catch (cause: unknown) {
+    expire(token);
+    throw cause;
+  }
 };
 
 document.addEventListener("click", (event) => {
