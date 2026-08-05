@@ -163,6 +163,7 @@ HTMLDialogElement.prototype.showModal = function biometricPackageDialog(): void 
     if (opening && status !== null) {
       status.textContent = "The password is discarded after opening unless you explicitly protect it with the optional biometric vault.";
     }
+    this.addEventListener("close", () => { pendingRemember = null; }, { once: true });
   }
   nativeShowModal.call(this);
 };
@@ -191,11 +192,22 @@ document.addEventListener("submit", (event) => {
   };
 }, true);
 
-document.addEventListener("close", (event) => {
-  if (event.target instanceof HTMLDialogElement && event.target.id === "astralPackageDialog") {
-    pendingRemember = null;
+const rememberProtectedPassword = async (
+  fingerprint: string,
+  password: string,
+): Promise<void> => {
+  const exists = await credentialVaultExistsForUse();
+  if (exists) await unlockCredentialVaultForUse();
+  const previous = loadPackagePassword(fingerprint);
+  try {
+    await rememberPackagePasswordWithBiometrics(fingerprint, password);
+    rememberPackageFingerprint(fingerprint);
+  } catch (cause: unknown) {
+    if (previous === null) forgetPackagePassword(fingerprint);
+    else savePackagePassword(fingerprint, previous);
+    throw cause;
   }
-}, true);
+};
 
 document.addEventListener("change", (event) => {
   const input = event.target;
@@ -208,16 +220,10 @@ document.addEventListener("change", (event) => {
     selectedPackage = null;
     if (pending !== null && file === pending.file) {
       const fingerprint = pending.fingerprint;
-      const previous = loadPackagePassword(fingerprint);
       let password = pending.password;
       pending.password = "";
-      void rememberPackagePasswordWithBiometrics(fingerprint, password)
-        .then(() => rememberPackageFingerprint(fingerprint))
-        .catch((cause: unknown) => {
-          if (previous === null) forgetPackagePassword(fingerprint);
-          else savePackagePassword(fingerprint, previous);
-          report(cause);
-        })
+      void rememberProtectedPassword(fingerprint, password)
+        .catch(report)
         .finally(() => { password = ""; });
     }
     return;
