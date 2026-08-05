@@ -12,6 +12,8 @@ const aad = new TextEncoder().encode(vaultSchema);
 export interface BrowserSecretSnapshot {
   openAiKey: string;
   signingKeyText: string | null;
+  /** Passwords are indexed by the SHA-256 of reconstructed canonical chart JSON. */
+  packagePasswords?: Record<string, string>;
 }
 
 interface VaultRecord {
@@ -38,6 +40,20 @@ const random = (length: number): Uint8Array => crypto.getRandomValues(new Uint8A
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const packagePasswords = (value: unknown): Record<string, string> => {
+  if (!record(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([id, password]) =>
+    /^sha256:[a-f0-9]{64}$/u.test(id)
+    && typeof password === "string"
+    && password.length > 0)) as Record<string, string>;
+};
+
+const selectedSnapshot = (snapshot: BrowserSecretSnapshot): BrowserSecretSnapshot => ({
+  openAiKey: snapshot.openAiKey,
+  signingKeyText: snapshot.signingKeyText,
+  packagePasswords: packagePasswords(snapshot.packagePasswords),
+});
 
 const requestValue = <T>(request: IDBRequest<T>): Promise<T> => new Promise((resolve, reject) => {
   request.addEventListener("success", () => resolve(request.result), { once: true });
@@ -172,7 +188,7 @@ const encrypt = async (
   snapshot: BrowserSecretSnapshot,
 ): Promise<{ iv: string; ciphertext: string }> => {
   const iv = random(12);
-  const plaintext = new TextEncoder().encode(JSON.stringify(snapshot));
+  const plaintext = new TextEncoder().encode(JSON.stringify(selectedSnapshot(snapshot)));
   const encrypted = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: ownedBuffer(iv), additionalData: ownedBuffer(aad), tagLength: 128 },
     key,
@@ -199,7 +215,11 @@ const decrypt = async (key: CryptoKey, value: VaultRecord): Promise<BrowserSecre
   if (signingKeyText !== null && typeof signingKeyText !== "string") {
     throw new Error("The decrypted signing key is malformed");
   }
-  return { openAiKey, signingKeyText };
+  return {
+    openAiKey,
+    signingKeyText,
+    packagePasswords: packagePasswords(parsed["packagePasswords"]),
+  };
 };
 
 const ensureSupport = (): void => {
@@ -229,7 +249,7 @@ class BrowserVault {
     const signingKeyText = localStorage.getItem(legacySigningStorageKey)?.trim() ?? null;
     return openAiKey.length === 0 && signingKeyText === null
       ? null
-      : { openAiKey, signingKeyText };
+      : { openAiKey, signingKeyText, packagePasswords: {} };
   }
 
   clearLegacy(): void {
@@ -277,10 +297,7 @@ class BrowserVault {
   save(snapshot: BrowserSecretSnapshot): Promise<void> {
     const key = this.#key;
     if (key === null || this.#record === null) return Promise.resolve();
-    const selected: BrowserSecretSnapshot = {
-      openAiKey: snapshot.openAiKey,
-      signingKeyText: snapshot.signingKeyText,
-    };
+    const selected = selectedSnapshot(snapshot);
     const pending = this.#writes.then(async () => {
       const current = this.#record;
       if (current === null) return;
