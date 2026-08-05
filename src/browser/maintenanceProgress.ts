@@ -8,6 +8,7 @@ interface MaintenanceBaseline {
 }
 
 let baseline: MaintenanceBaseline | null = null;
+let lastStartMessage = "";
 
 const formatDuration = (seconds: number): string => {
   if (!Number.isFinite(seconds) || seconds < 0) return "Calculating…";
@@ -21,6 +22,9 @@ const formatDuration = (seconds: number): string => {
 
 const readMaintenanceStart = (): void => {
   const message = element<HTMLElement>("#canonicaliseStatus")?.textContent ?? "";
+  if (message === lastStartMessage) return;
+  lastStartMessage = message;
+
   const partial = /Opening the full generation screen\. (\d+) missing or invalid interpretation unit/u.exec(message);
   if (partial !== null) {
     baseline = {
@@ -88,17 +92,21 @@ const updateEta = (): void => {
   output.textContent = formatDuration(etaSeconds);
 };
 
-const sync = (): void => {
-  readMaintenanceStart();
-  updateEta();
-};
-
-const observer = new MutationObserver(sync);
 const status = element<HTMLElement>("#canonicaliseStatus");
 const progress = element<HTMLElement>("#progressNumbers");
 const progressCard = element<HTMLElement>("#progressCard");
 const errorCard = element<HTMLElement>("#errorCard");
-if (status !== null) observer.observe(status, { childList: true, characterData: true, subtree: true });
-if (progress !== null) observer.observe(progress, { childList: true, characterData: true, subtree: true });
-if (progressCard !== null) observer.observe(progressCard, { attributes: true, attributeFilter: ["class"] });
-if (errorCard !== null) observer.observe(errorCard, { attributes: true, attributeFilter: ["class"] });
+
+if (status !== null) {
+  new MutationObserver(() => {
+    readMaintenanceStart();
+    updateEta();
+  }).observe(status, { childList: true, characterData: true, subtree: true });
+}
+for (const target of [progress, progressCard, errorCard]) {
+  if (target === null) continue;
+  const options = target === progress
+    ? { childList: true, characterData: true, subtree: true }
+    : { attributes: true, attributeFilter: ["class"] };
+  new MutationObserver(updateEta).observe(target, options);
+}
