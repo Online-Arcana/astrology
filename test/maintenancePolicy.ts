@@ -4,16 +4,18 @@ const assert: (condition: unknown, message: string) => asserts condition = (cond
   if (!condition) throw new Error(message);
 };
 
-const [policy, auditUi, auditCore, progress, resume, entry] = await Promise.all([
+const [policy, auditUi, auditCore, progress, availability, resume, entry] = await Promise.all([
   readFile("src/browser/maintenancePolicy.ts", "utf8"),
   readFile("src/browser/maintenanceAuditUi.ts", "utf8"),
   readFile("src/browser/maintenanceAudit.ts", "utf8"),
   readFile("src/browser/maintenanceProgress.ts", "utf8"),
+  readFile("src/browser/maintenanceAvailability.ts", "utf8"),
   readFile("src/browser/maintenanceResume.ts", "utf8"),
   readFile("src/browser/browserTools.ts", "utf8"),
 ]);
 
 const progressImport = entry.indexOf('import("./maintenanceProgress.js")');
+const availabilityImport = entry.indexOf('import("./maintenanceAvailability.js")');
 const resumeImport = entry.indexOf('import("./maintenanceResume.js")');
 
 const checks: readonly [boolean, string][] = [
@@ -35,7 +37,9 @@ const checks: readonly [boolean, string][] = [
   [/#progressCard/u.test(resume) && /scrollIntoView/u.test(resume), "the normal progress, stage, lane, ETA and billing interface must be brought into view"],
   [/remainingAtStart/u.test(progress) && /total - \(selected\.remainingAtStart/u.test(progress), "maintenance ETA must start from accepted recovered work rather than zero"],
   [/seenProgress/u.test(progress) && /#errorCard/u.test(progress), "maintenance ETA state must clear after failure or an abandoned run"],
-  [progressImport >= 0 && resumeImport > progressImport, "remaining-work ETA must initialise before the maintenance resume handler"],
+  [/#generateButton/u.test(availability) && /\.disabled !== true/u.test(availability), "maintenance recalculation must detect whether another generation is already active"],
+  [/event\.stopImmediatePropagation\(\)/u.test(availability) && /Finish or stop the current chart generation/u.test(availability), "overlapping maintenance generation must be blocked before a checkpoint is queued"],
+  [progressImport >= 0 && availabilityImport > progressImport && resumeImport > availabilityImport, "ETA and overlap guards must initialise before the maintenance resume handler"],
   [/import\("\.\/maintenanceResume\.js"\)/u.test(entry), "browser tools must initialise full-interface maintenance resume before the reduced policy handler"],
 ];
 
