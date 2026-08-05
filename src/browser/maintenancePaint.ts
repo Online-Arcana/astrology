@@ -1,7 +1,14 @@
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
 
 const nextPaint = (): Promise<void> => new Promise((resolve) => {
-  requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  let complete = false;
+  const finish = (): void => {
+    if (complete) return;
+    complete = true;
+    resolve();
+  };
+  window.setTimeout(finish, 150);
+  requestAnimationFrame(() => requestAnimationFrame(finish));
 });
 
 const progressCard = (): HTMLElement | null => element<HTMLElement>("#progressCard");
@@ -26,6 +33,9 @@ const showPreparation = (): void => {
   if (summary !== null) {
     summary.textContent = "Loading accepted interpretations into the normal generation runtime. The live lanes, ETA, token usage and cost will appear next.";
   }
+
+  const eta = element<HTMLElement>("#generationEta");
+  if (eta !== null) eta.textContent = "Calculating…";
 
   element<HTMLElement>("#laneList")?.replaceChildren();
   element<HTMLElement>("#billingPanel")?.classList.add("hidden");
