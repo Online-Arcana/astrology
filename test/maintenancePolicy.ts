@@ -22,7 +22,7 @@ const checks: readonly [boolean, string][] = [
   [/auditOpenedInterpretations/u.test(resume) && /invalidUnitIds/u.test(resume), "recalculation must derive the exact missing or invalid units from the maintenance audit"],
   [/ChartGenerationCheckpoint/u.test(resume) && /units\[unit\.id\] = phaseResult/u.test(resume), "valid existing interpretations must become accepted recovery units"],
   [/this\.resume\(selected\.checkpoint/u.test(resume), "maintenance recalculation must resume only unfinished units through the normal runtime"],
-  [/\.tab\[data-panel=\\"createPanel\\"\]/u.test(resume) && /#chartForm/u.test(resume), "recalculation must return to and submit the main Create chart screen"],
+  [/\.tab\[data-panel="createPanel"\]/u.test(resume) && /#chartForm/u.test(resume), "recalculation must return to and submit the main Create chart screen"],
   [/#progressCard/u.test(resume) && /scrollIntoView/u.test(resume), "the normal progress, stage, lane, ETA and billing interface must be brought into view"],
   [/import\("\.\/maintenanceResume\.js"\)/u.test(entry), "browser tools must initialise full-interface maintenance resume before the reduced policy handler"],
 ];
