@@ -8,6 +8,7 @@ import {
   saveSigningKey,
   signingKeyText,
 } from "./keys.js";
+import { clearPackageFingerprints } from "./packageFingerprints.js";
 import { browserVault, type BrowserSecretSnapshot } from "./vault.js";
 
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
@@ -221,6 +222,7 @@ const unlockVault = async (): Promise<BrowserSecretSnapshot> => {
 const removeVault = async (): Promise<void> => {
   if (!confirm("Delete the encrypted credential vault from this browser? Keep an exported copy of any key you still need.")) return;
   await browserVault.remove();
+  clearPackageFingerprints();
   clearPageSecrets();
   unlocked = false;
   await updateState();
@@ -274,6 +276,9 @@ const createUi = (): void => {
   }, true);
 };
 
+/** True only when this browser currently has a passkey-encrypted vault record. */
+export const credentialVaultExistsForUse = (): Promise<boolean> => browserVault.exists();
+
 /**
  * Unlock the passkey vault as the direct continuation of another protected
  * action. A recognised encrypted chart calls this and then decrypts immediately
@@ -289,12 +294,12 @@ export const unlockCredentialVaultForUse = async (): Promise<BrowserSecretSnapsh
 
 /** Save a chart password only after it is protected by the same biometric vault. */
 export const rememberPackagePasswordWithBiometrics = async (
-  contentSha256: string,
+  encryptedPackageSha256: string,
   password: string,
 ): Promise<void> => {
   const exists = await browserVault.exists();
   if (exists && !browserVault.unlocked) await unlockVault();
-  savePackagePassword(contentSha256, password);
+  savePackagePassword(encryptedPackageSha256, password);
   if (!exists) {
     await protectVault();
     return;
