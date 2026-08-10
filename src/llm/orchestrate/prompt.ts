@@ -1,3 +1,15 @@
+export const worldviewNeutralityRules = [
+  "Keep every interpretation religiously and metaphysically agnostic.",
+  "Do not assume, assert or imply belief in God or gods, divine will, providence, prayer, angels, demons, heaven, hell, salvation or religious doctrine.",
+  "Do not assume, assert or imply souls, soul contracts, soul purpose, karma, karmic debt, past lives, reincarnation or spiritual obligations.",
+  "Do not describe people, relationships or events as fated, destined, predestined, meant to be or cosmically required.",
+  "Do not give the universe, cosmos, life or any unnamed external force intentions such as wanting, teaching, sending, placing, guiding or choosing events for the person.",
+  "Do not invoke supernatural intervention, divine purpose, cosmic plans, sacred callings, spiritual missions or metaphysical causes.",
+  "Technical astrological proper names such as Part of Spirit may remain as names only; never infer a religious or spiritual claim from the name.",
+  "Use psychologically and experientially neutral language that a religious, non-religious or uncertain reader could all read without accepting a metaphysical premise.",
+  "Treat astrology as an interpretive symbolic framework: prefer wording such as can describe, may suggest, is associated with or astrologically points towards, and do not claim that a placement literally causes a trait or event.",
+] as const;
+
 export const baseInterpretationRules = [
   "Return only the strict schema.",
   "Fill every required field.",
@@ -8,6 +20,7 @@ export const baseInterpretationRules = [
   "Use only the supplied deterministic astrology and permitted references.",
   "Keep tropical and sidereal factors distinct.",
   "Do not change supplied scores, ranks, levels, relations or availability.",
+  ...worldviewNeutralityRules,
 ] as const;
 
 export const refinedInterpretationRules = [
