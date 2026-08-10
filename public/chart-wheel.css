@@ -1,0 +1,273 @@
+.chart-wheel-card {
+  overflow: hidden;
+}
+
+.chart-wheel-card .section-heading {
+  margin-bottom: .7rem;
+}
+
+.chart-wheel-card .wheel-intro {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.chart-wheel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, .36fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.chart-wheel-graphic {
+  min-width: 0;
+  padding: .65rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(182, 156, 255, .08), transparent 52%),
+    rgba(9, 7, 21, .55);
+}
+
+.chart-wheel svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(72vh, 52rem);
+  overflow: visible;
+}
+
+.wheel-frame {
+  fill: rgba(9, 7, 21, .22);
+  stroke: rgba(213, 200, 255, .62);
+  stroke-width: 2;
+}
+
+.wheel-sign {
+  stroke: rgba(213, 200, 255, .24);
+  stroke-width: 1.2;
+  cursor: pointer;
+  transition: opacity .14s ease, filter .14s ease, stroke-width .14s ease;
+}
+
+.wheel-sign-aries,
+.wheel-sign-leo,
+.wheel-sign-sagittarius { fill: rgba(210, 100, 104, .19); }
+.wheel-sign-taurus,
+.wheel-sign-virgo,
+.wheel-sign-capricorn { fill: rgba(105, 171, 130, .18); }
+.wheel-sign-gemini,
+.wheel-sign-libra,
+.wheel-sign-aquarius { fill: rgba(125, 160, 205, .18); }
+.wheel-sign-cancer,
+.wheel-sign-scorpio,
+.wheel-sign-pisces { fill: rgba(119, 112, 190, .21); }
+
+.wheel-sign:focus-visible,
+.wheel-house-sector:focus-visible,
+.wheel-point:focus-visible,
+.wheel-aspect-hit:focus-visible {
+  outline: none;
+  filter: drop-shadow(0 0 7px rgba(213, 200, 255, .9));
+}
+
+.wheel-sign-glyph,
+.wheel-house-number,
+.wheel-degree-tick,
+.wheel-house-cusp,
+.wheel-point-leader,
+.wheel-point-tick,
+.wheel-aspect,
+.wheel-untimed-note {
+  pointer-events: none;
+}
+
+.wheel-glyph-image {
+  pointer-events: none;
+}
+
+.wheel-glyph-fallback,
+.wheel-point-text,
+.wheel-house-number,
+.wheel-glyph-modifier {
+  fill: #f7f3ff;
+  font-family: Georgia, "Times New Roman", serif;
+  pointer-events: none;
+}
+
+.wheel-glyph-modifier {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-weight: 900;
+  paint-order: stroke;
+  stroke: #0d0b1a;
+  stroke-width: 3px;
+}
+
+.wheel-point-text {
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.wheel-degree-tick {
+  stroke: rgba(213, 200, 255, .32);
+  stroke-width: 1;
+}
+
+.wheel-degree-tick.major {
+  stroke: rgba(213, 200, 255, .66);
+  stroke-width: 1.6;
+}
+
+.wheel-house-sector {
+  fill: rgba(182, 156, 255, .018);
+  stroke: transparent;
+  cursor: pointer;
+  transition: fill .14s ease, opacity .14s ease;
+}
+
+.wheel-house-sector:hover,
+.wheel-house-sector.is-active {
+  fill: rgba(182, 156, 255, .16);
+}
+
+.wheel-house-cusp {
+  stroke: rgba(213, 200, 255, .28);
+  stroke-width: 1.25;
+}
+
+.wheel-house-cusp.angular {
+  stroke: rgba(245, 241, 255, .78);
+  stroke-width: 2.6;
+}
+
+.wheel-house-number {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  fill: rgba(245, 241, 255, .65);
+}
+
+.wheel-aspect {
+  stroke-width: 1.35;
+  opacity: .52;
+}
+
+.wheel-aspect.major { stroke-width: 1.7; opacity: .62; }
+.wheel-aspect-flowing { stroke: rgba(126, 183, 235, .74); }
+.wheel-aspect-challenging { stroke: rgba(235, 125, 139, .75); }
+.wheel-aspect-contextual { stroke: rgba(213, 200, 255, .55); }
+.wheel-aspect-adjusting { stroke: rgba(236, 190, 111, .7); stroke-dasharray: 6 4; }
+.wheel-aspect-creative { stroke: rgba(174, 133, 229, .72); stroke-dasharray: 3 4; }
+
+.wheel-aspect-hit {
+  stroke: transparent;
+  stroke-width: 13;
+  cursor: pointer;
+}
+
+.wheel-point {
+  cursor: pointer;
+  transition: opacity .14s ease, filter .14s ease;
+}
+
+.wheel-point:hover,
+.wheel-point.is-active {
+  filter: drop-shadow(0 0 7px rgba(213, 200, 255, .9));
+}
+
+.wheel-point-leader {
+  stroke: rgba(213, 200, 255, .23);
+  stroke-width: 1;
+}
+
+.wheel-point-tick {
+  stroke: rgba(245, 241, 255, .76);
+  stroke-width: 1.8;
+}
+
+.wheel-has-selection .wheel-sign,
+.wheel-has-selection .wheel-house-sector,
+.wheel-has-selection .wheel-point {
+  opacity: .34;
+}
+
+.wheel-has-selection .is-active {
+  opacity: 1;
+}
+
+.wheel-detail {
+  position: sticky;
+  top: 1rem;
+  min-height: 12rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(11, 9, 27, .72);
+}
+
+.wheel-detail-title {
+  display: block;
+  margin-bottom: .85rem;
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.wheel-detail-list {
+  display: grid;
+  grid-template-columns: minmax(6.2rem, .38fr) 1fr;
+  gap: .5rem .8rem;
+  margin: 0;
+}
+
+.wheel-detail-list dt {
+  color: var(--accent-strong);
+  font-size: .77rem;
+  font-weight: 800;
+}
+
+.wheel-detail-list dd {
+  margin: 0;
+  color: #eee9fa;
+  font-size: .8rem;
+  line-height: 1.45;
+}
+
+.wheel-detail p {
+  margin: .9rem 0 0;
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.wheel-untimed-note {
+  fill: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+#fileChartWheelCard {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+  .chart-wheel {
+    grid-template-columns: 1fr;
+  }
+  .wheel-detail {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .chart-wheel-graphic {
+    padding: .25rem;
+    border-radius: .85rem;
+  }
+  .wheel-detail-list {
+    grid-template-columns: 1fr;
+    gap: .15rem;
+  }
+  .wheel-detail-list dd {
+    margin-bottom: .55rem;
+  }
+}
