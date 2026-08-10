@@ -21,6 +21,24 @@ const reviewedHandPage = (
   ],
 });
 
+const reviewedAstrodienstPage = (
+  id: string,
+  title: string,
+  url: string,
+  allowedSections: readonly string[],
+  notes: readonly string[],
+): CorpusSource => ({
+  id,
+  title,
+  author: null,
+  publisher: "Astrodienst",
+  editionOrDate: null,
+  role: "semantic",
+  reviewStatus: "approved",
+  allowedSections: [...allowedSections],
+  notes: [`Reviewed public source: ${url}`, ...notes],
+});
+
 /**
  * Source approval is document-specific. Section IDs are stable provenance keys
  * used by CorpusClaim.sourceRefs; descriptive review notes stay in `notes`.
@@ -137,23 +155,62 @@ export const corpusSources: readonly CorpusSource[] = [
     ["ascendant-presentation", "descendant-world-facing", "midheaven-life-direction", "ic-home-history"],
     "Only the descriptive angle passages are approved. Religious, transcendent, fate, universal-purpose and predictive claims elsewhere on the page are excluded.",
   ),
-  {
-    id: "semantic.astrodienst.brief-intro-aspects",
-    title: "A Brief Introduction to Astrology: Aspects",
-    author: null,
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
+
+  reviewedAstrodienstPage(
+    "semantic.astrodienst.brief-intro-aspects",
+    "A Brief Introduction to Astrology: Aspects",
+    "https://www.astro.com/astrology/in_aspect_e.htm",
+    [
       "conjunction", "opposition", "square", "trine", "sextile",
       "semisquare", "sesquiquadrate", "semisextile", "quincunx", "quintile", "biquintile",
     ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_aspect_e.htm",
-      "Approved only for the relationship behaviour assigned to the named aspects. Orb tables and unrelated material are not semantic claims.",
+    ["Approved only for the relationship behaviour assigned to the named aspects. Orb tables and unrelated material are not semantic claims."],
+  ),
+  reviewedAstrodienstPage(
+    "semantic.astrodienst.brief-intro-houses",
+    "A Brief Introduction to Astrology: Houses",
+    "https://www.astro.com/astrology/in_house2_e.htm",
+    [
+      "house-1-self-presentation",
+      "house-2-values-resources",
+      "house-3-communication-local-relations",
+      "house-4-home-origins",
+      "house-5-creativity-pleasure-children",
+      "house-6-work-routine-care",
+      "house-7-partnerships",
+      "house-8-shared-resources-loss",
+      "house-9-worldview-learning-travel",
+      "house-10-career-public-development",
+      "house-11-friends-groups-society",
+      "house-12-retreat-withdrawal-institutions",
     ],
-  },
+    [
+      "Only the practical life-domain descriptions are approved.",
+      "House 8 metaphysical/death framing, House 9 religious or spiritual assumptions, and House 12 religious-institution framing are excluded.",
+      "Gendered parent assignments are not carried into corpus claims.",
+    ],
+  ),
+  reviewedAstrodienstPage(
+    "semantic.astrodienst.brief-intro-signs",
+    "A Brief Introduction to Astrology: The Signs",
+    "https://www.astro.com/astrology/in_signs_e.htm",
+    [
+      "sign-aries-summary", "sign-taurus-summary", "sign-gemini-summary", "sign-cancer-summary",
+      "sign-leo-summary", "sign-virgo-summary", "sign-libra-summary", "sign-scorpio-summary",
+      "sign-sagittarius-summary", "sign-capricorn-summary", "sign-aquarius-summary", "sign-pisces-summary",
+    ],
+    [
+      "Approved only for the short sign summaries and their element/mode descriptions.",
+      "Longer personality essays, gendered generalisations, religious/spiritual language and deterministic claims are excluded.",
+    ],
+  ),
+  reviewedAstrodienstPage(
+    "semantic.astrodienst.brief-intro-elements",
+    "A Brief Introduction to Astrology: The four Elements and the Signs",
+    "https://www.astro.com/astrology/in_elements_e.htm",
+    ["fire-style", "earth-style", "air-style", "water-style", "cardinal-mode", "fixed-mode", "mutable-mode"],
+    ["Approved for element and modality expression styles only. Claims that these classifications establish objective personality facts are not imported."],
+  ),
 
   {
     id: "semantic.tompkins.contemporary-handbook",
@@ -220,9 +277,7 @@ export const corpusSources: readonly CorpusSource[] = [
     role: "architecture",
     reviewStatus: "approved",
     allowedSections: ["combinatorial-structure"],
-    notes: [
-      "Architecture reference only; it cannot provide interpretation claims.",
-    ],
+    notes: ["Architecture reference only; it cannot provide interpretation claims."],
   },
 ] as const;
 
