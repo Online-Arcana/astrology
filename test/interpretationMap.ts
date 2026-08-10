@@ -26,7 +26,11 @@ const calculation = {
     points: {
       north_node_mean: { id: "north_node_mean", position: { value: { longitudeDegrees: 10 } } },
       part_of_spirit: { id: "part_of_spirit", position: { value: { longitudeDegrees: 30 } } },
-      uranus: { id: "uranus", position: { value: { longitudeDegrees: 10 } } },
+      uranus: {
+        id: "uranus",
+        position: { value: { longitudeDegrees: 280, sign: "capricorn" } },
+        houses: { placidus: { value: { house: 1 } } },
+      },
     },
     houses: {
       placidus: {
@@ -79,6 +83,20 @@ test("mean and true calculation variants normalise to semantic node entities", (
   equal(result.ingredients[0]?.metadata["calculationVariant"], "mean", "calculation variant metadata");
   equal(result.ingredients.some(({ atomId }) => atomId.includes("tropical")), false, "zodiac must not become semantic atom");
   equal(result.chartMetadata.zodiac, "tropical", "zodiac remains chart metadata");
+});
+
+test("point placement decomposition includes point sign and house semantics", () => {
+  const result = decomposeInterpretationUnit(calculation, unit(
+    "tropical.point.uranus",
+    "points.uranus",
+    [ref("astral-calculation/system/points/uranus")],
+  ));
+  equal(
+    result.ingredients.map(({ atomId }) => atomId).join("|"),
+    "body.uranus|sign.capricorn|house.1",
+    "point placement composition",
+  );
+  equal(result.ingredients[2]?.metadata["placementFor"], "uranus", "house relation keeps the placed point ID private");
 });
 
 test("Part of Spirit is a technical point name rather than a metaphysical claim", () => {
