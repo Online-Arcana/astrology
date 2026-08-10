@@ -1,5 +1,6 @@
 import { compileInterpretationCorpus } from "../src/interpretation/corpus/compile.js";
 import { compileReviewedCorpus, reviewedCorpusAtoms } from "../src/interpretation/corpus/data/index.js";
+import { requiredCorpusAtomIds } from "../src/interpretation/corpus/requirements.js";
 import type { CorpusAtom, CorpusClaim, CorpusSource } from "../src/interpretation/corpus/types.js";
 
 const equal = <T>(actual: T, expected: T, message: string): void => {
@@ -161,10 +162,11 @@ test("the checked-in reviewed corpus contains every configured longitude aspect 
   for (const id of expected) equal(reviewedIds.has(`aspect.${id}`), true, `aspect.${id} exists`);
 });
 
-test("the checked-in reviewed corpus contains approved node lot and main-angle atoms", () => {
+test("the checked-in reviewed corpus contains all required node lot Lilith and angle atoms", () => {
   const expected = [
-    "point.north-node", "point.south-node", "point.part-of-fortune", "point.part-of-spirit",
+    "point.north-node", "point.south-node", "point.black-moon-lilith", "point.part-of-fortune", "point.part-of-spirit",
     "angle.ascendant", "angle.descendant", "angle.midheaven", "angle.imum-coeli",
+    "angle.vertex", "angle.antivertex", "angle.east-point",
   ];
   for (const id of expected) equal(reviewedIds.has(id), true, `${id} exists`);
 });
@@ -172,18 +174,31 @@ test("the checked-in reviewed corpus contains approved node lot and main-angle a
 test("the checked-in reviewed corpus compiles as a partial agnostic corpus", () => {
   const compiled = compileReviewedCorpus(false);
   equal(compiled.worldview, "agnostic", "reviewed corpus worldview");
-  equal(Object.keys(compiled.atoms).length >= 53, true, "reviewed corpus has the current reviewed atom set");
+  equal(Object.keys(compiled.atoms).length > 100, true, "reviewed corpus has the current broad atom set");
   equal(Object.keys(compiled.claims).length >= Object.keys(compiled.atoms).length, true, "every reviewed atom has semantic claims");
 });
 
-test("the checked-in corpus still refuses production compilation until remaining atoms are reviewed", () => {
+test("only eclipse semantics remain absent from the required atom set", () => {
+  const missing = requiredCorpusAtomIds.filter((id) => !reviewedIds.has(id));
+  const expected = [
+    "derived.eclipses-at-birth",
+    "derived.eclipses-prenatal-solar",
+    "derived.eclipses-prenatal-lunar",
+  ];
+  equal(JSON.stringify(missing), JSON.stringify(expected), "remaining required corpus atoms");
+});
+
+test("production compilation remains fail-closed while eclipse semantics are unapproved", () => {
   let failed = false;
   try {
     compileReviewedCorpus(true);
   } catch (cause: unknown) {
-    failed = cause instanceof Error && cause.message.includes("missing required atoms");
+    failed = cause instanceof Error
+      && cause.message.includes("derived.eclipses-at-birth")
+      && cause.message.includes("derived.eclipses-prenatal-solar")
+      && cause.message.includes("derived.eclipses-prenatal-lunar");
   }
-  equal(failed, true, "reviewed corpus must remain fail-closed while incomplete");
+  equal(failed, true, "reviewed corpus must name the remaining eclipse gap");
 });
 
 console.log(`1..${passed}`);
