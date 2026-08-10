@@ -130,6 +130,13 @@ export const corpusSources: readonly CorpusSource[] = [
     ["fortune-physical-social-world", "fortune-material-support", "spirit-will-intention", "spirit-chosen-career-direction"],
     "Only the named neutral passages are approved. Karmic, soul, spiritual-basis-of-illness, death, sex-role and other worldview-dependent material elsewhere in the article is excluded.",
   ),
+  reviewedHandPage(
+    "semantic.hand.transits-jupiter-angles",
+    "The transits of the planets - Transits of Jupiter",
+    "https://www.astro.com/astrology/in_hand2_jupiter_transits_e.htm",
+    ["ascendant-presentation", "descendant-world-facing", "midheaven-life-direction", "ic-home-history"],
+    "Only the descriptive angle passages are approved. Religious, transcendent, fate, universal-purpose and predictive claims elsewhere on the page are excluded.",
+  ),
   {
     id: "semantic.astrodienst.brief-intro-aspects",
     title: "A Brief Introduction to Astrology: Aspects",
