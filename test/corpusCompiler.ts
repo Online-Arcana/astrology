@@ -171,34 +171,16 @@ test("the checked-in reviewed corpus contains all required node lot Lilith and a
   for (const id of expected) equal(reviewedIds.has(id), true, `${id} exists`);
 });
 
-test("the checked-in reviewed corpus compiles as a partial agnostic corpus", () => {
-  const compiled = compileReviewedCorpus(false);
-  equal(compiled.worldview, "agnostic", "reviewed corpus worldview");
-  equal(Object.keys(compiled.atoms).length > 100, true, "reviewed corpus has the current broad atom set");
-  equal(Object.keys(compiled.claims).length >= Object.keys(compiled.atoms).length, true, "every reviewed atom has semantic claims");
-});
-
-test("only eclipse semantics remain absent from the required atom set", () => {
+test("the checked-in reviewed corpus covers the complete required atom set", () => {
   const missing = requiredCorpusAtomIds.filter((id) => !reviewedIds.has(id));
-  const expected = [
-    "derived.eclipses-at-birth",
-    "derived.eclipses-prenatal-solar",
-    "derived.eclipses-prenatal-lunar",
-  ];
-  equal(JSON.stringify(missing), JSON.stringify(expected), "remaining required corpus atoms");
+  equal(JSON.stringify(missing), "[]", "missing required corpus atoms");
 });
 
-test("production compilation remains fail-closed while eclipse semantics are unapproved", () => {
-  let failed = false;
-  try {
-    compileReviewedCorpus(true);
-  } catch (cause: unknown) {
-    failed = cause instanceof Error
-      && cause.message.includes("derived.eclipses-at-birth")
-      && cause.message.includes("derived.eclipses-prenatal-solar")
-      && cause.message.includes("derived.eclipses-prenatal-lunar");
-  }
-  equal(failed, true, "reviewed corpus must name the remaining eclipse gap");
+test("the checked-in reviewed corpus compiles as a complete agnostic production corpus", () => {
+  const compiled = compileReviewedCorpus(true);
+  equal(compiled.worldview, "agnostic", "reviewed corpus worldview");
+  equal(Object.keys(compiled.atoms).length >= requiredCorpusAtomIds.length, true, "compiled atom coverage");
+  equal(Object.keys(compiled.claims).length >= Object.keys(compiled.atoms).length, true, "every reviewed atom has semantic claims");
 });
 
 console.log(`1..${passed}`);
