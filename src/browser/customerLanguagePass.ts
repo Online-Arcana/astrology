@@ -136,11 +136,11 @@ const plainReadings = (): void => {
       if (explanation.textContent !== description) explanation.textContent = description;
     }
 
-    // The canonical title remains in data-original-title. Do not lock the
-    // rendered title: the technical enhancement pass may need to restore it
-    // briefly before regrouping late-arriving sections, after which this pass
-    // translates it back to customer language.
-    reading.dataset["viewerTitleLocked"] = "false";
+    // The canonical title remains in data-original-title. Once the hierarchy is
+    // complete, keep the visible customer label stable. The regroup guard
+    // explicitly unlocks/restores canonical titles only when a late ungrouped
+    // reading needs to be classified again.
+    reading.dataset["viewerTitleLocked"] = "true";
   }
 };
 
