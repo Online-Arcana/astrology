@@ -69,15 +69,17 @@ const birth: BirthInput = {
   preferredGender: "non-binary",
 };
 
+let schemaClients = 0;
 const unreachableClient = (): SchemaClient => ({
   id: undefined,
   run: async () => {
+    schemaClients += 1;
     throw new Error("schema client must not be reached before semantic provider validation");
   },
 });
 const schemaFactory: ChartSchemaFactory = () => () => unreachableClient();
 
-test("ChartGenerationService passes an explicit semantic provider into the live plan", async () => {
+test("ChartGenerationService preflights an explicit semantic provider before paid generation", async () => {
   let calls = 0;
   const semanticProvider: InterpretationSemanticProvider = {
     mapFor: () => {
@@ -88,7 +90,7 @@ test("ChartGenerationService passes an explicit semantic provider into the live 
   const service = new ChartGenerationService({
     calculation: { calculate: async () => calculation },
     schemaFactory,
-    config: readConfig({ ASTRAL_DEBUG_THROW_ON_INTERPRETATION_FAILURE: "true" }),
+    config: readConfig({}),
     version: "fixture",
     semanticProvider,
     now: () => "2026-08-10T14:00:00.000Z",
@@ -101,7 +103,8 @@ test("ChartGenerationService passes an explicit semantic provider into the live 
     message = cause instanceof Error ? cause.message : String(cause);
   }
   equal(calls, 1, "semantic provider call count");
-  equal(message, "semantic provider reached", "provider failure should remain fail-closed");
+  equal(schemaClients, 0, "semantic preflight must happen before a schema call");
+  equal(message, "semantic provider reached", "provider failure should remain fail-closed without debug mode");
 });
 
 console.log(`1..${passed}`);
