@@ -1,4 +1,5 @@
 import type { Config } from "../../config.js";
+import { worldviewDiscriminatorErrors, worldviewDiscriminatorInput, worldviewDiscriminatorShape } from "../audit/worldviewDiscriminator.js";
 import { coherenceIssues, conflictingUnits } from "./coherence.js";
 import { foundationPlan, wavePlan, type LanePlan } from "./planner.js";
 import { AdaptiveLimiter } from "./rateLimit.js";
@@ -32,6 +33,7 @@ interface ExecutionOptions {
   calculation: unknown;
   unit: InterpretationCall;
   client: SchemaClient;
+  createClient: SchemaClientFactory;
   config: Config;
   limiter: AdaptiveLimiter;
   hooks: RunHooks;
@@ -168,6 +170,57 @@ const safeAudit = (
   }
 };
 
+const resolveWorldviewReview = async (
+  options: ExecutionOptions,
+  audit: UnitAudit<object>,
+): Promise<UnitAudit<object>> => {
+  const review = audit.worldviewReview ?? [];
+  if (!audit.valid || review.length === 0) return audit;
+
+  const client = options.createClient();
+  options.counters.calls += 1;
+  try {
+    const result = await options.limiter.run(() => client.run(
+      worldviewDiscriminatorShape,
+      worldviewDiscriminatorInput(options.unit.id, audit.value, review),
+      {
+        body: {
+          model: options.config.openai.smallModel,
+          store: false,
+          reasoning: { effort: "none" },
+          max_output_tokens: 512,
+        },
+        retries: 0,
+      },
+    ));
+    conversation(client, options.counters);
+    const errors = worldviewDiscriminatorErrors(result);
+    if (errors.length === 0) {
+      return { ...audit, worldviewReview: [] };
+    }
+    return {
+      ...audit,
+      valid: false,
+      errors: [...new Set([...audit.errors, ...review, ...errors])],
+      soft: true,
+      repair: "audit",
+    };
+  } catch (cause: unknown) {
+    conversation(client, options.counters);
+    return {
+      ...audit,
+      valid: false,
+      errors: [...new Set([
+        ...audit.errors,
+        ...review,
+        `Worldview discriminator failed closed: ${cause instanceof Error ? cause.message : String(cause)}`,
+      ])],
+      soft: true,
+      repair: "audit",
+    };
+  }
+};
+
 const state = (
   unit: InterpretationCall,
   attempt: number,
@@ -190,13 +243,13 @@ const reconstructionResult = async (
 ): Promise<UnitResult<object>> => {
   options.hooks.onRepair?.(options.unit, attempt, "deterministic", errors);
   let rebuilt = reconstructUnit({ unit: options.unit, candidates });
-  let audited = safeAudit(options.unit, rebuilt.value, context);
+  let audited = await resolveWorldviewReview(options, safeAudit(options.unit, rebuilt.value, context));
 
   if (!audited.valid) {
     const forced = fieldsFromAuditErrors(options.unit, audited.errors);
     if (forced.size > 0) {
       rebuilt = reconstructUnit({ unit: options.unit, candidates: [rebuilt.value, ...candidates], forceFields: forced });
-      audited = safeAudit(options.unit, rebuilt.value, context);
+      audited = await resolveWorldviewReview(options, safeAudit(options.unit, rebuilt.value, context));
     }
   }
 
@@ -204,7 +257,7 @@ const reconstructionResult = async (
     throw new Error(`Interpretation unit ${options.unit.id} required deterministic reconstruction: ${errors.join("; ")}`);
   }
 
-  const warnings = [...new Set([...rebuilt.warnings, ...audited.errors])];
+  const warnings = [...new Set([...rebuilt.warnings, ...audited.errors, ...(audited.worldviewReview ?? [])])];
   if (!audited.valid) options.hooks.onSoftAccept?.(options.unit, attempt, warnings);
   const result: UnitResult<object> = {
     id: options.unit.id,
@@ -283,7 +336,7 @@ const executeUnit = async (options: ExecutionOptions): Promise<UnitResult<object
       return reconstructionResult(options, candidates, context, attempt, model, correction);
     }
 
-    const audited = safeAudit(options.unit, output, context);
+    const audited = await resolveWorldviewReview(options, safeAudit(options.unit, output, context));
     candidates.push(audited.value);
     if (audited.valid) {
       const result: UnitResult<object> = { id: options.unit.id, value: audited.value, attempts: attempt, model };
@@ -333,8 +386,12 @@ const validateResult = (
     throw new Error(`Recovered interpretation model is invalid for ${call.id}`);
   }
   const audited = safeAudit(call, result.value, { calculation, earlier, correction: [] });
-  if (!audited.valid && result.provenance?.repairedBy !== "deterministic") {
-    throw new Error(`Recovered interpretation unit ${call.id} failed audit: ${audited.errors.join("; ")}`);
+  const unresolvedWorldview = (audited.worldviewReview?.length ?? 0) > 0;
+  if ((!audited.valid || unresolvedWorldview) && result.provenance?.repairedBy !== "deterministic") {
+    throw new Error(`Recovered interpretation unit ${call.id} failed audit: ${[...audited.errors, ...(audited.worldviewReview ?? [])].join("; ")}`);
+  }
+  if (unresolvedWorldview) {
+    throw new Error(`Recovered deterministic interpretation unit ${call.id} requires worldview review and must be rebuilt`);
   }
   return { ...result, value: audited.value };
 };
@@ -461,7 +518,7 @@ const deterministicUnit = (
       repairedBy: "deterministic",
       repairKind: "xml_fallback",
       fallbackFields: rebuilt.fallbackFields,
-      auditWarnings: [...new Set([...rebuilt.warnings, ...audited.errors, String(cause)])],
+      auditWarnings: [...new Set([...rebuilt.warnings, ...audited.errors, ...(audited.worldviewReview ?? []), String(cause)])],
     },
   };
 };
@@ -550,6 +607,7 @@ const runCore = async (
         calculation,
         unit,
         client,
+        createClient,
         config,
         limiter,
         hooks,
@@ -650,6 +708,7 @@ const runCore = async (
           calculation,
           unit,
           client,
+          createClient,
           config,
           limiter,
           hooks,
@@ -717,6 +776,7 @@ const runCore = async (
           calculation,
           unit,
           client,
+          createClient,
           config,
           limiter,
           hooks,
