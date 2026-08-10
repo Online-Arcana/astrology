@@ -20,10 +20,15 @@ interface State {
   profile: FieldProfile;
   earlier: NarrativeEntry[];
   errors: string[];
+  worldviewReview: string[];
 }
 
 const report = (state: State, errors: readonly string[]): void => {
   state.errors.push(...errors);
+};
+
+const reviewWorldview = (state: State, reasons: readonly string[]): void => {
+  state.worldviewReview.push(...reasons);
 };
 
 const keyFor = (path: string): string | null => {
@@ -63,6 +68,7 @@ const auditText = (value: string, state: State, path: string): string => {
     priorFields: [...(profile.priorFields ?? []), ...state.earlier],
   });
   if (!result.valid) report(state, result.issues.map(({ message }) => message));
+  reviewWorldview(state, result.worldviewReview);
   if (result.value.length >= 20) state.earlier.push({ path, value: result.value });
   return result.value;
 };
@@ -88,6 +94,7 @@ const visit = (
         priorFields: [...(profile.priorFields ?? []), ...state.earlier],
       });
       if (!result.valid) report(state, result.issues.map(({ message }) => message));
+      reviewWorldview(state, result.worldviewReview);
       result.values.forEach((item, index) => {
         if (item.length >= 20) state.earlier.push({ path: `${path}[${index}]`, value: item });
       });
@@ -120,6 +127,7 @@ export const auditStructured = <T extends object>(
     profile,
     earlier: [],
     errors: [],
+    worldviewReview: [],
   };
   const audited = visit(value, state, profile.id, null) as T;
   const completion = auditCompletion(audited, profile.id);
@@ -127,6 +135,7 @@ export const auditStructured = <T extends object>(
     ...state.errors,
     ...completion.map(({ message }) => message),
   ])];
+  const worldviewReview = [...new Set(state.worldviewReview)];
   const needsRepair = errors.length > 0;
   const repair = state.errors.length === 0 && completion.length > 0
     ? "completion" as const
@@ -136,11 +145,8 @@ export const auditStructured = <T extends object>(
     valid: !needsRepair,
     value: audited,
     errors,
-    // NLP is a free detector, not an execution gate. The orchestrator sends
-    // every finding to the small model for the smallest possible correction.
-    // Should heuristic repair remain imperfect, keep the parsed candidate and
-    // finish the chart rather than throwing away all accepted work.
     soft: needsRepair,
     ...(needsRepair ? { repair } : {}),
+    ...(worldviewReview.length === 0 ? {} : { worldviewReview }),
   };
 };
