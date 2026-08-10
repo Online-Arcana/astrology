@@ -1,5 +1,11 @@
 import type { Config } from "../../config.js";
 import { generatedNamePattern } from "../../file/invariants.js";
+import { validateInterpretationMap } from "../../interpretation/corpus/compile.js";
+import type { InterpretationMap } from "../../interpretation/corpus/types.js";
+import { semanticPropositionTexts } from "../../interpretation/map/compile.js";
+import { decomposeInterpretationUnit } from "../../interpretation/map/decompose.js";
+import type { InterpretationSemanticProvider } from "../../interpretation/map/provider.js";
+import { serialiseInterpretationPrompt } from "../../interpretation/prompt/serialise.js";
 import { resolveRef, refsValid } from "../../ref/resolve.js";
 import type { JsonRef } from "../../types/base.js";
 import type { Section } from "../../types/chart.js";
@@ -23,9 +29,9 @@ import type {
   UnitResult,
 } from "./types.js";
 
-export const promptCatalogue = "astral-prompts/1.3.0" as const;
+export const promptCatalogue = "astral-prompts/1.4.0" as const;
 export const structuredOutputCatalogue = "astral-structured-output/1.1.0" as const;
-export const nlpAuditProfile = "astral-nlp-audit/1.1.0" as const;
+export const nlpAuditProfile = "astral-nlp-audit/1.2.0" as const;
 export const modelRoutingProfile = "astral-model-routing/1.2.0" as const;
 
 export interface PlanInterpretationResult {
@@ -66,26 +72,28 @@ const human = (value: string): string => value
 const task = (unit: InterpretationUnit): string => {
   const subject = human(unit.section);
   const domain = unit.domain ? ` within the ${human(unit.domain)} compatibility domain` : "";
-  return sectionPrompt([
+  return [
     `Write only the final ${subject} interpretation for the selected ${unit.zodiac} zodiac system${domain}.`,
-    "Treat the supplied source objects as fixed facts.",
-    "Use only references supplied in permittedSourceRefs.",
+    "Treat the supplied chartEvidence source objects as fixed deterministic facts.",
+    "Treat semanticInput as meaning and interpretiveVoice as rendering style; never merge those roles.",
+    "Use only references supplied in chartEvidence.permittedSourceRefs.",
     "Put exact local JSON references exclusively in sourceRefs; never include a #/ path or source reference in narrative prose.",
     "Do not mention, compare or import the unselected zodiac system or another ayanamsha.",
     "Do not infer unavailable calculations, add extra fields or merge this field with another interpretation field.",
-  ].join("\n"));
+  ].join("\n");
 };
 
 const correctionInstruction = (unit: InterpretationUnit): string => {
   const lines = [
     "Correct only this interpretation unit and return the same strict schema.",
-    "Copy every sourceRefs value exactly from permittedSourceRefs.",
+    "Copy every sourceRefs value exactly from chartEvidence.permittedSourceRefs.",
     "Never invent, shorten, translate, normalise or alter a source reference.",
     "Never place a source reference or internal JSON path inside narrative prose.",
     "Write directly to the person using you and your, and lead with human meaning rather than chart mechanics.",
     "Do not begin narrative sentences with a planet, sign, house, aspect, placement or calculation label.",
     "Keep every narrative property semantically distinct.",
     "Do not repeat or lightly paraphrase the summary, detail or another property.",
+    "Do not copy or lightly paraphrase semantic proposition wording; express supported meaning afresh in the interpretive voice.",
     "Complete every required property and finish every sentence and list entry.",
     `Use only the selected ${unit.zodiac} zodiac system.`,
   ];
@@ -217,8 +225,28 @@ const sourceAwareFallback = (
   return refs.length === 0 ? noSourceFallback(unit) : genericFallback(unit, refs, warning);
 };
 
+const semanticMapFor = (
+  calculation: AstralCalculation,
+  unit: InterpretationUnit,
+  provider: InterpretationSemanticProvider | null,
+): InterpretationMap | null => {
+  if (provider === null) return null;
+  const map = provider.mapFor(calculation, unit);
+  if (map.unitId !== unit.id) {
+    throw new Error(`Semantic provider returned map ${map.unitId} for interpretation unit ${unit.id}`);
+  }
+  validateInterpretationMap(map);
+  const permitted = new Set(unit.allowedSourceRefs);
+  const outside = map.chartEvidence.filter((ref) => !permitted.has(ref));
+  if (outside.length > 0) {
+    throw new Error(`Interpretation map ${unit.id} contains evidence outside its deterministic source boundary: ${outside.join(", ")}`);
+  }
+  return map;
+};
+
 const substantiveCalls = (
   calculation: AstralCalculation,
+  semanticProvider: InterpretationSemanticProvider | null,
 ): { calls: InterpretationCall[]; synthetic: Record<string, UnitResult<object>> } => {
   const calls: InterpretationCall[] = [];
   const synthetic: Record<string, UnitResult<object>> = {};
@@ -231,6 +259,9 @@ const substantiveCalls = (
     }
 
     const allowed = new Set(unitSources.map(({ ref }) => ref));
+    const decomposition = decomposeInterpretationUnit(calculation, unit);
+    const interpretationMap = semanticMapFor(calculation, unit, semanticProvider);
+    const semanticPropositions = interpretationMap === null ? [] : semanticPropositionTexts(interpretationMap);
     const specialistKey = unit.section === "life.romance"
       ? "romance"
       : unit.section === "life.sexuality"
@@ -247,6 +278,7 @@ const substantiveCalls = (
       minLength: 2,
       maxLength: 4_000,
       ...(specialist?.fieldLexicons === undefined ? {} : { fieldLexicons: specialist.fieldLexicons }),
+      ...(semanticPropositions.length === 0 ? {} : { semanticPropositions }),
     };
 
     calls.push({
@@ -255,12 +287,11 @@ const substantiveCalls = (
       ...route(unit),
       shape: shapeForUnit(unit, [...allowed]),
       allowedSourceRefs: allowed,
-      input: ({ correction }) => ({
-        instructions: task(unit),
-        deterministicData: {
-          unit: { id: unit.id, zodiac: unit.zodiac, section: unit.section, domain: unit.domain },
-          sources: unitSources,
-        },
+      input: ({ correction }) => serialiseInterpretationPrompt({
+        task: task(unit),
+        decomposition,
+        interpretationMap,
+        chartEvidence: unitSources,
         permittedSourceRefs: [...allowed],
         ...(correction.length === 0 ? {} : {
           correction: {
@@ -336,8 +367,9 @@ const generatedNameCall = (calculation: AstralCalculation): InterpretationCall =
 
 export const interpretationCalls = (
   calculation: AstralCalculation,
+  semanticProvider: InterpretationSemanticProvider | null = null,
 ): { calls: InterpretationCall[]; synthetic: Record<string, UnitResult<object>> } => {
-  const prepared = substantiveCalls(calculation);
+  const prepared = substantiveCalls(calculation, semanticProvider);
   return {
     calls: calculation.subject.providedName === null
       ? [...prepared.calls, generatedNameCall(calculation)]
@@ -408,8 +440,9 @@ const runPlan = async (
   createClient: SchemaClientFactory,
   hooks: RunHooks,
   recovery: InterpretationRecovery | null,
+  semanticProvider: InterpretationSemanticProvider | null,
 ): Promise<PlanInterpretationResult> => {
-  const prepared = interpretationCalls(calculation);
+  const prepared = interpretationCalls(calculation, semanticProvider);
   const calls = recoveryAwareCalls(prepared.calls, recovery);
   const raw = calls.length === 0
     ? localRun(prepared.synthetic, "All interpretation units used deterministic fallback")
@@ -438,9 +471,10 @@ export const runInterpretationPlan = async (
   createClient: SchemaClientFactory,
   hooks: RunHooks = {},
   recovery: InterpretationRecovery | null = null,
+  semanticProvider: InterpretationSemanticProvider | null = null,
 ): Promise<PlanInterpretationResult> => {
   try {
-    return await runPlan(calculation, config, createClient, hooks, recovery);
+    return await runPlan(calculation, config, createClient, hooks, recovery, semanticProvider);
   } catch (cause: unknown) {
     if (config.chart.throwOnInterpretationFailure) throw cause;
     return deterministicPlan(calculation, hooks, cause);
