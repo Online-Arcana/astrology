@@ -83,7 +83,7 @@ await test("overview leads the chart and owns synthesis readings", async () => {
   const synthesis = await readFile("src/browser/synthesisCategory.ts", "utf8");
   const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
   assert(/title\.textContent = "Overview"/u.test(synthesis), "synthesis category must be renamed Overview");
-  assert(/host\.prepend\(details\)/u.test(synthesis), "Overview must be moved to the beginning of the chart");
+  assert(/host\.firstElementChild !== details/u.test(synthesis), "Overview movement must be idempotent");
   assert(/navRoot\.prepend\(item\)/u.test(source), "Overview must be moved to the beginning of the index");
   assert(/Integrated chart synthesis/u.test(source) && /Final personal portrait/u.test(source), "Overview must recognise canonical synthesis readings");
   assert(/"chart-category-synthesis": "Overview"/u.test(customer), "customer presentation must preserve the Overview label");
@@ -160,20 +160,19 @@ await test("nested index links open their complete details path", async () => {
   assert(/parent instanceof HTMLDetailsElement/u.test(source), "nested navigation must open intermediate groups before scrolling");
 });
 
-await test("late regrouping preserves canonical classification without exposing it", async () => {
-  const guard = await readFile("src/browser/viewerRegroupGuard.ts", "utf8");
+await test("late regrouping classifies from canonical titles while rendering plain language", async () => {
+  const hierarchy = await readFile("src/browser/viewerHierarchy.ts", "utf8");
   const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
-  assert(/data-original-title|originalTitle/u.test(guard), "regroup guard must use the stored canonical title");
-  assert(/viewerTitleLocked.*false/u.test(guard), "regroup guard must temporarily unlock titles for classification");
-  assert(/viewerTitleLocked.*true/u.test(customer), "customer pass must lock the final visible wording");
+  assert(/classificationTitle/u.test(hierarchy) && /originalTitle/u.test(hierarchy), "hierarchy must classify from the stored canonical title");
+  assert(/groupFor\(category\.id, classificationTitle\(reading\)\)/u.test(hierarchy), "grouping must not depend on the rendered customer title");
+  assert(/viewerTitleLocked.*true/u.test(customer), "customer pass must keep the final visible wording stable");
 });
 
 await test("viewer observers remain scoped to formatted chart UI", async () => {
   const source = await readFile("src/browser/viewerEnhancements.ts", "utf8");
   const hierarchy = await readFile("src/browser/viewerHierarchy.ts", "utf8");
   const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
-  const guard = await readFile("src/browser/viewerRegroupGuard.ts", "utf8");
-  assert(!/observe\(document\.body/u.test(source) && !/observe\(document\.body/u.test(hierarchy) && !/observe\(document\.body/u.test(customer) && !/observe\(document\.body/u.test(guard), "viewer must not install a page-wide observer");
+  assert(!/observe\(document\.body/u.test(source) && !/observe\(document\.body/u.test(hierarchy) && !/observe\(document\.body/u.test(customer), "viewer must not install a page-wide observer");
   assert(/#formattedChart/u.test(source) && /#formattedView/u.test(source), "viewer observers must stay scoped to formatted-chart containers");
 });
 
