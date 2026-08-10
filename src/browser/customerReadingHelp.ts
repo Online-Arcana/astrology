@@ -5,50 +5,67 @@ interface PlainAspectLanguage {
   description: string;
 }
 
+const plainFactorNames: Readonly<Record<string, string>> = {
+  "North Node": "Growth direction",
+  "South Node": "Familiar patterns",
+  "Part of Fortune": "Ease and fulfilment",
+  "Part of Spirit": "Purpose and inner direction",
+  "Imum Coeli": "Home and private foundations",
+  "East Point": "Personal presence",
+  Lilith: "Autonomy and instinct",
+  Ascendant: "How you present yourself",
+  Descendant: "Close relationships",
+  Midheaven: "Career and public direction",
+  Vertex: "Significant encounters",
+  Antivertex: "Your response to significant encounters",
+};
+
+const plainFactor = (value: string): string => plainFactorNames[value] ?? value;
+
 const aspectLanguage: readonly [RegExp, (left: string, right: string) => PlainAspectLanguage][] = [
   [/^(.+?) conjunct (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: strongly combined influences`,
-    description: `${left} and ${right} are closely linked in this chart, so their themes tend to operate together rather than separately.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: strongly combined influences`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} are closely linked in this chart, so their themes tend to operate together rather than separately.`,
   })],
   [/^(.+?) opposite (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: balancing opposite pulls`,
-    description: `${left} and ${right} pull in different directions, creating a polarity that tends to work best when both sides are acknowledged and balanced.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: balancing opposite pulls`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} pull in different directions, creating a polarity that tends to work best when both sides are acknowledged and balanced.`,
   })],
   [/^(.+?) trine (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: natural strengths and easy flow`,
-    description: `${left} and ${right} support one another naturally, so their qualities can work together with relatively little friction.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: natural strengths and easy flow`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} support one another naturally, so their qualities can work together with relatively little friction.`,
   })],
   [/^(.+?) square (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: pressure, friction and growth`,
-    description: `${left} and ${right} create tension that can feel demanding, but that pressure can also drive action, awareness and development.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: pressure, friction and growth`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} create tension that can feel demanding, but that pressure can also drive action, awareness and development.`,
   })],
   [/^(.+?) sextile (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: supportive opportunities`,
-    description: `${left} and ${right} can support one another through opportunities that tend to become more useful when you actively engage with them.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: supportive opportunities`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} can support one another through opportunities that tend to become more useful when you actively engage with them.`,
   })],
   [/^(.+?) quincunx (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: adjustment and compromise`,
-    description: `${left} and ${right} do not fit together automatically, so their interaction often calls for ongoing adjustment, flexibility and compromise.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: adjustment and compromise`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} do not fit together automatically, so their interaction often calls for ongoing adjustment, flexibility and compromise.`,
   })],
   [/^(.+?) semi-sextile (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: a subtle connection`,
-    description: `${left} and ${right} have a quieter connection that may need conscious attention before its usefulness becomes obvious.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: a subtle connection`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} have a quieter connection that may need conscious attention before its usefulness becomes obvious.`,
   })],
   [/^(.+?) semi-square (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: low-level friction`,
-    description: `${left} and ${right} create mild but recurring friction that can encourage small, practical adjustments over time.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: low-level friction`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} create mild but recurring friction that can encourage small, practical adjustments over time.`,
   })],
   [/^(.+?) sesquiquadrate (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: persistent pressure`,
-    description: `${left} and ${right} create persistent tension that tends to push for adjustment rather than offering a quick or effortless resolution.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: persistent pressure`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} create persistent tension that tends to push for adjustment rather than offering a quick or effortless resolution.`,
   })],
   [/^(.+?) quintile (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: creative talent and unusual strengths`,
-    description: `${left} and ${right} can combine in specialised or creative ways, especially when the connection is developed deliberately.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: creative talent and unusual strengths`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} can combine in specialised or creative ways, especially when the connection is developed deliberately.`,
   })],
   [/^(.+?) biquintile (.+)$/u, (left, right) => ({
-    title: `${left} and ${right}: creative talent and unusual strengths`,
-    description: `${left} and ${right} can combine in specialised or creative ways, especially when the connection is developed deliberately.`,
+    title: `${plainFactor(left)} and ${plainFactor(right)}: creative talent and unusual strengths`,
+    description: `${plainFactor(left)} and ${plainFactor(right)} can combine in specialised or creative ways, especially when the connection is developed deliberately.`,
   })],
 ];
 
