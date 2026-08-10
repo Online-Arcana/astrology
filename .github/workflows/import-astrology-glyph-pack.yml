@@ -1,0 +1,96 @@
+name: import astrology glyph pack
+
+on:
+  push:
+    branches:
+      - work/viewer-glyph-symbols
+    paths:
+      - temp/astrology_svg_pack_v3.zip
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: work/viewer-glyph-symbols
+          fetch-depth: 0
+
+      - name: Import and validate glyph pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f temp/astrology_svg_pack_v3.zip
+
+          python3 <<'PY'
+          from __future__ import annotations
+
+          import json
+          import shutil
+          import tempfile
+          import zipfile
+          from pathlib import Path, PurePosixPath
+
+          archive = Path("temp/astrology_svg_pack_v3.zip")
+          destination = Path("public/assets/astrology-glyphs")
+
+          with tempfile.TemporaryDirectory() as temporary:
+              root = Path(temporary)
+              with zipfile.ZipFile(archive) as bundle:
+                  for member in bundle.infolist():
+                      path = PurePosixPath(member.filename)
+                      if path.is_absolute() or ".." in path.parts:
+                          raise SystemExit(f"Unsafe archive path: {member.filename}")
+                  bundle.extractall(root)
+
+              manifests = list(root.rglob("manifest.json"))
+              if len(manifests) != 1:
+                  raise SystemExit(f"Expected exactly one manifest.json, found {len(manifests)}")
+
+              pack_root = manifests[0].parent
+              manifest = json.loads(manifests[0].read_text(encoding="utf-8"))
+              items = manifest.get("items")
+              if not isinstance(items, list) or len(items) < 60:
+                  raise SystemExit("Glyph manifest is missing or unexpectedly small")
+
+              svg_files = sorted((pack_root / "svg").rglob("*.svg"))
+              if len(svg_files) < 60:
+                  raise SystemExit(f"Expected at least 60 SVG files, found {len(svg_files)}")
+
+              forbidden = ("<script", "<foreignObject", "javascript:")
+              for svg in svg_files:
+                  text = svg.read_text(encoding="utf-8")
+                  lowered = text.lower()
+                  for token in forbidden:
+                      if token.lower() in lowered:
+                          raise SystemExit(f"Unsafe SVG content in {svg.relative_to(pack_root)}: {token}")
+
+              if destination.exists():
+                  shutil.rmtree(destination)
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copytree(pack_root, destination)
+
+              print(f"Imported {len(items)} manifest entries and {len(svg_files)} SVG files")
+          PY
+
+          rm -f temp/astrology_svg_pack_v3.zip
+
+      - name: Commit imported assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A public/assets/astrology-glyphs temp/astrology_svg_pack_v3.zip
+          if git diff --cached --quiet; then
+            echo "No glyph import changes to commit"
+            exit 0
+          fi
+          git commit -m "Import astrology SVG glyph pack [skip ci]"
+          git push origin HEAD:work/viewer-glyph-symbols
