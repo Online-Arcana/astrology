@@ -1,5 +1,6 @@
 import { compatibilityDomains } from "../compat/catalogue.js";
 import { generatedNamePattern } from "../file/invariants.js";
+import { auditWorldviewObject, worldviewFailureMessages } from "../interpretation/corpus/worldview.js";
 import type { InterpretationRun, UnitResult } from "../llm/orchestrate/types.js";
 import { refsValid } from "../ref/resolve.js";
 import type { JsonRef } from "../types/base.js";
@@ -230,6 +231,12 @@ const subject = (calculation: AstralCalculation, generatedName: string | undefin
   };
 };
 
+const assertFinalWorldviewNeutrality = (chart: AstralChart): void => {
+  const audit = auditWorldviewObject(chart, "astral-chart");
+  if (audit.safe && !audit.requiresReview) return;
+  throw new Error(`Final chart failed worldview-neutrality audit: ${worldviewFailureMessages(audit).join("; ")}`);
+};
+
 export const assembleChart = (
   calculation: AstralCalculation,
   run: InterpretationRun,
@@ -249,7 +256,7 @@ export const assembleChart = (
     };
   });
   const zodiac = calculation.system.zodiac;
-  return {
+  const chart: AstralChart = {
     schema: "astral-chart/1.1.0",
     subject: subject(calculation, options.generatedName),
     zodiac,
@@ -274,4 +281,6 @@ export const assembleChart = (
       phases,
     },
   };
+  assertFinalWorldviewNeutrality(chart);
+  return chart;
 };
