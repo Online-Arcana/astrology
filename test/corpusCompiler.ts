@@ -21,7 +21,7 @@ const source: CorpusSource = {
   editionOrDate: "2026",
   role: "semantic",
   reviewStatus: "approved",
-  allowedSections: ["reviewed section"],
+  allowedSections: ["reviewed-section"],
   notes: [],
 };
 
@@ -79,12 +79,40 @@ test("technical or architecture references cannot silently become semantic prove
     compileInterpretationCorpus({
       sources: [technical],
       atoms: [{ ...atom, sourceIds: [technical.id] }],
-      claims: [{ ...claim, sourceRefs: [`${technical.id}#section`] }],
+      claims: [{ ...claim, sourceRefs: [`${technical.id}#reviewed-section`] }],
     });
   } catch {
     failed = true;
   }
   equal(failed, true, "non-semantic provenance must fail");
+});
+
+test("claims cannot cite an unapproved section of an otherwise approved document", () => {
+  let failed = false;
+  try {
+    compileInterpretationCorpus({
+      sources: [source],
+      atoms: [atom],
+      claims: [{ ...claim, sourceRefs: [`${source.id}#different-section`] }],
+    });
+  } catch (cause: unknown) {
+    failed = cause instanceof Error && cause.message.includes("unapproved section");
+  }
+  equal(failed, true, "document approval must not imply section approval");
+});
+
+test("claims require a section locator rather than a bare document ID", () => {
+  let failed = false;
+  try {
+    compileInterpretationCorpus({
+      sources: [source],
+      atoms: [atom],
+      claims: [{ ...claim, sourceRefs: [source.id] }],
+    });
+  } catch (cause: unknown) {
+    failed = cause instanceof Error && cause.message.includes("must reference an approved section");
+  }
+  equal(failed, true, "bare document provenance must fail");
 });
 
 test("non-agnostic claims cannot enter even an otherwise valid partial corpus", () => {
