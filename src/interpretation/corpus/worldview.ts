@@ -29,6 +29,18 @@ const shieldTechnicalNames = (value: string): string => {
 
 const rules: readonly Rule[] = [
   {
+    category: "religious_agency",
+    severity: "reject",
+    pattern: /\b(?:god|gods|a deity|the deity)\s+(?:wants?|asks?|commands?|placed|sent|gave|gives|punishes?|rewards?|guides?|chose|chooses)\b/giu,
+    reason: "a religious being is given causal or directive agency in the user's life",
+  },
+  {
+    category: "religious_agency",
+    severity: "reject",
+    pattern: /\b(?:dios|los dioses|una deidad|la deidad)\s+(?:quiere|pide|ordena|coloc[oó]|puso|envi[oó]|dio|da|castiga|premia|gu[ií]a|eligi[oó]|elige)\b/giu,
+    reason: "a religious being is given causal or directive agency in the user's life",
+  },
+  {
     category: "religious_doctrine",
     severity: "reject",
     pattern: /\b(?:god|gods|goddess|deity|prayer|providence|salvation|heaven|hell|angel|angels|demon|demons)\b/giu,
@@ -205,10 +217,16 @@ export const auditWorldviewText = (value: string): WorldviewTextAudit => {
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const finalChartNonInterpretivePath = (path: string): boolean =>
+  path === "astral-chart.subject"
+  || path.startsWith("astral-chart.subject.")
+  || path === "astral-chart.provenance"
+  || path.startsWith("astral-chart.provenance.");
+
 export const auditWorldviewObject = (value: unknown, path = "$"): WorldviewTextAudit => {
   const findings: WorldviewFinding[] = [];
   const visit = (current: unknown, currentPath: string, key: string | null): void => {
-    if (key === "sourceRefs") return;
+    if (key === "sourceRefs" || finalChartNonInterpretivePath(currentPath)) return;
     if (typeof current === "string") {
       findings.push(...matchedFindings(current).map((finding) => ({ ...finding, path: currentPath })));
       return;
