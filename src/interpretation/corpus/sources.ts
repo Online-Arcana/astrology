@@ -130,6 +130,23 @@ export const corpusSources: readonly CorpusSource[] = [
     ["fortune-physical-social-world", "fortune-material-support", "spirit-will-intention", "spirit-chosen-career-direction"],
     "Only the named neutral passages are approved. Karmic, soul, spiritual-basis-of-illness, death, sex-role and other worldview-dependent material elsewhere in the article is excluded.",
   ),
+  {
+    id: "semantic.astrodienst.brief-intro-aspects",
+    title: "A Brief Introduction to Astrology: Aspects",
+    author: null,
+    publisher: "Astrodienst",
+    editionOrDate: null,
+    role: "semantic",
+    reviewStatus: "approved",
+    allowedSections: [
+      "conjunction", "opposition", "square", "trine", "sextile",
+      "semisquare", "sesquiquadrate", "semisextile", "quincunx", "quintile", "biquintile",
+    ],
+    notes: [
+      "Reviewed public source: https://www.astro.com/astrology/in_aspect_e.htm",
+      "Approved only for the relationship behaviour assigned to the named aspects. Orb tables and unrelated material are not semantic claims.",
+    ],
+  },
 
   {
     id: "semantic.tompkins.contemporary-handbook",
