@@ -30,11 +30,13 @@ await import("./authorityUi.js");
 // Synthesis correction runs before the hierarchy pass. The hierarchy classifies
 // from each reading's preserved canonical title, while the final presentation
 // pass translates the rendered labels into plain customer language. The initial
-// state pass then owns the customer-facing default collapse state and its CSS.
+// state pass owns default disclosure state. Glyph enhancement runs last so it can
+// decorate stable customer titles without becoming part of hierarchy semantics.
 await import("./synthesisCategory.js");
 await import("./viewerHierarchy.js");
 await import("./customerLanguagePass.js");
 await import("./viewerInitialState.js");
+await import("./viewerGlyphs.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
 
