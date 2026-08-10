@@ -78,9 +78,16 @@ const viewerCard = (): HTMLElement | null => {
 };
 
 let lastViewerFingerprint: string | null = null;
+let syncingViewerWheel = false;
+
+const viewerWheelPresent = (): boolean =>
+  document.querySelector("#fileChartWheelCard .chart-wheel svg") !== null;
+
 const syncViewerWheel = (): void => {
+  if (syncingViewerWheel) return;
   const raw = document.querySelector<HTMLElement>("#rawChart")?.textContent?.trim() ?? "";
   if (raw.length === 0) return;
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -88,13 +95,20 @@ const syncViewerWheel = (): void => {
     return;
   }
   if (!isAstralWithCalculation(parsed)) return;
+
   const calculation = parsed["astral-calculation"];
   const fingerprint = calculation.provenance.calculationFingerprint;
-  if (fingerprint === lastViewerFingerprint) return;
-  const card = viewerCard();
-  if (card === null) return;
-  renderIntoCard(card, calculation);
-  lastViewerFingerprint = fingerprint;
+  if (fingerprint === lastViewerFingerprint && viewerWheelPresent()) return;
+
+  syncingViewerWheel = true;
+  try {
+    const card = viewerCard();
+    if (card === null) return;
+    renderIntoCard(card, calculation);
+    lastViewerFingerprint = fingerprint;
+  } finally {
+    syncingViewerWheel = false;
+  }
 };
 
 window.addEventListener("astral:calculation", (event) => {
@@ -111,4 +125,13 @@ if (rawChart !== null) {
   });
 }
 
-syncViewerWheel();
+const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
+if (formattedChart !== null) {
+  new MutationObserver(syncViewerWheel).observe(formattedChart, {
+    childList: true,
+    subtree: false,
+  });
+}
+
+window.addEventListener("pageshow", syncViewerWheel);
+queueMicrotask(syncViewerWheel);
