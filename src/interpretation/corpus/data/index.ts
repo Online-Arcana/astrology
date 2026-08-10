@@ -4,6 +4,7 @@ import type { CorpusAtom, CorpusClaim, CorpusSource } from "../types.js";
 import { angleAtoms, angleClaims, angleSources } from "./angles.js";
 import { aspectAtoms, aspectClaims } from "./aspects.js";
 import { bodyAtoms, bodyClaims } from "./bodies.js";
+import { balanceConditionSource, conditionAtoms, conditionClaims } from "./conditions.js";
 import { derivedAtoms, derivedClaims, derivedSources } from "./derived.js";
 import { domainAtoms, domainClaims, projectDomainSource } from "./domains.js";
 import { eclipseAtoms, eclipseClaims, eclipseSources } from "./eclipses.js";
@@ -16,6 +17,7 @@ import { signAtoms, signClaims } from "./signs.js";
 export const reviewedCorpusSources: readonly CorpusSource[] = [
   ...corpusSources,
   projectDomainSource,
+  balanceConditionSource,
   ...pointSources,
   ...angleSources,
   ...patternSources,
@@ -30,6 +32,7 @@ export const reviewedCorpusAtoms: readonly CorpusAtom[] = [
   ...signAtoms,
   ...houseAtoms,
   ...aspectAtoms,
+  ...conditionAtoms,
   ...patternAtoms,
   ...derivedAtoms,
   ...eclipseAtoms,
@@ -43,6 +46,7 @@ export const reviewedCorpusClaims: readonly CorpusClaim[] = [
   ...signClaims,
   ...houseClaims,
   ...aspectClaims,
+  ...conditionClaims,
   ...patternClaims,
   ...derivedClaims,
   ...eclipseClaims,
