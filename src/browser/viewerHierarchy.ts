@@ -1,3 +1,5 @@
+import { displayReadingTitle } from "./readingHelp.js";
+
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
 
 const synthesisTitles = new Set([
@@ -5,6 +7,7 @@ const synthesisTitles = new Set([
   "Final portrait",
   "Integrated chart synthesis",
   "Final personal portrait",
+  "Your overall portrait",
 ]);
 
 interface GroupMeta {
@@ -20,6 +23,11 @@ const slug = (value: string): string => value
 
 const readingTitle = (reading: HTMLDetailsElement): string =>
   reading.querySelector<HTMLElement>(":scope > summary")?.textContent?.trim() ?? "Chart section";
+
+const classificationTitle = (reading: HTMLDetailsElement): string => {
+  const original = reading.dataset["originalTitle"];
+  return original === undefined ? readingTitle(reading) : displayReadingTitle(original);
+};
 
 const categoryBody = (category: HTMLDetailsElement): HTMLElement | null =>
   category.querySelector<HTMLElement>(":scope > .chart-category-body");
@@ -56,7 +64,7 @@ const ensureOverview = (): void => {
   if (host === null || navRoot === null) return;
 
   const readings = [...host.querySelectorAll<HTMLDetailsElement>("details.chart-reading")]
-    .filter((reading) => synthesisTitles.has(readingTitle(reading)));
+    .filter((reading) => synthesisTitles.has(readingTitle(reading)) || synthesisTitles.has(classificationTitle(reading)));
   let category = element<HTMLDetailsElement>("#chart-category-synthesis");
 
   if (readings.length === 0) {
@@ -244,7 +252,7 @@ const groupCategories = (): void => {
     if (readings.length === 0) continue;
     const grouped = new Map<string, { meta: GroupMeta; readings: HTMLDetailsElement[] }>();
     for (const reading of readings) {
-      const meta = groupFor(category.id, readingTitle(reading));
+      const meta = groupFor(category.id, classificationTitle(reading));
       const selected = grouped.get(meta.id) ?? { meta, readings: [] };
       selected.readings.push(reading);
       grouped.set(meta.id, selected);
