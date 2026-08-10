@@ -131,13 +131,16 @@ export const auditStructured = <T extends object>(
   };
   const audited = visit(value, state, profile.id, null) as T;
   const completion = auditCompletion(audited, profile.id);
+  const worldviewReview = [...new Set(state.worldviewReview)];
   const errors = [...new Set([
     ...state.errors,
     ...completion.map(({ message }) => message),
+    // Until the cheap discriminator is wired into orchestration, ambiguous worldview
+    // language fails closed and follows the ordinary correction/reconstruction path.
+    ...worldviewReview,
   ])];
-  const worldviewReview = [...new Set(state.worldviewReview)];
   const needsRepair = errors.length > 0;
-  const repair = state.errors.length === 0 && completion.length > 0
+  const repair = state.errors.length === 0 && completion.length > 0 && worldviewReview.length === 0
     ? "completion" as const
     : "audit" as const;
 
