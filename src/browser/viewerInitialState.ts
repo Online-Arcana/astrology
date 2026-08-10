@@ -60,6 +60,19 @@ const bulkButton = (className: string): HTMLButtonElement => {
   return button;
 };
 
+const setBulkButtonState = (
+  button: HTMLButtonElement,
+  allExpanded: boolean,
+  hasItems: boolean,
+  subject: string,
+): void => {
+  button.disabled = !hasItems;
+  const text = allExpanded ? "Collapse all" : "Expand all";
+  if (button.textContent !== text) button.textContent = text;
+  const label = `${allExpanded ? "Collapse" : "Expand"} all ${subject}`;
+  if (button.getAttribute("aria-label") !== label) button.setAttribute("aria-label", label);
+};
+
 const indexToggles = (): HTMLButtonElement[] => formattedView === null
   ? []
   : [...formattedView.querySelectorAll<HTMLButtonElement>(
@@ -72,9 +85,7 @@ const syncIndexBulkControl = (): void => {
   const toggles = indexToggles();
   const allExpanded = toggles.length > 0
     && toggles.every((toggle) => toggle.getAttribute("aria-expanded") === "true");
-  button.disabled = toggles.length === 0;
-  button.textContent = allExpanded ? "Collapse all" : "Expand all";
-  button.setAttribute("aria-label", `${allExpanded ? "Collapse" : "Expand"} all Chart index branches`);
+  setBulkButtonState(button, allExpanded, toggles.length > 0, "Chart index branches");
 };
 
 const ensureIndexBulkControl = (): void => {
@@ -108,9 +119,7 @@ const syncChartBulkControl = (): void => {
   if (button === null) return;
   const details = chartDetails();
   const allExpanded = details.length > 0 && details.every((item) => item.open);
-  button.disabled = details.length === 0;
-  button.textContent = allExpanded ? "Collapse all" : "Expand all";
-  button.setAttribute("aria-label", `${allExpanded ? "Collapse" : "Expand"} all chart sections`);
+  setBulkButtonState(button, allExpanded, details.length > 0, "chart sections");
 };
 
 const ensureChartBulkControl = (): void => {
