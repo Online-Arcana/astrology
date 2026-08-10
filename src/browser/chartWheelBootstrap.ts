@@ -1,3 +1,4 @@
+import type { Aspect, AspectKind } from "../types/astro.js";
 import type { AstralCalculation, AstralFile } from "../types/file.js";
 import { renderChartWheel } from "./chartWheel.js";
 import { applyCanonicalWheelGlyphs } from "./chartWheelGlyphs.js";
@@ -21,33 +22,198 @@ const isAstralWithCalculation = (value: unknown): value is Pick<AstralFile, "ast
   return isCalculation((value as { "astral-calculation"?: unknown })["astral-calculation"]);
 };
 
-const cardShell = (id: string, eyebrow: string, heading: string, intro: string): HTMLElement => {
+const aspectMeanings: Readonly<Record<AspectKind, string>> = {
+  conjunction: "The two points act together and intensify one another. Their themes are difficult to separate in this part of the chart.",
+  opposition: "The two points pull from opposite sides. The aspect asks for balance, awareness and integration between them.",
+  trine: "The two points tend to work together easily. Their themes reinforce one another with relatively little friction.",
+  square: "The two points create friction and pressure. The tension can be demanding, but it can also drive action and development.",
+  sextile: "The two points support one another through an opportunity that becomes stronger when it is actively used.",
+  quincunx: "The two points do not fit together naturally. Repeated adjustment and compromise are usually needed between their themes.",
+  semisextile: "The connection is subtle and adjacent. The two themes can support one another, but usually require conscious attention.",
+  semisquare: "A low-level but persistent tension links the two points, often creating irritation that pushes for adjustment or action.",
+  sesquiquadrate: "The two points create sustained internal pressure. The tension is less obvious than a square but can become difficult to ignore.",
+  quintile: "The two points are linked through creative or specialised potential that can be developed deliberately.",
+  biquintile: "The two points form a strong creative or inventive connection, often expressed through refinement, technique or unusual problem-solving.",
+};
+
+const aspectLabels: Readonly<Record<AspectKind, string>> = {
+  conjunction: "Conjunction",
+  opposition: "Opposition",
+  trine: "Trine",
+  square: "Square",
+  sextile: "Sextile",
+  quincunx: "Quincunx",
+  semisextile: "Semi-sextile",
+  semisquare: "Semi-square",
+  sesquiquadrate: "Sesquiquadrate",
+  quintile: "Quintile",
+  biquintile: "Biquintile",
+};
+
+const aspectOrder = [
+  "conjunction", "opposition", "trine", "square", "sextile",
+  "quincunx", "semisextile", "semisquare", "sesquiquadrate", "quintile", "biquintile",
+] as const satisfies readonly AspectKind[];
+
+const cardShell = (id: string, heading: string): HTMLElement => {
   const card = document.createElement("section");
   card.id = id;
   card.className = "card chart-wheel-card";
 
   const header = document.createElement("div");
   header.className = "section-heading";
-  const copy = document.createElement("div");
-  const overline = document.createElement("p");
-  overline.className = "eyebrow";
-  overline.textContent = eyebrow;
   const title = document.createElement("h2");
   title.textContent = heading;
-  copy.append(overline, title);
-  header.append(copy);
+  header.append(title);
 
-  const paragraph = document.createElement("p");
-  paragraph.className = "wheel-intro";
-  paragraph.textContent = intro;
-  card.append(header, paragraph);
+  card.append(header);
   return card;
+};
+
+interface WheelAspectEntry {
+  aspect: Aspect;
+  visible: SVGLineElement | null;
+  hit: SVGLineElement;
+}
+
+const wheelAspectEntries = (wheel: HTMLElement, calculation: AstralCalculation): WheelAspectEntry[] => {
+  const visibleAspects = calculation.system.aspects.filter((aspect) =>
+    calculation.system.points[aspect.a].position.value !== null
+    && calculation.system.points[aspect.b].position.value !== null);
+  const hitLines = [...wheel.querySelectorAll<SVGLineElement>(".wheel-aspect-hit")];
+
+  return hitLines.flatMap((hit, index) => {
+    const aspect = visibleAspects[index];
+    if (aspect === undefined) return [];
+    const previous = hit.previousElementSibling;
+    const visible = previous instanceof SVGLineElement && previous.classList.contains("wheel-aspect")
+      ? previous
+      : null;
+    return [{ aspect, visible, hit }];
+  });
+};
+
+const addAspectExplanations = (wheel: HTMLElement, calculation: AstralCalculation): void => {
+  const detail = wheel.querySelector<HTMLElement>(".wheel-detail");
+  if (detail === null) return;
+
+  for (const { aspect, visible, hit } of wheelAspectEntries(wheel, calculation)) {
+    hit.dataset["aspect"] = aspect.id;
+    hit.dataset["aspectKind"] = aspect.kind;
+    visible?.setAttribute("data-aspect-kind", aspect.kind);
+
+    const showMeaning = (): void => {
+      const list = detail.querySelector<HTMLDListElement>(".wheel-detail-list");
+      if (list === null) return;
+      const labels = [...list.querySelectorAll("dt")].map((term) => term.textContent?.trim() ?? "");
+      if (!labels.includes("Points") || !labels.includes("Exact angle")) return;
+      if (list.querySelector(".wheel-aspect-meaning-label") !== null) return;
+      const term = document.createElement("dt");
+      term.className = "wheel-aspect-meaning-label";
+      term.textContent = "Meaning";
+      const description = document.createElement("dd");
+      description.className = "wheel-aspect-meaning";
+      description.textContent = aspectMeanings[aspect.kind];
+      list.append(term, description);
+      visible?.classList.add("is-active");
+    };
+
+    const clearHighlight = (): void => { visible?.classList.remove("is-active"); };
+    hit.addEventListener("mouseenter", showMeaning);
+    hit.addEventListener("focus", showMeaning);
+    hit.addEventListener("click", showMeaning);
+    hit.addEventListener("mouseleave", clearHighlight);
+    hit.addEventListener("blur", clearHighlight);
+  }
+};
+
+const addAspectControls = (wheel: HTMLElement, calculation: AstralCalculation): void => {
+  const entries = wheelAspectEntries(wheel, calculation);
+  if (entries.length === 0) return;
+
+  const presentKinds = aspectOrder.filter((kind) => entries.some(({ aspect }) => aspect.kind === kind));
+  const defaultKinds = new Set<AspectKind>(
+    entries.filter(({ aspect }) => aspect.class === "major").map(({ aspect }) => aspect.kind),
+  );
+  const checkboxes = new Map<AspectKind, HTMLInputElement>();
+
+  const controls = document.createElement("fieldset");
+  controls.className = "wheel-aspect-controls";
+  const legend = document.createElement("legend");
+  legend.textContent = "Aspect lines";
+
+  const actions = document.createElement("div");
+  actions.className = "wheel-aspect-actions";
+  const makeAction = (text: string, ariaLabel: string, run: () => void): HTMLButtonElement => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ghost wheel-aspect-control-button";
+    button.textContent = text;
+    button.setAttribute("aria-label", ariaLabel);
+    button.addEventListener("click", run);
+    return button;
+  };
+
+  const options = document.createElement("div");
+  options.className = "wheel-aspect-options";
+
+  const apply = (): void => {
+    for (const { aspect, visible, hit } of entries) {
+      const enabled = checkboxes.get(aspect.kind)?.checked === true;
+      for (const element of [visible, hit]) {
+        if (element === null) continue;
+        element.style.display = enabled ? "" : "none";
+        element.setAttribute("aria-hidden", String(!enabled));
+      }
+      hit.setAttribute("tabindex", enabled ? "0" : "-1");
+      if (!enabled) visible?.classList.remove("is-active");
+    }
+  };
+
+  const setSelection = (enabled: (kind: AspectKind) => boolean): void => {
+    for (const [kind, checkbox] of checkboxes) checkbox.checked = enabled(kind);
+    apply();
+  };
+
+  actions.append(
+    makeAction("Default", "Restore default aspect lines", () => setSelection((kind) => defaultKinds.has(kind))),
+    makeAction("None", "Hide all aspect lines", () => setSelection(() => false)),
+    makeAction("All", "Show all aspect lines", () => setSelection(() => true)),
+  );
+
+  for (const kind of presentKinds) {
+    const aspects = entries.filter(({ aspect }) => aspect.kind === kind);
+    const label = document.createElement("label");
+    label.className = "wheel-aspect-option";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = defaultKinds.has(kind);
+    checkbox.dataset["aspectKind"] = kind;
+    checkbox.addEventListener("change", apply);
+    checkboxes.set(kind, checkbox);
+
+    const copy = document.createElement("span");
+    copy.className = "wheel-aspect-option-copy";
+    const name = document.createElement("strong");
+    name.textContent = aspectLabels[kind];
+    const meta = document.createElement("small");
+    meta.textContent = `${aspects[0]?.aspect.class === "major" ? "Major" : "Minor"} · ${aspects.length}`;
+    copy.append(name, meta);
+    label.append(checkbox, copy);
+    options.append(label);
+  }
+
+  controls.append(legend, actions, options);
+  wheel.prepend(controls);
+  apply();
 };
 
 const renderIntoCard = (card: HTMLElement, calculation: AstralCalculation): void => {
   card.querySelector(".chart-wheel")?.remove();
   const wheel = renderChartWheel(calculation);
   applyCanonicalWheelGlyphs(wheel);
+  addAspectExplanations(wheel, calculation);
+  addAspectControls(wheel, calculation);
   card.append(wheel);
 };
 
@@ -56,12 +222,7 @@ const ensureLiveCard = (): HTMLElement | null => {
   if (createPanel === null) return null;
   const existing = createPanel.querySelector<HTMLElement>("#liveChartWheelCard");
   if (existing !== null) return existing;
-  const card = cardShell(
-    "liveChartWheelCard",
-    "Deterministic chart",
-    "Your chart wheel",
-    "The astronomical calculation is complete. You can explore the wheel while the interpretation is still being generated.",
-  );
+  const card = cardShell("liveChartWheelCard", "Your chart wheel");
   const progress = createPanel.querySelector<HTMLElement>("#progressCard");
   if (progress === null) createPanel.append(card);
   else progress.insertAdjacentElement("afterend", card);
@@ -76,24 +237,56 @@ const showLiveCalculation = (calculation: AstralCalculation): void => {
 };
 
 const viewerCard = (): HTMLElement | null => {
-  const formattedView = document.querySelector<HTMLElement>("#formattedView");
-  if (formattedView === null) return null;
-  const existing = formattedView.querySelector<HTMLElement>("#fileChartWheelCard");
-  if (existing !== null) return existing;
-  const card = cardShell(
-    "fileChartWheelCard",
-    "Deterministic reconstruction",
-    "Chart wheel",
-    "This wheel is rebuilt from the deterministic calculation already stored in the .astral file. No additional metadata is required.",
-  );
-  formattedView.prepend(card);
-  return card;
+  const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
+  if (formattedChart === null) return null;
+  formattedChart.classList.add("chart-wheel-host");
+
+  const existing = document.querySelector<HTMLElement>("#fileChartWheelCard");
+  if (existing !== null && !(existing instanceof HTMLDetailsElement)) existing.remove();
+
+  const current = document.querySelector<HTMLDetailsElement>("#fileChartWheelCard");
+  if (current !== null) {
+    if (current.parentElement !== formattedChart) formattedChart.prepend(current);
+    const body = current.querySelector<HTMLElement>(":scope > .chart-wheel-category-body");
+    if (body !== null) return body;
+    current.remove();
+  }
+
+  const category = document.createElement("details");
+  category.id = "fileChartWheelCard";
+  category.className = "chart-category chart-wheel-card chart-wheel-category";
+  category.open = true;
+
+  const summary = document.createElement("summary");
+  const title = document.createElement("span");
+  title.textContent = "Chart wheel";
+  summary.append(title);
+
+  const body = document.createElement("div");
+  body.className = "chart-category-body chart-wheel-category-body";
+  category.append(summary, body);
+  formattedChart.prepend(category);
+  return body;
+};
+
+export const mountViewerChartWheel = (calculation: AstralCalculation): void => {
+  const card = viewerCard();
+  if (card === null) return;
+  renderIntoCard(card, calculation);
+  lastViewerFingerprint = calculation.provenance.calculationFingerprint;
 };
 
 let lastViewerFingerprint: string | null = null;
+let syncingViewerWheel = false;
+
+const viewerWheelPresent = (): boolean =>
+  document.querySelector("#fileChartWheelCard .chart-wheel svg") !== null;
+
 const syncViewerWheel = (): void => {
+  if (syncingViewerWheel) return;
   const raw = document.querySelector<HTMLElement>("#rawChart")?.textContent?.trim() ?? "";
   if (raw.length === 0) return;
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -101,13 +294,17 @@ const syncViewerWheel = (): void => {
     return;
   }
   if (!isAstralWithCalculation(parsed)) return;
+
   const calculation = parsed["astral-calculation"];
   const fingerprint = calculation.provenance.calculationFingerprint;
-  if (fingerprint === lastViewerFingerprint) return;
-  const card = viewerCard();
-  if (card === null) return;
-  renderIntoCard(card, calculation);
-  lastViewerFingerprint = fingerprint;
+  if (fingerprint === lastViewerFingerprint && viewerWheelPresent()) return;
+
+  syncingViewerWheel = true;
+  try {
+    mountViewerChartWheel(calculation);
+  } finally {
+    syncingViewerWheel = false;
+  }
 };
 
 window.addEventListener("astral:calculation", (event) => {
@@ -124,4 +321,13 @@ if (rawChart !== null) {
   });
 }
 
-syncViewerWheel();
+const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
+if (formattedChart !== null) {
+  new MutationObserver(syncViewerWheel).observe(formattedChart, {
+    childList: true,
+    subtree: false,
+  });
+}
+
+window.addEventListener("pageshow", syncViewerWheel);
+queueMicrotask(syncViewerWheel);

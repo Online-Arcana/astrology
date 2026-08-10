@@ -1,29 +1,144 @@
 .chart-wheel-card {
-  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  container-type: inline-size;
+}
+
+#formattedChart.chart-wheel-host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#formattedChart.chart-wheel-host > .chart-wheel-category {
+  order: -100;
+}
+
+#formattedChart.chart-wheel-host > .viewer-chart-bulk-controls {
+  order: -90;
+}
+
+.chart-wheel-category {
+  margin: 0 0 .85rem;
+  overflow: visible;
+}
+
+.chart-wheel-category-body {
+  display: block;
+  min-width: 0;
+  padding: 0 .75rem .75rem;
 }
 
 .chart-wheel-card .section-heading {
-  margin-bottom: .7rem;
+  margin-bottom: .35rem;
 }
 
 .chart-wheel-card .wheel-intro {
+  max-width: 62rem;
   margin: 0 0 1rem;
   color: var(--muted);
+  font-size: .92rem;
   line-height: 1.55;
 }
 
 .chart-wheel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, .36fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .85rem;
   align-items: start;
+  min-width: 0;
+}
+
+.wheel-aspect-controls {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: .72rem .82rem .82rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(11, 9, 27, .62);
+}
+
+.wheel-aspect-controls legend {
+  padding: 0 .35rem;
+  color: #f7f3ff;
+  font-size: .86rem;
+  font-weight: 850;
+}
+
+.wheel-aspect-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .42rem;
+  margin-bottom: .7rem;
+}
+
+.wheel-aspect-control-button {
+  min-height: 2.15rem;
+  padding: .42rem .68rem;
+  border-radius: .65rem;
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.wheel-aspect-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: .42rem;
+}
+
+.wheel-aspect-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .52rem;
+  min-width: 0;
+  padding: .55rem .62rem;
+  border: 1px solid rgba(213, 200, 255, .14);
+  border-radius: .72rem;
+  background: rgba(255, 255, 255, .018);
+  cursor: pointer;
+}
+
+.wheel-aspect-option:hover {
+  border-color: rgba(213, 200, 255, .3);
+  background: rgba(182, 156, 255, .055);
+}
+
+.wheel-aspect-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: .12rem 0 0;
+  accent-color: var(--accent, #b69cff);
+}
+
+.wheel-aspect-option-copy {
+  display: grid;
+  gap: .08rem;
+  min-width: 0;
+}
+
+.wheel-aspect-option-copy strong {
+  color: #f5f1ff;
+  font-size: .78rem;
+  line-height: 1.25;
+}
+
+.wheel-aspect-option-copy small {
+  color: var(--muted, #b8b3cf);
+  font-size: .69rem;
+  line-height: 1.2;
 }
 
 .chart-wheel-graphic {
+  width: 100%;
   min-width: 0;
-  padding: .65rem;
+  max-width: 68rem;
+  margin-inline: auto;
+  padding: clamp(.25rem, 1.2cqw, .7rem);
   border: 1px solid var(--border);
-  border-radius: 1.1rem;
+  border-radius: clamp(.8rem, 2cqw, 1.15rem);
   background:
     radial-gradient(circle at 50% 50%, rgba(182, 156, 255, .08), transparent 52%),
     rgba(9, 7, 21, .55);
@@ -33,7 +148,7 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: min(72vh, 52rem);
+  aspect-ratio: 1;
   overflow: visible;
 }
 
@@ -152,6 +267,7 @@
 .wheel-aspect {
   stroke-width: 1.35;
   opacity: .52;
+  transition: opacity .14s ease, stroke-width .14s ease, filter .14s ease;
 }
 
 .wheel-aspect.major { stroke-width: 1.7; opacity: .62; }
@@ -160,6 +276,12 @@
 .wheel-aspect-contextual { stroke: rgba(213, 200, 255, .55); }
 .wheel-aspect-adjusting { stroke: rgba(236, 190, 111, .7); stroke-dasharray: 6 4; }
 .wheel-aspect-creative { stroke: rgba(174, 133, 229, .72); stroke-dasharray: 3 4; }
+
+.wheel-aspect.is-active {
+  opacity: 1;
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0 5px rgba(245, 241, 255, .72));
+}
 
 .wheel-aspect-hit {
   stroke: transparent;
@@ -198,10 +320,10 @@
 }
 
 .wheel-detail {
-  position: sticky;
-  top: 1rem;
-  min-height: 12rem;
-  padding: 1rem;
+  position: static;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(.8rem, 2cqw, 1rem);
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: rgba(11, 9, 27, .72);
@@ -209,36 +331,39 @@
 
 .wheel-detail-title {
   display: block;
-  margin-bottom: .85rem;
+  margin-bottom: .7rem;
   color: #fff;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .wheel-detail-list {
   display: grid;
-  grid-template-columns: minmax(6.2rem, .38fr) 1fr;
-  gap: .5rem .8rem;
+  grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
+  gap: .42rem .8rem;
   margin: 0;
 }
 
 .wheel-detail-list dt {
   color: var(--accent-strong);
-  font-size: .77rem;
+  font-size: .76rem;
   font-weight: 800;
 }
 
 .wheel-detail-list dd {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
   color: #eee9fa;
-  font-size: .8rem;
+  font-size: .82rem;
   line-height: 1.45;
 }
 
+.wheel-aspect-meaning {
+  color: #f7f3ff !important;
+}
+
 .wheel-detail p {
-  margin: .9rem 0 0;
-  color: var(--muted);
-  font-size: .78rem;
-  line-height: 1.5;
+  display: none;
 }
 
 .wheel-untimed-note {
@@ -248,28 +373,60 @@
 }
 
 #fileChartWheelCard {
-  margin-bottom: 1rem;
+  margin: 0 0 .85rem;
 }
 
-@media (max-width: 900px) {
+@container (min-width: 62rem) {
   .chart-wheel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(32rem, 1fr) minmax(18rem, 22rem);
+    gap: 1rem;
   }
+
+  .chart-wheel-graphic {
+    max-width: none;
+  }
+
   .wheel-detail {
-    position: static;
+    position: sticky;
+    top: 1rem;
   }
 }
 
-@media (max-width: 640px) {
-  .chart-wheel-graphic {
-    padding: .25rem;
-    border-radius: .85rem;
+@container (max-width: 34rem) {
+  .chart-wheel-card .wheel-intro {
+    font-size: .86rem;
   }
+
+  .wheel-aspect-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wheel-aspect-control-button {
+    width: 100%;
+  }
+
+  .wheel-aspect-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-wheel-graphic {
+    padding: .2rem;
+    border-radius: .8rem;
+  }
+
   .wheel-detail-list {
     grid-template-columns: 1fr;
-    gap: .15rem;
+    gap: .12rem;
   }
+
   .wheel-detail-list dd {
-    margin-bottom: .55rem;
+    margin-bottom: .5rem;
+  }
+}
+
+@container (max-width: 22rem) {
+  .wheel-aspect-options {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

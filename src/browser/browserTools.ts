@@ -37,6 +37,12 @@ await import("./viewerHierarchy.js");
 await import("./customerLanguagePass.js");
 await import("./viewerInitialState.js");
 await import("./viewerGlyphs.js");
+
+// The chart wheel is part of the browser presentation graph. It listens for the
+// calculation-complete event during new generation and reconstructs the same
+// deterministic wheel from astral-calculation data when an existing file opens.
+await import("./chartWheelBootstrap.js");
+
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
 

@@ -12,7 +12,7 @@ const host = document.querySelector<HTMLElement>("#formattedChart");
 const formattedView = document.querySelector<HTMLElement>("#formattedView");
 
 const collapsibleSelector = [
-  "details.chart-category",
+  "details.chart-category:not(.chart-wheel-category)",
   "details.chart-reading-group",
   "details.chart-reading",
   "details.compatibility-bucket",
