@@ -126,6 +126,16 @@ await test("browser tools initialise the interactive chart wheel", async () => {
   assert(!/rotation:\s*180/u.test(wheelGlyphs), "North and South node direction must not be encoded by rotating the Mean/True glyph");
 });
 
+await test("random canonical chart tester remains deterministic and test-only", async () => {
+  const tester = await readFile("src/browser/randomChartTest.ts", "utf8");
+  const policy = await readFile("src/browser/testKeyPolicyUi.ts", "utf8");
+  assert(/TEST: Random canonical chart \(no LLM\)/u.test(tester), "test chart button must identify itself and the no-LLM path clearly");
+  assert(/CalculationService/u.test(tester) && /assembleAstralFile/u.test(tester), "test chart must use canonical calculation and file assembly");
+  assert(/Lorem ipsum/u.test(tester) && /calls:\s*0/u.test(tester), "test chart interpretations must be Lorem Ipsum with zero LLM calls");
+  assert(/generateTestSigningKey/u.test(tester) && /testArtifactMarker/u.test(tester), "test chart must create an explicit signed test artifact when no real key is available");
+  assert(/canonicaliseSign/u.test(policy) && /sign\.disabled = testOnly/u.test(policy), "test signing bundle must disable ordinary re-sign UI");
+});
+
 await test("opened files use an explicit copy-only maintenance path", async () => {
   const app = await readFile("src/browser/app.ts", "utf8");
   const tools = await readFile("src/browser/testTools.ts", "utf8");

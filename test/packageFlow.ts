@@ -14,6 +14,13 @@ const [
   vault,
   vaultUi,
   authority,
+  fileAuthority,
+  testArtifact,
+  testTransport,
+  testDownload,
+  randomTester,
+  testPolicy,
+  maintenancePolicy,
   entry,
   build,
   page,
@@ -27,13 +34,22 @@ const [
   readFile("src/browser/vault.ts", "utf8"),
   readFile("src/browser/vaultUi.ts", "utf8"),
   readFile("src/browser/authorityUi.ts", "utf8"),
+  readFile("src/file/authority.ts", "utf8"),
+  readFile("src/testing/artifact.ts", "utf8"),
+  readFile("src/browser/testPackageTransport.ts", "utf8"),
+  readFile("src/browser/testPackageDownload.ts", "utf8"),
+  readFile("src/browser/randomChartTest.ts", "utf8"),
+  readFile("src/browser/testKeyPolicyUi.ts", "utf8"),
+  readFile("src/browser/maintenancePolicy.ts", "utf8"),
   readFile("src/browser/browserTools.ts", "utf8"),
   readFile("scripts/build-pages.mjs", "utf8"),
   readFile("public/index.html", "utf8"),
 ]);
 
+const testTransportImport = entry.indexOf('import("./testPackageTransport.js")');
 const biometricImport = entry.indexOf('import("./packageBiometric.js")');
 const ordinaryPackageImport = entry.indexOf('import("./packageFlow.js")');
+const testDownloadImport = entry.indexOf('import("./testPackageDownload.js")');
 
 const checks: readonly [boolean, string][] = [
   [/\[submodule "vendor\/astral-packager"\][\s\S]*path = vendor\/astral-packager[\s\S]*kitty-crow\/astral-packager\.git/u.test(modules), "astral-packager must be declared as a submodule"],
@@ -71,8 +87,25 @@ const checks: readonly [boolean, string][] = [
   [/clearPackageFingerprints\(\)/u.test(vaultUi), "deleting the encrypted vault must remove non-secret remembered-file fingerprints"],
   [/liveSigningKey/u.test(authority) && /#signingKey/u.test(authority) && /loadSigningKey/u.test(authority), "authority comparison must use the live signing bundle"],
   [/does not identify which tool created it/u.test(authority) && /No signing key is currently loaded/u.test(authority), "verified signatures must not be labelled as created elsewhere without evidence"],
+  [/expectedKeyId/u.test(fileAuthority) && /authority\.keyId !== expectedKeyId/u.test(fileAuthority), "signature validation must bind authority keyId to the embedded public key"],
+  [/TEST_ARTIFACT_SCHEMA/u.test(testArtifact) && /marker\.signingKeyId !== authority\.keyId/u.test(testArtifact), "test bypass marker must cryptographically bind to the exact authority key id"],
+  [/integrityValid\(file\)/u.test(testArtifact) && /signatureValid\(file\)/u.test(testArtifact), "test bypass must require both file integrity and Ed25519 signature verification"],
+  [/signingMode === "test_key"/u.test(testArtifact) && /TEST_KEY_ISSUER_PREFIX/u.test(testArtifact), "test-key bypass must require the signed test-key mode and reserved issuer together"],
+  [/TEST_PACKAGE_MAGIC = "ASTRTEST1"/u.test(testArtifact) && /NO-CONFIDENTIALITY/u.test(testArtifact), "test packages must have distinct magic and an explicitly non-confidential public test password"],
+  [/openPackage\(unwrapTestPackage\(bytes\), TEST_PACKAGE_PASSWORD\)/u.test(testTransport), "test package transport must still decrypt a real inner ASTRPKG container"],
+  [/status !== "verified_test_key"/u.test(testTransport) && /testArtifactStatus\(parsed\)/u.test(testTransport), "test package transport must reject anything that is not a verified test-key artifact"],
+  [/testArtifactStatus\(parsed\)/u.test(testDownload) && /status !== "verified_test_key"/u.test(testDownload) && /ordinaryPackagedClick\.call/u.test(testDownload), "ordinary files must fall through to normal password packaging"],
+  [/isTestSigningKey\(key\) && !allowTestOnly/u.test(keys) && /cannot be saved in the production credential vault/u.test(keys), "TEST-ONLY signing bundles must be rejected by normal validation and persistence"],
+  [/CalculationService/u.test(randomTester) && /assembleChart/u.test(randomTester) && /assembleAstralFile/u.test(randomTester), "random chart tester must use the real deterministic calculation and file assembly pipeline"],
+  [/Lorem ipsum/u.test(randomTester) && /calls:\s*0/u.test(randomTester) && /NO-LLM/u.test(randomTester), "random chart tester must use synthetic Lorem Ipsum interpretations with zero model calls"],
+  [!/\.generate\(request|runInterpretationPlan|loadOpenAiKey/u.test(randomTester), "random chart tester must not enter the OpenAI interpretation path"],
+  [/canonicaliseSign/u.test(testPolicy) && /sign\.disabled = testOnly/u.test(testPolicy) && /Re-signing is disabled/u.test(testPolicy), "TEST-ONLY keys must visibly disable maintenance re-signing"],
+  [/await validateSigningKey\(key\)/u.test(maintenancePolicy), "maintenance signing must retain the action-layer production-key validation guard"],
+  [/TEST SIGNATURE — NOT VALID/u.test(authority) && /INVALID TEST ARTIFACT/u.test(authority), "viewer must clearly distinguish verified test signatures from invalid test-marker combinations"],
   [/node:zlib/u.test(build) && /external: true/u.test(build), "browser bundle must leave the unreachable Node compression import external"],
-  [biometricImport >= 0 && ordinaryPackageImport > biometricImport, "browser tools must initialise biometric recognition before ordinary packaged file handling"],
+  [testTransportImport >= 0 && biometricImport > testTransportImport, "test-package recognition must run before biometric package handling"],
+  [ordinaryPackageImport > biometricImport, "browser tools must initialise biometric recognition before ordinary packaged file handling"],
+  [testDownloadImport > ordinaryPackageImport, "test download wrapper must install only after normal password packaging"],
   [/id="astralFile"/u.test(page), "the browser page must retain the single .astral file input"],
 ];
 
