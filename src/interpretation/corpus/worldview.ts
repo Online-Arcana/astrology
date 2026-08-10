@@ -115,13 +115,13 @@ const rules: readonly Rule[] = [
   {
     category: "spiritual_worldview",
     severity: "reject",
-    pattern: /\b(?:spiritual destiny|spiritual lesson|spiritual obligation|spiritual mission|sacred calling|sacred mission|cosmic purpose|cosmic plan|cosmic lesson)\b/giu,
+    pattern: /\b(?:spiritual destiny|spiritual lesson|spiritual obligation|spiritual mission|spiritually meant to|spiritually required|sacred calling|sacred mission|cosmic purpose|cosmic plan|cosmic lesson)\b/giu,
     reason: "a spiritual or cosmic worldview is imposed as the explanation",
   },
   {
     category: "spiritual_worldview",
     severity: "reject",
-    pattern: /\b(?:destino espiritual|lecci[oó]n espiritual|obligaci[oó]n espiritual|misi[oó]n espiritual|llamado sagrado|misi[oó]n sagrada|prop[oó]sito c[oó]smico|plan c[oó]smico)\b/giu,
+    pattern: /\b(?:destino espiritual|lecci[oó]n espiritual|obligaci[oó]n espiritual|misi[oó]n espiritual|espiritualmente destinad[oa]|espiritualmente obligad[oa]|llamado sagrado|misi[oó]n sagrada|prop[oó]sito c[oó]smico|plan c[oó]smico)\b/giu,
     reason: "a spiritual or cosmic worldview is imposed as the explanation",
   },
   {
