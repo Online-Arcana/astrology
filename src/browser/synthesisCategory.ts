@@ -1,8 +1,12 @@
 const synthesisTitles = new Set([
+  "How your chart fits together",
+  "Final portrait",
   "Integrated chart synthesis",
   "Final personal portrait",
+  "Your overall portrait",
 ]);
 
+// "Final synthesis" was the previous customer-facing label. The synthesis now leads the chart as Overview.
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
 
 const ensureCategory = (): { details: HTMLDetailsElement; body: HTMLElement } | null => {
@@ -15,17 +19,18 @@ const ensureCategory = (): { details: HTMLDetailsElement; body: HTMLElement } | 
     details.className = "chart-category";
     const summary = document.createElement("summary");
     const title = document.createElement("span");
-    title.textContent = "Final synthesis";
+    title.textContent = "Overview";
     const count = document.createElement("span");
     count.className = "chart-category-count";
     summary.append(title, count);
     const body = document.createElement("div");
     body.className = "chart-category-body";
     details.append(summary, body);
-    const technical = element<HTMLDetailsElement>("#chart-category-technical");
-    if (technical === null) host.append(details);
-    else host.insertBefore(details, technical);
   }
+  const title = details.querySelector<HTMLElement>(":scope > summary > span:not(.chart-category-count)");
+  if (title !== null && title.textContent !== "Overview") title.textContent = "Overview";
+  details.open = true;
+  if (host.firstElementChild !== details) host.prepend(details);
   const body = details.querySelector<HTMLElement>(":scope > .chart-category-body");
   return body === null ? null : { details, body };
 };
@@ -35,25 +40,38 @@ const ensureIndexItem = (): HTMLUListElement | null => {
   const root = index?.querySelector<HTMLUListElement>(":scope > ul") ?? null;
   if (root === null) return null;
   let categoryLink = root.querySelector<HTMLAnchorElement>('a[href="#chart-category-synthesis"]');
-  if (categoryLink === null) {
-    const item = document.createElement("li");
+  let item = categoryLink?.closest<HTMLLIElement>("li") ?? null;
+  if (categoryLink === null || item === null) {
+    item = document.createElement("li");
     categoryLink = document.createElement("a");
     categoryLink.href = "#chart-category-synthesis";
-    categoryLink.textContent = "Final synthesis";
+    categoryLink.textContent = "Overview";
     const readings = document.createElement("ul");
     item.append(categoryLink, readings);
-    const technical = root.querySelector<HTMLAnchorElement>('a[href="#chart-category-technical"]')?.closest("li") ?? null;
-    if (technical === null) root.append(item);
-    else root.insertBefore(item, technical);
+  } else if (categoryLink.textContent !== "Overview") {
+    categoryLink.textContent = "Overview";
   }
-  const item = categoryLink.closest("li");
-  if (item === null) return null;
+  if (root.firstElementChild !== item) root.prepend(item);
   let readings = item.querySelector<HTMLUListElement>(":scope > ul");
   if (readings === null) {
     readings = document.createElement("ul");
     item.append(readings);
   }
   return readings;
+};
+
+const updateCount = (details: HTMLDetailsElement, body: HTMLElement): void => {
+  const count = details.querySelector<HTMLElement>(":scope > summary .chart-category-count");
+  if (count === null) return;
+  const groups = body.querySelectorAll(":scope > details.chart-reading-group").length;
+  if (groups > 0) {
+    const label = `${groups} group${groups === 1 ? "" : "s"}`;
+    if (count.textContent !== label) count.textContent = label;
+    return;
+  }
+  const total = body.querySelectorAll(":scope > details.chart-reading").length;
+  const label = `${total} section${total === 1 ? "" : "s"}`;
+  if (count.textContent !== label) count.textContent = label;
 };
 
 let correcting = false;
@@ -69,17 +87,12 @@ const correct = (): void => {
   correcting = true;
   try {
     for (const reading of readings) {
-      if (reading.parentElement !== target.body) target.body.append(reading);
+      if (!target.details.contains(reading)) target.body.append(reading);
       const link = element<HTMLAnchorElement>(`#formattedChartIndex a[href="#${CSS.escape(reading.id)}"]`);
       const item = link?.closest("li") ?? null;
-      if (item !== null && item.parentElement !== index) index.append(item);
+      if (item !== null && !index.contains(item)) index.append(item);
     }
-    const count = target.details.querySelector<HTMLElement>(":scope > summary .chart-category-count");
-    if (count !== null) {
-      const total = target.body.querySelectorAll(":scope > details.chart-reading").length;
-      const label = `${total} section${total === 1 ? "" : "s"}`;
-      if (count.textContent !== label) count.textContent = label;
-    }
+    updateCount(target.details, target.body);
   } finally {
     correcting = false;
   }

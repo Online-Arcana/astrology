@@ -27,9 +27,12 @@ await import("./packageWording.js");
 await import("./packageFlow.js");
 await import("./authorityUi.js");
 
-// This observer is scoped to the formatted chart host and only performs
-// idempotent category moves after a chart has been rendered.
+// Synthesis correction runs before the hierarchy pass. The hierarchy classifies
+// from each reading's preserved canonical title, while the final presentation
+// pass translates the rendered labels into plain customer language.
 await import("./synthesisCategory.js");
+await import("./viewerHierarchy.js");
+await import("./customerLanguagePass.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
 
