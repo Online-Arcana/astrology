@@ -22,6 +22,14 @@ const aspects = [
   "quincunx", "semisextile", "semisquare", "sesquiquadrate", "quintile", "biquintile",
 ] as const;
 
+const conditions = [
+  "element-fire", "element-earth", "element-air", "element-water",
+  "modality-cardinal", "modality-fixed", "modality-mutable",
+  "polarity-active", "polarity-receptive",
+  "hemisphere-eastern", "hemisphere-western", "hemisphere-northern", "hemisphere-southern",
+  "house-mode-angular", "house-mode-succedent", "house-mode-cadent",
+] as const;
+
 const patterns = [
   "stellium", "t-square", "grand-trine", "grand-cross", "yod",
   "kite", "mystic-rectangle", "grand-sextile", "thor-hammer",
@@ -72,6 +80,7 @@ export const requiredCorpusAtomIds: readonly string[] = [
   ...signs.map((id) => `sign.${id}`),
   ...Array.from({ length: 12 }, (_, index) => `house.${index + 1}`),
   ...aspects.map((id) => `aspect.${id}`),
+  ...conditions.map((id) => `condition.${id}`),
   ...patterns.map((id) => `pattern.${id}`),
   ...derived.map((id) => `derived.${id}`),
   ...lifeDomains.map((id) => `life-domain.${id}`),
