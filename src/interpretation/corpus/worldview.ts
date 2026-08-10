@@ -67,7 +67,7 @@ const rules: readonly Rule[] = [
   {
     category: "karma_or_reincarnation",
     severity: "reject",
-    pattern: /\b(?:karma|karmic|karmically|karmic debt|past lives?|reincarnat(?:e|ed|es|ion|ion's|ing)|previous incarnation)\b/giu,
+    pattern: /\b(?:karma|karmic|karmically|karmic debt|past (?:life|lives)|reincarnat(?:e|ed|es|ion|ion's|ing)|previous incarnation)\b/giu,
     reason: "karma, reincarnation or past-life metaphysics is assumed",
   },
   {
