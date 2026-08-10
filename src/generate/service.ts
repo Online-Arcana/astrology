@@ -58,6 +58,8 @@ export interface ChartGenerationCheckpoint {
 export type ResumableChartGenerationCheckpoint = ChartGenerationCheckpoint | LegacyGenerationCheckpoint;
 
 export interface GenerationHooks extends Omit<RunHooks, "onCheckpoint"> {
+  /** Fires when the authoritative deterministic calculation exists and before interpretation starts or resumes. */
+  onCalculation?: (calculation: AstralCalculation) => void | Promise<void>;
   onCheckpoint?: (checkpoint: ChartGenerationCheckpoint) => void | Promise<void>;
   onUsage?: (event: PricedUsage) => void;
   onBill?: (bill: ChartBill) => void;
@@ -237,6 +239,7 @@ export class ChartGenerationService {
     hooks: GenerationHooks = {},
   ): Promise<GeneratedChart> {
     const calculation = await this.#runtime.calculation.calculate(birth, options);
+    await hooks.onCalculation?.(calculation);
     return this.#complete(calculation, hooks, null, null);
   }
 
@@ -249,6 +252,7 @@ export class ChartGenerationService {
         legacyBirthInput(checkpoint),
         optionsFromConfig(this.#runtime.config),
       );
+      await hooks.onCalculation?.(calculation);
       const recovery = migrateLegacyInterpretation(checkpoint, calculation);
       return this.#complete(calculation, hooks, recovery, null);
     }
@@ -264,6 +268,7 @@ export class ChartGenerationService {
       throw new Error("Generation recovery calculation fingerprint does not match its calculation");
     }
     assertRecoveryBasis(checkpoint, this.#runtime.config);
+    await hooks.onCalculation?.(checkpoint.calculation);
     const recovery = await authoritativeInterpretation(checkpoint.calculation, checkpoint.interpretation);
     return this.#complete(checkpoint.calculation, hooks, recovery, checkpoint.billing ?? null);
   }
@@ -284,7 +289,13 @@ export class ChartGenerationService {
       hooks.onUsage?.(event);
       hooks.onBill?.(collector.snapshot());
     };
-    const { onCheckpoint, onUsage: _onUsage, onBill: _onBill, ...runHooks } = hooks;
+    const {
+      onCalculation: _onCalculation,
+      onCheckpoint,
+      onUsage: _onUsage,
+      onBill: _onBill,
+      ...runHooks
+    } = hooks;
     const instrumented = diagnosticHooks({
       ...runHooks,
       ...(onCheckpoint === undefined
