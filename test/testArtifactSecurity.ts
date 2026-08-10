@@ -1,3 +1,4 @@
+import { open as openPackage, pack } from "astral-packager";
 import { base64url } from "../src/file/codec.js";
 import { sign, signatureValid } from "../src/file/authority.js";
 import type { AstralFile } from "../src/types/file.js";
@@ -9,6 +10,7 @@ import {
 } from "../src/browser/keys.js";
 import {
   TEST_PACKAGE_MAGIC,
+  TEST_PACKAGE_PASSWORD,
   isTestPackageBytes,
   unwrapTestPackage,
   wrapTestPackage,
@@ -70,10 +72,34 @@ assert(isTestPackageBytes(wrapped), "test wrapper must be recognisable");
 const unwrapped = unwrapTestPackage(wrapped);
 assert(new TextDecoder().decode(unwrapped) === "ASTRPKGfixture", "test wrapper must preserve the exact inner ASTRPKG bytes");
 
+const protectedSource = JSON.stringify({ classification: "ordinary-password-protected-chart" });
+const ordinaryPassword = "Ordinary-Real-Chart!Password-8427";
+const ordinaryPackage = await pack(protectedSource, ordinaryPassword);
+const forgedTestWrapper = wrapTestPackage(ordinaryPackage.bytes);
+let publicPasswordOpenedOrdinary = false;
+try {
+  const opened = await openPackage(unwrapTestPackage(forgedTestWrapper), TEST_PACKAGE_PASSWORD);
+  publicPasswordOpenedOrdinary = true;
+  opened.id.drop();
+} catch {
+  // Expected: adding ASTRTEST1 outside a real package does not change its encryption key.
+}
+assert(!publicPasswordOpenedOrdinary, "ASTRTEST1 must not make an ordinary password-protected package decryptable with the public test password");
+
+const intentionalTestPackage = await pack(protectedSource, TEST_PACKAGE_PASSWORD);
+const openedTest = await openPackage(unwrapTestPackage(wrapTestPackage(intentionalTestPackage.bytes)), TEST_PACKAGE_PASSWORD);
+try {
+  assert(openedTest.source === protectedSource, "the public test password must open only a package intentionally encrypted for test transport");
+} finally {
+  openedTest.id.drop();
+}
+
 console.log("ok 1 - authority keyId is cryptographically bound to publicKey");
 console.log("ok 2 - test signing key is unmistakably marked");
 console.log("ok 3 - production validation rejects test signing keys");
 console.log("ok 4 - explicit test validation accepts a cryptographically sound test key");
 console.log("ok 5 - test signing keys cannot enter the credential vault");
 console.log("ok 6 - test package wrapper is distinct and lossless");
-console.log("1..6");
+console.log("ok 7 - wrapping an ordinary encrypted package cannot bypass its real password");
+console.log("ok 8 - public test password opens only intentionally test-encrypted transport");
+console.log("1..8");
