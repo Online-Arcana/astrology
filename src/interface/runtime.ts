@@ -2,6 +2,7 @@ import { BillStore } from "../billing/store.js";
 import { loadCalculationService } from "../calculate/service.js";
 import type { Config } from "../config.js";
 import { loadChartGenerationService } from "../generate/service.js";
+import { productionSemanticProvider } from "../interpretation/map/builtin.js";
 import { loadCscCatalogue } from "../place/csc.js";
 import type { ApiRuntime } from "./api.js";
 
@@ -20,7 +21,7 @@ export const loadApiRuntime = async (
   ]);
   const generator = config.openai.apiKey.trim().length === 0
     ? null
-    : await loadChartGenerationService(config, version);
+    : await loadChartGenerationService(config, version, {}, productionSemanticProvider);
   return {
     service,
     generator,
