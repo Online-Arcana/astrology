@@ -13,6 +13,7 @@ import { loadCscCatalogue } from "../place/csc.js";
 import type { PlaceCatalogue } from "../place/model.js";
 import type { BirthInput } from "../types/base.js";
 import type { AstralFile } from "../types/file.js";
+import "./chartWheelBootstrap.js";
 import type { BrowserSigningKey } from "./keys.js";
 
 export const browserVersion = "0.20.0";
@@ -73,6 +74,14 @@ const signedGeneratedFile = async (
   return sign(generated.file, key.issuer, key, generatedAt);
 };
 
+const wheelHooks = (hooks: GenerationHooks): GenerationHooks => ({
+  ...hooks,
+  onCalculation: async (calculation) => {
+    window.dispatchEvent(new CustomEvent("astral:calculation", { detail: calculation }));
+    await hooks.onCalculation?.(calculation);
+  },
+});
+
 export class BrowserRuntime {
   readonly #apiKey: string;
   readonly #places: Promise<PlaceCatalogue>;
@@ -110,7 +119,7 @@ export class BrowserRuntime {
     hooks: GenerationHooks,
     signingKey: BrowserSigningKey | null,
   ): Promise<BrowserGeneratedChart> {
-    const generated = await (await this.#service(options)).generate(birth, options, hooks);
+    const generated = await (await this.#service(options)).generate(birth, options, wheelHooks(hooks));
     return {
       ...generated,
       file: await signedGeneratedFile(generated, signingKey),
@@ -123,7 +132,7 @@ export class BrowserRuntime {
     hooks: GenerationHooks,
     signingKey: BrowserSigningKey | null,
   ): Promise<BrowserGeneratedChart> {
-    const generated = await (await this.#service(optionsFor(checkpoint))).resume(checkpoint, hooks);
+    const generated = await (await this.#service(optionsFor(checkpoint))).resume(checkpoint, wheelHooks(hooks));
     return {
       ...generated,
       file: await signedGeneratedFile(generated, signingKey),
