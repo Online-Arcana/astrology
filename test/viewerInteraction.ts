@@ -35,6 +35,15 @@ await test("newly rendered chart details default to collapsed", async () => {
   assert(/MutationObserver/u.test(source) && /structuralAddition/u.test(source), "new chart structures must trigger the initial-state pass");
 });
 
+await test("index branch labels toggle the same disclosure as their arrows", async () => {
+  const source = await readFile("src/browser/viewerInitialState.ts", "utf8");
+  assert(/#formattedChartIndex \.formatted-index-row > a\[href\^='#'\]/u.test(source), "branch label clicks must be delegated from the formatted viewer");
+  assert(/formatted-index-branch-toggle/u.test(source), "branch labels must resolve their existing disclosure control");
+  assert(/event\.preventDefault\(\)/u.test(source), "branch label disclosure must not navigate the main chart");
+  assert(/event\.stopPropagation\(\)/u.test(source), "branch label disclosure must not reach the legacy navigation handler");
+  assert(/toggle\.click\(\)/u.test(source), "branch labels must use the exact same toggle behaviour as the disclosure arrow");
+});
+
 await test("closed details and hidden index branches are actually hidden", async () => {
   const styles = await readFile("public/viewer-state-fixes.css", "utf8");
   assert(/\.formatted-chart-index \[hidden\][\s\S]*?display:\s*none\s*!important/u.test(styles), "hidden index branches must override grid display rules");
