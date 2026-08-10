@@ -9,6 +9,7 @@ import {
   type GenerationHooks,
   type ResumableChartGenerationCheckpoint,
 } from "../generate/service.js";
+import { productionSemanticProvider } from "../interpretation/map/builtin.js";
 import { loadCscCatalogue } from "../place/csc.js";
 import type { PlaceCatalogue } from "../place/model.js";
 import type { BirthInput } from "../types/base.js";
@@ -108,9 +109,12 @@ export class BrowserRuntime {
     if (options.primaryZodiac !== options.interpretationMode) {
       throw new Error("The browser runtime requires one selected zodiac system");
     }
-    return loadChartGenerationService(configFor(this.#apiKey, options), browserVersion, {
-      fetch: this.#fetch,
-    });
+    return loadChartGenerationService(
+      configFor(this.#apiKey, options),
+      browserVersion,
+      { fetch: this.#fetch },
+      productionSemanticProvider,
+    );
   }
 
   async generate(
