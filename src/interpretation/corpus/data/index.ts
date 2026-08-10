@@ -4,6 +4,7 @@ import type { CorpusAtom, CorpusClaim, CorpusSource } from "../types.js";
 import { angleAtoms, angleClaims } from "./angles.js";
 import { aspectAtoms, aspectClaims } from "./aspects.js";
 import { bodyAtoms, bodyClaims } from "./bodies.js";
+import { derivedAtoms, derivedClaims, derivedSources } from "./derived.js";
 import { domainAtoms, domainClaims, projectDomainSource } from "./domains.js";
 import { houseAtoms, houseClaims } from "./houses.js";
 import { patternAtoms, patternClaims, patternSources } from "./patterns.js";
@@ -14,14 +15,15 @@ import { signAtoms, signClaims } from "./signs.js";
  * Reviewed semantic data that has actually been approved for corpus use.
  *
  * This list is intentionally incomplete while the remaining rare points,
- * angles and derived constructs are researched. Production callers compile
- * with requireComplete=true and therefore fail closed until the complete corpus
- * has been reviewed.
+ * angles and eclipse semantics are researched. Production callers compile with
+ * requireComplete=true and therefore fail closed until the complete corpus has
+ * been reviewed.
  */
 export const reviewedCorpusSources: readonly CorpusSource[] = [
   ...corpusSources,
   projectDomainSource,
   ...patternSources,
+  ...derivedSources,
 ] as const;
 
 export const reviewedCorpusAtoms: readonly CorpusAtom[] = [
@@ -32,6 +34,7 @@ export const reviewedCorpusAtoms: readonly CorpusAtom[] = [
   ...houseAtoms,
   ...aspectAtoms,
   ...patternAtoms,
+  ...derivedAtoms,
   ...domainAtoms,
 ] as const;
 
@@ -43,6 +46,7 @@ export const reviewedCorpusClaims: readonly CorpusClaim[] = [
   ...houseClaims,
   ...aspectClaims,
   ...patternClaims,
+  ...derivedClaims,
   ...domainClaims,
 ] as const;
 
