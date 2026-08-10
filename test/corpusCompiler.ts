@@ -1,4 +1,5 @@
 import { compileInterpretationCorpus } from "../src/interpretation/corpus/compile.js";
+import { compileReviewedCorpus, reviewedCorpusAtoms } from "../src/interpretation/corpus/data/index.js";
 import type { CorpusAtom, CorpusClaim, CorpusSource } from "../src/interpretation/corpus/types.js";
 
 const equal = <T>(actual: T, expected: T, message: string): void => {
@@ -98,6 +99,32 @@ test("non-agnostic claims cannot enter even an otherwise valid partial corpus", 
     failed = true;
   }
   equal(failed, true, "metaphysical claim must fail compilation");
+});
+
+test("the checked-in reviewed corpus contains all ten principal body atoms", () => {
+  const ids = new Set(reviewedCorpusAtoms.map(({ id }) => id));
+  const expected = [
+    "sun", "moon", "mercury", "venus", "mars",
+    "jupiter", "saturn", "uranus", "neptune", "pluto",
+  ];
+  for (const id of expected) equal(ids.has(`body.${id}`), true, `body.${id} exists`);
+});
+
+test("the checked-in reviewed corpus compiles as a partial agnostic corpus", () => {
+  const compiled = compileReviewedCorpus(false);
+  equal(compiled.worldview, "agnostic", "reviewed corpus worldview");
+  equal(Object.keys(compiled.atoms).length >= 10, true, "reviewed corpus has body atoms");
+  equal(Object.keys(compiled.claims).length > Object.keys(compiled.atoms).length, true, "reviewed atoms carry multiple claims where supported");
+});
+
+test("the checked-in corpus still refuses production compilation until remaining atoms are reviewed", () => {
+  let failed = false;
+  try {
+    compileReviewedCorpus(true);
+  } catch (cause: unknown) {
+    failed = cause instanceof Error && cause.message.includes("missing required atoms");
+  }
+  equal(failed, true, "reviewed corpus must remain fail-closed while incomplete");
 });
 
 console.log(`1..${passed}`);
