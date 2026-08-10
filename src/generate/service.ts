@@ -8,6 +8,7 @@ import {
 import { assembleChart } from "../chart/assemble.js";
 import type { Config } from "../config.js";
 import { assembleAstralFile } from "../file/document.js";
+import type { InterpretationMap } from "../interpretation/corpus/types.js";
 import type { InterpretationSemanticProvider } from "../interpretation/map/provider.js";
 import {
   legacyBirthInput,
@@ -18,6 +19,7 @@ import {
 import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
 import { diagnosticHooks } from "../llm/orchestrate/diagnostics.js";
 import {
+  interpretationCalls,
   nlpAuditProfile,
   promptCatalogue,
   runInterpretationPlan,
@@ -34,7 +36,7 @@ import type {
 } from "../llm/orchestrate/types.js";
 import { preferredGenderOf, type BirthInput, type PreferredGender } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
-import type { AstralCalculation, AstralFile } from "../types/file.js";
+import type { AstralCalculation, AstralFile, InterpretationUnit } from "../types/file.js";
 
 export const generationRecoverySchema = "astral-generation-recovery/1.1.0" as const;
 
@@ -233,6 +235,21 @@ const assertRecoveryBasis = (checkpoint: ChartGenerationCheckpoint, config: Conf
   }
 };
 
+const memoizedSemanticProvider = (
+  provider: InterpretationSemanticProvider,
+): InterpretationSemanticProvider => {
+  const maps = new Map<string, InterpretationMap>();
+  return {
+    mapFor: (calculation: AstralCalculation, unit: InterpretationUnit): InterpretationMap => {
+      const existing = maps.get(unit.id);
+      if (existing !== undefined) return existing;
+      const map = provider.mapFor(calculation, unit);
+      maps.set(unit.id, map);
+      return map;
+    },
+  };
+};
+
 export class ChartGenerationService {
   readonly #runtime: GenerationRuntime;
 
@@ -317,15 +334,24 @@ export class ChartGenerationService {
               )),
           }),
     }, () => this.#runtime.now());
+    const configuredProvider = this.#runtime.semanticProvider ?? null;
+    const semanticProvider = configuredProvider === null
+      ? null
+      : memoizedSemanticProvider(configuredProvider);
 
     try {
+      // Preflight the complete corpus-backed call plan before opening a paid
+      // conversation. This validates and memoises every map that will later be
+      // shared by the writer and deterministic reconstruction.
+      if (semanticProvider !== null) interpretationCalls(calculation, semanticProvider);
+
       const interpreted = await runInterpretationPlan(
         calculation,
         this.#runtime.config,
         this.#runtime.schemaFactory(calculation, report),
         instrumented,
         recovery,
-        this.#runtime.semanticProvider ?? null,
+        semanticProvider,
       );
       const generatedAt = this.#runtime.now();
       const chart = assembleChart(calculation, interpreted.run, {
