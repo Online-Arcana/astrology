@@ -2,6 +2,7 @@ import { auditWorldviewText } from "../../interpretation/corpus/worldview.js";
 import type { JsonRef } from "../../types/base.js";
 import type { InterpretationCall } from "../orchestrate/types.js";
 import { fallbackCatalogue, type FallbackFamily } from "./catalogue.js";
+import { semanticFallbackText } from "./semantic.js";
 
 export interface ReconstructionResult {
   value: object;
@@ -159,10 +160,17 @@ interface BuildState {
   forceFields: ReadonlySet<string>;
   fallbackFields: Set<string>;
   warnings: string[];
+  usedXmlFallback: boolean;
 }
 
 const scalarFallback = (state: BuildState, key: string, schema: Schema): string => {
   state.fallbackFields.add(key);
+  if (state.unit.semanticMap !== undefined) {
+    const semantic = semanticFallbackText(state.unit.semanticMap, key);
+    if (semantic !== null) return semantic;
+    state.warnings.push(`Semantic reconstruction had no safe rendering for ${key}; XML fallback used`);
+  }
+  state.usedXmlFallback = true;
   return fallbackText(state.family, key, state.unit, schema);
 };
 
@@ -326,6 +334,7 @@ export const reconstructUnit = ({
       forceFields,
       fallbackFields: new Set<string>(),
       warnings: [],
+      usedXmlFallback: false,
     };
     const value = buildValue(state, unit.id, unit.shape.schema, candidates);
     const objectValue = record(value) ? value : {};
@@ -333,7 +342,7 @@ export const reconstructUnit = ({
       value: parsed(unit, objectValue),
       fallbackFields: [...state.fallbackFields],
       warnings: state.warnings,
-      usedXmlFallback: state.fallbackFields.size > 0,
+      usedXmlFallback: state.usedXmlFallback,
     };
   } catch (cause: unknown) {
     const family: FallbackFamily = unit.id === "generated-name" ? "generated-name" : "section";
