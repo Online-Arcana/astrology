@@ -5,6 +5,31 @@
   container-type: inline-size;
 }
 
+#formattedChart.chart-wheel-host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#formattedChart.chart-wheel-host > .chart-wheel-category {
+  order: -100;
+}
+
+#formattedChart.chart-wheel-host > .viewer-chart-bulk-controls {
+  order: -90;
+}
+
+.chart-wheel-category {
+  margin: 0 0 .85rem;
+  overflow: visible;
+}
+
+.chart-wheel-category-body {
+  display: block;
+  min-width: 0;
+  padding: 0 .75rem .75rem;
+}
+
 .chart-wheel-card .section-heading {
   margin-bottom: .35rem;
 }
@@ -28,7 +53,7 @@
 .chart-wheel-graphic {
   width: 100%;
   min-width: 0;
-  max-width: 58rem;
+  max-width: 68rem;
   margin-inline: auto;
   padding: clamp(.25rem, 1.2cqw, .7rem);
   border: 1px solid var(--border);
@@ -161,6 +186,7 @@
 .wheel-aspect {
   stroke-width: 1.35;
   opacity: .52;
+  transition: opacity .14s ease, stroke-width .14s ease, filter .14s ease;
 }
 
 .wheel-aspect.major { stroke-width: 1.7; opacity: .62; }
@@ -169,6 +195,12 @@
 .wheel-aspect-contextual { stroke: rgba(213, 200, 255, .55); }
 .wheel-aspect-adjusting { stroke: rgba(236, 190, 111, .7); stroke-dasharray: 6 4; }
 .wheel-aspect-creative { stroke: rgba(174, 133, 229, .72); stroke-dasharray: 3 4; }
+
+.wheel-aspect.is-active {
+  opacity: 1;
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0 5px rgba(245, 241, 255, .72));
+}
 
 .wheel-aspect-hit {
   stroke: transparent;
@@ -245,11 +277,12 @@
   line-height: 1.45;
 }
 
+.wheel-aspect-meaning {
+  color: #f7f3ff !important;
+}
+
 .wheel-detail p {
-  margin: .75rem 0 0;
-  color: var(--muted);
-  font-size: .78rem;
-  line-height: 1.5;
+  display: none;
 }
 
 .wheel-untimed-note {
@@ -259,7 +292,7 @@
 }
 
 #fileChartWheelCard {
-  margin: 0;
+  margin: 0 0 .85rem;
 }
 
 @container (min-width: 62rem) {
