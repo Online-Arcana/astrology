@@ -54,14 +54,43 @@ await test("life-section machine labels are customer-facing", () => {
   assert(readingDescription("tropical life children And Nurturing")?.includes("care, nurturing") === true, "children section must explain what it covers");
 });
 
-await test("compatibility viewer has one extra hierarchy and one global sign filter", async () => {
+await test("overview leads the chart and owns synthesis readings", async () => {
+  const source = await readFile("src/browser/viewerHierarchy.ts", "utf8");
+  const synthesis = await readFile("src/browser/synthesisCategory.ts", "utf8");
+  assert(/title\.textContent = "Overview"/u.test(synthesis), "synthesis category must be renamed Overview");
+  assert(/host\.prepend\(details\)/u.test(synthesis), "Overview must be moved to the beginning of the chart");
+  assert(/navRoot\.prepend\(item\)/u.test(source), "Overview must be moved to the beginning of the index");
+  assert(/Integrated chart synthesis/u.test(source) && /Final personal portrait/u.test(source), "Overview must recognise canonical synthesis readings");
+});
+
+await test("every ordinary category is organised as category group section", async () => {
+  const source = await readFile("src/browser/viewerHierarchy.ts", "utf8");
+  assert(/chart-reading-group/u.test(source), "ordinary categories must create explicit reading groups");
+  assert(/rebuildCategoryIndex/u.test(source), "group hierarchy must also be reflected in the index");
+  assert(/categoryIndexList\(category\.id\)/u.test(source), "grouped index must remain nested below its category");
+  assert(/\.chart-reading-group\{/u.test(source), "reading groups must have customer-facing styling");
+});
+
+await test("aspect and pattern readings are divided into useful groups", async () => {
+  const source = await readFile("src/browser/viewerHierarchy.ts", "utf8");
+  assert(/title: "Aspect patterns"/u.test(source), "patterns must have their own group");
+  assert(/title: "Declination aspects"/u.test(source), "declination aspects must have their own group");
+  assert(/title: "Major planetary aspects"/u.test(source), "major planetary aspects must have their own group");
+  assert(/title: "Major aspects to angles and calculated points"/u.test(source), "major point aspects must have their own group");
+  assert(/title: "Minor planetary aspects"/u.test(source), "minor planetary aspects must have their own group");
+  assert(/title: "Minor aspects to angles and calculated points"/u.test(source), "minor point aspects must have their own group");
+});
+
+await test("compatibility viewer has group domain section hierarchy and a styled sign filter", async () => {
   const source = await readFile("src/browser/viewerEnhancements.ts", "utf8");
+  const hierarchy = await readFile("src/browser/viewerHierarchy.ts", "utf8");
   assert(/title: "Relationships"/u.test(source), "compatibility must have a Relationships group");
   assert(/title: "Sexual"/u.test(source), "compatibility must have a Sexual group");
   assert(/title: "Business"/u.test(source), "compatibility must have a Business group");
   assert(/Show compatibility with/u.test(source) && /All zodiac signs/u.test(source), "compatibility must provide one sign filter");
   assert(/compatibility-bucket/u.test(source) && /compatibility-domain/u.test(source), "compatibility must retain group and domain tiers");
   assert(/domainList/u.test(source) && /readingList/u.test(source), "compatibility index must expose group, domain and reading tiers");
+  assert(/\.compatibility-sign-filter\{/u.test(hierarchy) && /\.compatibility-sign-filter select/u.test(hierarchy), "compatibility filter must be visibly styled");
 });
 
 await test("chart index stays visible on the left with nested branches collapsed", async () => {
@@ -76,9 +105,16 @@ await test("chart index stays visible on the left with nested branches collapsed
   assert(!/index-collapsed/u.test(styles), "viewer must not collapse the whole index column");
 });
 
+await test("nested index links open their complete details path", async () => {
+  const source = await readFile("src/browser/viewerHierarchy.ts", "utf8");
+  assert(/openPath/u.test(source), "nested navigation must open ancestor details");
+  assert(/parent instanceof HTMLDetailsElement/u.test(source), "nested navigation must open intermediate groups before scrolling");
+});
+
 await test("viewer observers remain scoped to formatted chart UI", async () => {
   const source = await readFile("src/browser/viewerEnhancements.ts", "utf8");
-  assert(!/observe\(document\.body/u.test(source), "viewer must not install a page-wide observer");
+  const hierarchy = await readFile("src/browser/viewerHierarchy.ts", "utf8");
+  assert(!/observe\(document\.body/u.test(source) && !/observe\(document\.body/u.test(hierarchy), "viewer must not install a page-wide observer");
   assert(/#formattedChart/u.test(source) && /#formattedView/u.test(source), "viewer observers must stay scoped to formatted-chart containers");
 });
 
