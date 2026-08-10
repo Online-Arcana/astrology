@@ -120,18 +120,42 @@ const slug = (value: string): string => value
   .replaceAll(/^-+|-+$/gu, "")
   .toLocaleLowerCase("en-GB") || "section";
 
+const indexLinkItem = (href: string, title: string): HTMLLIElement => {
+  const item = document.createElement("li");
+  const link = document.createElement("a");
+  link.href = href;
+  link.textContent = title;
+  item.append(link);
+  return item;
+};
+
 const rebuildCompatibilityIndex = (buckets: readonly HTMLDetailsElement[]): void => {
   const categoryLink = element<HTMLAnchorElement>('#formattedChartIndex a[href="#chart-category-compatibilities"]');
   const root = categoryLink?.closest("li")?.querySelector<HTMLUListElement>(":scope > ul") ?? null;
   if (root === null) return;
   root.replaceChildren();
+
   for (const bucket of buckets) {
-    const item = document.createElement("li");
-    const link = document.createElement("a");
-    link.href = `#${bucket.id}`;
-    link.textContent = bucket.querySelector(":scope > summary .compatibility-bucket-title")?.textContent?.trim() ?? "Compatibility";
-    item.append(link);
-    root.append(item);
+    const bucketTitle = bucket.querySelector<HTMLElement>(":scope > summary .compatibility-bucket-title")?.textContent?.trim() ?? "Compatibility";
+    const bucketItem = indexLinkItem(`#${bucket.id}`, bucketTitle);
+    const domainList = document.createElement("ul");
+
+    for (const domain of bucket.querySelectorAll<HTMLDetailsElement>(":scope > .compatibility-bucket-body > details.compatibility-domain")) {
+      const domainTitle = domain.querySelector<HTMLElement>(":scope > summary .compatibility-domain-title")?.textContent?.trim() ?? "Compatibility area";
+      const domainItem = indexLinkItem(`#${domain.id}`, domainTitle);
+      const readingList = document.createElement("ul");
+
+      for (const reading of domain.querySelectorAll<HTMLDetailsElement>(":scope > .compatibility-domain-body > details.chart-reading")) {
+        const title = readingSummary(reading)?.textContent?.trim() ?? "Reading";
+        readingList.append(indexLinkItem(`#${reading.id}`, title));
+      }
+
+      if (readingList.children.length > 0) domainItem.append(readingList);
+      domainList.append(domainItem);
+    }
+
+    if (domainList.children.length > 0) bucketItem.append(domainList);
+    root.append(bucketItem);
   }
 };
 
@@ -250,50 +274,56 @@ const enhanceCompatibilities = (): void => {
   rebuildCompatibilityIndex(bucketElements);
 };
 
+const setIndexBranchExpanded = (
+  toggle: HTMLButtonElement,
+  children: HTMLUListElement,
+  expanded: boolean,
+): void => {
+  toggle.setAttribute("aria-expanded", String(expanded));
+  toggle.classList.toggle("expanded", expanded);
+  children.hidden = !expanded;
+};
+
+const enhanceIndexItem = (item: HTMLLIElement): void => {
+  const children = item.querySelector<HTMLUListElement>(":scope > ul");
+  if (children === null) return;
+
+  let row = item.querySelector<HTMLElement>(":scope > .formatted-index-row");
+  if (row === null) {
+    const link = item.querySelector<HTMLAnchorElement>(":scope > a");
+    if (link === null) return;
+
+    row = document.createElement("div");
+    row.className = "formatted-index-row";
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "ghost formatted-index-branch-toggle";
+    toggle.textContent = "›";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", `Show subsections of ${link.textContent?.trim() ?? "this section"}`);
+    row.append(toggle, link);
+    item.insertBefore(row, children);
+    children.hidden = true;
+
+    toggle.addEventListener("click", () => {
+      const expanded = toggle.getAttribute("aria-expanded") !== "true";
+      setIndexBranchExpanded(toggle, children, expanded);
+      toggle.setAttribute(
+        "aria-label",
+        `${expanded ? "Hide" : "Show"} subsections of ${link.textContent?.trim() ?? "this section"}`,
+      );
+    });
+  }
+
+  for (const child of children.querySelectorAll<HTMLLIElement>(":scope > li")) enhanceIndexItem(child);
+};
+
 const enhanceIndex = (): void => {
-  const view = element<HTMLElement>("#formattedView");
   const nav = element<HTMLElement>("#formattedChartIndex");
-  if (view === null || nav === null || nav.dataset["collapsible"] === "true") return;
-  const heading = nav.querySelector<HTMLElement>(":scope > h3");
-  const list = nav.querySelector<HTMLUListElement>(":scope > ul");
-  if (heading === null || list === null) return;
-
-  const header = document.createElement("div");
-  header.className = "formatted-index-header";
-  const toggle = document.createElement("button");
-  toggle.type = "button";
-  toggle.className = "ghost formatted-index-toggle";
-  toggle.setAttribute("aria-expanded", "false");
-  toggle.setAttribute("aria-controls", "formattedChartIndexContents");
-  const title = document.createElement("span");
-  title.textContent = "Chart index";
-  const action = document.createElement("span");
-  action.className = "formatted-index-toggle-action";
-  action.textContent = "Show";
-  toggle.append(title, action);
-  header.append(toggle);
-
-  const contents = document.createElement("div");
-  contents.id = "formattedChartIndexContents";
-  contents.className = "formatted-chart-index-contents";
-  contents.hidden = true;
-  contents.append(list);
-  heading.remove();
-  nav.prepend(header, contents);
-  nav.dataset["collapsible"] = "true";
-  view.classList.add("index-collapsed");
-
-  const setExpanded = (expanded: boolean): void => {
-    toggle.setAttribute("aria-expanded", String(expanded));
-    action.textContent = expanded ? "Hide" : "Show";
-    contents.hidden = !expanded;
-    view.classList.toggle("index-collapsed", !expanded);
-  };
-  toggle.addEventListener("click", () => setExpanded(toggle.getAttribute("aria-expanded") !== "true"));
-  nav.addEventListener("click", (event) => {
-    const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href^='#']") : null;
-    if (link !== null && matchMedia("(max-width: 980px)").matches) setExpanded(false);
-  });
+  const list = nav?.querySelector<HTMLUListElement>(":scope > ul") ?? null;
+  if (nav === null || list === null) return;
+  nav.dataset["nestedBranches"] = "true";
+  for (const item of list.querySelectorAll<HTMLLIElement>(":scope > li")) enhanceIndexItem(item);
 };
 
 let enhancing = false;
