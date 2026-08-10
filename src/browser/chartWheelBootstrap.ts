@@ -1,5 +1,6 @@
 import type { AstralCalculation, AstralFile } from "../types/file.js";
 import { renderChartWheel } from "./chartWheel.js";
+import { applyCanonicalWheelGlyphs } from "./chartWheelGlyphs.js";
 
 const stylesheetId = "astralChartWheelStyles";
 if (document.getElementById(stylesheetId) === null) {
@@ -45,7 +46,9 @@ const cardShell = (id: string, eyebrow: string, heading: string, intro: string):
 
 const renderIntoCard = (card: HTMLElement, calculation: AstralCalculation): void => {
   card.querySelector(".chart-wheel")?.remove();
-  card.append(renderChartWheel(calculation));
+  const wheel = renderChartWheel(calculation);
+  applyCanonicalWheelGlyphs(wheel);
+  card.append(wheel);
 };
 
 const ensureLiveCard = (): HTMLElement | null => {
