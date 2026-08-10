@@ -27,11 +27,12 @@ await import("./packageWording.js");
 await import("./packageFlow.js");
 await import("./authorityUi.js");
 
-// Synthesis correction runs before the final hierarchy pass so late category
-// moves are normalised into Overview -> group -> section rather than fighting
-// the customer-facing navigation structure.
+// Synthesis correction runs before the hierarchy pass. The final presentation
+// pass then translates canonical technical names into plain customer language
+// without changing the underlying chart identifiers or data.
 await import("./synthesisCategory.js");
 await import("./viewerHierarchy.js");
+await import("./customerLanguagePass.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
 
