@@ -24,8 +24,11 @@ export interface InterpretationPromptInput {
   } | null;
 }
 
+export type InterpretationSemanticMode = "corpus-backed" | "legacy-unmapped";
+
 export interface SerializedInterpretationPrompt {
   profile: typeof interpretationVoiceProfile.id;
+  semanticMode: InterpretationSemanticMode;
   privateControls: string;
   interpretiveVoice: string;
   semanticInput: {
@@ -53,14 +56,31 @@ const privateControls = (task: string): string => [
   task,
 ].join("\n");
 
+const semanticContract = (map: InterpretationMap | null): string => [
+  semanticRegisterContract(),
+  map === null
+    ? [
+        "SEMANTIC MODE: legacy-unmapped.",
+        "A reviewed compiled InterpretationMap is not attached to this call yet.",
+        "This is transitional compatibility mode while the project corpus is being built; do not infer psychological meaning from machine identifiers, calculation variants or JSON property names.",
+      ].join("\n")
+    : [
+        "SEMANTIC MODE: corpus-backed.",
+        "Only propositions contained in interpretationMap authorise astrological meaning for this unit.",
+        "Do not add an astrological meaning because it is familiar from training, convention or source wording when that meaning is absent from interpretationMap.",
+        "forbiddenClaims is policy metadata describing meanings that must not be inferred; it is not semantic content to repeat.",
+      ].join("\n"),
+].join("\n");
+
 export const serialiseInterpretationPrompt = (
   input: InterpretationPromptInput,
 ): SerializedInterpretationPrompt => ({
   profile: interpretationVoiceProfile.id,
+  semanticMode: input.interpretationMap === null ? "legacy-unmapped" : "corpus-backed",
   privateControls: privateControls(input.task),
   interpretiveVoice: interpretiveVoiceContract(),
   semanticInput: {
-    contract: semanticRegisterContract(),
+    contract: semanticContract(input.interpretationMap),
     decomposition: input.decomposition,
     interpretationMap: input.interpretationMap,
   },
