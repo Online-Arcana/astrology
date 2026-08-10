@@ -8,6 +8,7 @@ import {
 import { assembleChart } from "../chart/assemble.js";
 import type { Config } from "../config.js";
 import { assembleAstralFile } from "../file/document.js";
+import type { InterpretationSemanticProvider } from "../interpretation/map/provider.js";
 import {
   legacyBirthInput,
   legacyGenerationRecoverySchema,
@@ -75,6 +76,12 @@ export interface GenerationRuntime {
   schemaFactory: ChartSchemaFactory;
   config: Config;
   version: string;
+  /**
+   * Optional while the reviewed semantic corpus is under construction.
+   * When supplied, every substantive interpretation call is corpus-backed and
+   * the provider must fail closed for missing or invalid unit semantics.
+   */
+  semanticProvider?: InterpretationSemanticProvider | null;
   now(): string;
 }
 
@@ -318,6 +325,7 @@ export class ChartGenerationService {
         this.#runtime.schemaFactory(calculation, report),
         instrumented,
         recovery,
+        this.#runtime.semanticProvider ?? null,
       );
       const generatedAt = this.#runtime.now();
       const chart = assembleChart(calculation, interpreted.run, {
@@ -345,6 +353,7 @@ export const loadChartGenerationService = async (
   config: Config,
   version = "0.20.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
+  semanticProvider: InterpretationSemanticProvider | null = null,
 ): Promise<ChartGenerationService> => {
   if (config.openai.apiKey.trim().length === 0) {
     throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
@@ -373,6 +382,7 @@ export const loadChartGenerationService = async (
     schemaFactory,
     config,
     version,
+    ...(semanticProvider === null ? {} : { semanticProvider }),
     now: () => new Date().toISOString(),
   });
 };
