@@ -16,13 +16,15 @@ const readingBody = (reading: HTMLDetailsElement): HTMLElement | null =>
 const normaliseReading = (reading: HTMLDetailsElement): string => {
   const summary = readingSummary(reading);
   if (summary === null) return "Chart section";
+  if (reading.dataset["viewerTitleLocked"] === "true") return summary.textContent?.trim() ?? "Chart section";
+
   const original = reading.dataset["originalTitle"] ?? summary.textContent?.trim() ?? "Chart section";
   reading.dataset["originalTitle"] = original;
   const title = displayReadingTitle(original);
   if (summary.textContent !== title) summary.textContent = title;
 
   const link = element<HTMLAnchorElement>(`#formattedChartIndex a[href="#${CSS.escape(reading.id)}"]`);
-  if (link !== null) link.textContent = title;
+  if (link !== null && link.textContent !== title) link.textContent = title;
 
   const body = readingBody(reading);
   const description = readingDescription(original);
@@ -31,9 +33,11 @@ const normaliseReading = (reading: HTMLDetailsElement): string => {
     if (explanation === null) {
       explanation = document.createElement("p");
       explanation.className = "chart-reading-explainer";
+      explanation.textContent = description;
       body.prepend(explanation);
+    } else if (explanation.textContent !== description) {
+      explanation.textContent = description;
     }
-    explanation.textContent = description;
   }
   return title;
 };
@@ -191,8 +195,7 @@ const enhanceCompatibilities = (): void => {
 
     const bucketBody = document.createElement("div");
     bucketBody.className = "compatibility-bucket-body";
-    const domains = [...bucket.domains.values()];
-    for (const domain of domains) {
+    for (const domain of bucket.domains.values()) {
       domain.signs.sort((left, right) => compatibilitySignOrder(left.sign, right.sign));
       signReadings.push(...domain.signs);
 
@@ -213,11 +216,13 @@ const enhanceCompatibilities = (): void => {
       if (domain.overview !== null) {
         const summaryElement = readingSummary(domain.overview);
         if (summaryElement !== null) summaryElement.textContent = "Overview";
+        domain.overview.dataset["viewerTitleLocked"] = "true";
         domainBody.append(domain.overview);
       }
       for (const { sign, reading } of domain.signs) {
         const summaryElement = readingSummary(reading);
         if (summaryElement !== null) summaryElement.textContent = sign;
+        reading.dataset["viewerTitleLocked"] = "true";
         reading.dataset["compatibilitySign"] = sign.toLocaleLowerCase("en-GB");
         domainBody.append(reading);
       }
