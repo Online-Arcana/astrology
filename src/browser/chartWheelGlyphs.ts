@@ -4,28 +4,43 @@ const svgNamespace = "http://www.w3.org/2000/svg";
 
 interface CanonicalNodeGlyph {
   path: string;
-  rotation: 0 | 180;
+  modifier: "N" | "S";
+  fallback: "TN" | "TS" | "MN" | "MS";
 }
 
 const canonicalNodeGlyphs: Readonly<Record<string, CanonicalNodeGlyph>> = {
-  north_node_true: { path: `${glyphBase}/true_node.svg`, rotation: 0 },
-  south_node_true: { path: `${glyphBase}/true_node.svg`, rotation: 180 },
-  north_node_mean: { path: `${glyphBase}/mean_node.svg`, rotation: 0 },
-  south_node_mean: { path: `${glyphBase}/mean_node.svg`, rotation: 180 },
+  north_node_true: { path: `${glyphBase}/true_node.svg`, modifier: "N", fallback: "TN" },
+  south_node_true: { path: `${glyphBase}/true_node.svg`, modifier: "S", fallback: "TS" },
+  north_node_mean: { path: `${glyphBase}/mean_node.svg`, modifier: "N", fallback: "MN" },
+  south_node_mean: { path: `${glyphBase}/mean_node.svg`, modifier: "S", fallback: "MS" },
 };
 
-const rotateImage = (image: SVGImageElement, rotation: 0 | 180): void => {
-  if (rotation === 0) {
-    image.removeAttribute("transform");
-    return;
-  }
+const applyNodeGlyph = (pointId: string, glyph: CanonicalNodeGlyph, wheel: HTMLElement): void => {
+  const point = wheel.querySelector<SVGGElement>(`.wheel-point[data-point="${pointId}"]`);
+  if (point === null) return;
+
+  const fallback = point.querySelector<SVGTextElement>(".wheel-glyph-fallback, .wheel-point-text");
+  if (fallback !== null) fallback.textContent = glyph.fallback;
+
+  const image = point.querySelector<SVGImageElement>("image.wheel-glyph-image");
+  if (image === null) return;
+  image.setAttribute("href", glyph.path);
+  image.removeAttribute("transform");
+
+  point.querySelector(".wheel-glyph-modifier")?.remove();
   const x = Number(image.getAttribute("x") ?? 0);
   const y = Number(image.getAttribute("y") ?? 0);
-  const width = Number(image.getAttribute("width") ?? 0);
-  const height = Number(image.getAttribute("height") ?? 0);
+  const width = Number(image.getAttribute("width") ?? 29);
+  const height = Number(image.getAttribute("height") ?? 29);
   const centreX = x + width / 2;
   const centreY = y + height / 2;
-  image.setAttribute("transform", `rotate(${rotation} ${centreX} ${centreY})`);
+  const marker = document.createElementNS(svgNamespace, "text");
+  marker.textContent = glyph.modifier;
+  marker.setAttribute("x", String(centreX + width * 0.42));
+  marker.setAttribute("y", String(centreY - height * 0.28));
+  marker.setAttribute("class", "wheel-glyph-modifier wheel-node-direction");
+  marker.setAttribute("font-size", String(Math.max(8, width * 0.32)));
+  point.append(marker);
 };
 
 const applySpiritGlyph = (wheel: HTMLElement): void => {
@@ -58,20 +73,13 @@ const applySpiritGlyph = (wheel: HTMLElement): void => {
 };
 
 /**
- * Replaces temporary chart-wheel glyphs with canonical dedicated assets.
- * Mean/True Nodes use their dedicated SVGs, with South Nodes rotated 180°.
- * Part of Spirit uses a distinct phi-style SVG rather than the Sun-like ⊙ fallback.
+ * Applies the wheel's canonical point glyph conventions.
+ * Mean/True is encoded by the node SVG shape; North/South is encoded by N/S.
+ * Part of Spirit uses a distinct phi-style SVG rather than the Sun-like fallback.
  */
 export const applyCanonicalWheelGlyphs = (wheel: HTMLElement): void => {
   for (const [pointId, glyph] of Object.entries(canonicalNodeGlyphs)) {
-    const point = wheel.querySelector<SVGGElement>(`.wheel-point[data-point="${pointId}"]`);
-    if (point === null) continue;
-    const image = point.querySelector<SVGImageElement>("image.wheel-glyph-image");
-    if (image === null) continue;
-    image.setAttribute("href", glyph.path);
-    rotateImage(image, glyph.rotation);
-    point.querySelector(".wheel-glyph-modifier")?.remove();
+    applyNodeGlyph(pointId, glyph, wheel);
   }
-
   applySpiritGlyph(wheel);
 };

@@ -36,7 +36,7 @@ await test("audit repair wording does not claim incomplete output", () => {
 await test("preferred gender is optional and legacy metadata defaults to male", () => {
   equal(preferredGenderOf({}), "male", "legacy default");
   equal(preferredGenderOf({ preferredGender: "female" }), "female", "female preference");
-  equal(preferredGenderOf({ preferredGender: "non-binary" }), "non-binary", "non-binary preference");
+  equal(preferredGenderOf({ preferredGender: "non-binary" }), "non-binary preference");
   const request = parseCalculationRequest({
     birth: {
       date: "2000-01-01",
@@ -101,14 +101,23 @@ await test("browser tools initialise the interactive chart wheel", async () => {
   const tools = await readFile("src/browser/browserTools.ts", "utf8");
   const bootstrap = await readFile("src/browser/chartWheelBootstrap.ts", "utf8");
   const wheelGlyphs = await readFile("src/browser/chartWheelGlyphs.ts", "utf8");
+  const wheelStyles = await readFile("public/chart-wheel.css", "utf8");
   assert(/chartWheelBootstrap\.js/u.test(tools), "browser-tools entry must import the chart wheel bootstrap so esbuild includes it");
   assert(/astral:calculation/u.test(bootstrap), "chart wheel bootstrap must listen for new deterministic calculations");
   assert(/#rawChart/u.test(bootstrap), "chart wheel bootstrap must reconstruct opened charts from their stored calculation");
-  assert(/wheel-aspect-controls/u.test(bootstrap), "chart wheel must expose aspect-line controls");
-  assert(/aspect\.class === "major"/u.test(bootstrap), "chart wheel default must derive from canonical major aspects");
+  assert(/wheel-aspect-groups/u.test(bootstrap) && /wheel-aspect-child/u.test(bootstrap), "aspect controls must expose expandable groups and individual deterministic lines");
+  assert(/parent\.indeterminate/u.test(bootstrap), "aspect group checkboxes must represent mixed child state");
+  assert(/defaultAspectVisible/u.test(bootstrap) && /coreAspectPoints/u.test(bootstrap), "default view must use major planet-to-planet aspects without deleting the rest");
   assert(/Restore default aspect lines/u.test(bootstrap) && /Hide all aspect lines/u.test(bootstrap) && /Show all aspect lines/u.test(bootstrap), "chart wheel must provide default, none and all aspect actions");
+  assert(/prepareConjunctionGeometry/u.test(bootstrap) && /wheel-aspect-conjunction-marker/u.test(wheelStyles), "conjunctions must use visible dedicated geometry rather than a collapsed chord");
+  assert(/wheel\.querySelector\("\.wheel-detail"\)\?\.remove\(\)/u.test(bootstrap) && /wheel-tooltip/u.test(bootstrap), "chart details must use contextual tooltips instead of a permanent panel");
   assert(/part_of_spirit/u.test(wheelGlyphs) && /lot_of_spirit\.svg/u.test(wheelGlyphs), "Part of Spirit must use its dedicated SVG glyph");
   assert(/fallback\.textContent = "Φ"/u.test(wheelGlyphs), "Part of Spirit fallback must remain visually distinct from the Sun");
+  assert(wheelGlyphs.includes('north_node_true: { path: `${glyphBase}/true_node.svg`, modifier: "N"'), "True North Node must use the True Node glyph with N");
+  assert(wheelGlyphs.includes('south_node_true: { path: `${glyphBase}/true_node.svg`, modifier: "S"'), "True South Node must use the True Node glyph with S");
+  assert(wheelGlyphs.includes('north_node_mean: { path: `${glyphBase}/mean_node.svg`, modifier: "N"'), "Mean North Node must use the Mean Node glyph with N");
+  assert(wheelGlyphs.includes('south_node_mean: { path: `${glyphBase}/mean_node.svg`, modifier: "S"'), "Mean South Node must use the Mean Node glyph with S");
+  assert(!/rotation:\s*180/u.test(wheelGlyphs), "North and South node direction must not be encoded by rotating the Mean/True glyph");
 });
 
 await test("opened files use an explicit copy-only maintenance path", async () => {
