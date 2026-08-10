@@ -31,7 +31,7 @@ Start with the path that matches the work.
 
 ## Interpretation
 
-- [Interpretation corpus and worldview-neutral generation](interpretation-corpus.md): source roles, atomic semantics, InterpretationMap, semantic-register versus interpretive-voice separation and hard neutrality gates.
+- [Interpretation semantics](interpretation-corpus.md): reviewed semantic data, source provenance, interpretation maps, writing voice and worldview checks.
 - [Interpretation runtime](interpretation.md): one immutable chart system, serial foundation, four bounded lanes, snapshots, audits and truncation condensation.
 - [NLP audit](audit.md): semantic role, human-first style, completion, duplication and source references.
 
@@ -43,7 +43,7 @@ Start with the path that matches the work.
 
 **Changing deterministic astrology:** service → astrology → the relevant subsystem document
 
-**Changing LLM interpretation:** interpretation-corpus → interpretation → audit → recovery → chart-files
+**Changing interpretation:** interpretation-corpus → interpretation → audit → recovery → chart-files
 
 **Implementing a `.astral` reader:** format → chart-files
 
