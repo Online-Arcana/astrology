@@ -56,6 +56,8 @@ export interface UnitAudit<T extends object> {
   errors: string[];
   soft?: boolean;
   repair?: "completion" | "audit";
+  /** Ambiguous language that must pass the cheap worldview discriminator before acceptance. */
+  worldviewReview?: string[];
 }
 
 export type InterpretationRepairKind =
