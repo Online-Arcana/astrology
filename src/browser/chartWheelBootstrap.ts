@@ -63,18 +63,27 @@ const showLiveCalculation = (calculation: AstralCalculation): void => {
 };
 
 const viewerCard = (): HTMLElement | null => {
-  const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
-  if (formattedChart === null) return null;
+  const formattedView = document.querySelector<HTMLElement>("#formattedView");
+  if (formattedView === null) return null;
 
   const existing = document.querySelector<HTMLElement>("#fileChartWheelCard");
   if (existing !== null) {
-    if (existing.parentElement !== formattedChart) formattedChart.prepend(existing);
+    if (existing.parentElement !== formattedView) formattedView.prepend(existing);
+    formattedView.classList.add("chart-wheel-mounted");
     return existing;
   }
 
   const card = cardShell("fileChartWheelCard", "Chart wheel");
-  formattedChart.prepend(card);
+  formattedView.prepend(card);
+  formattedView.classList.add("chart-wheel-mounted");
   return card;
+};
+
+export const mountViewerChartWheel = (calculation: AstralCalculation): void => {
+  const card = viewerCard();
+  if (card === null) return;
+  renderIntoCard(card, calculation);
+  lastViewerFingerprint = calculation.provenance.calculationFingerprint;
 };
 
 let lastViewerFingerprint: string | null = null;
@@ -102,10 +111,7 @@ const syncViewerWheel = (): void => {
 
   syncingViewerWheel = true;
   try {
-    const card = viewerCard();
-    if (card === null) return;
-    renderIntoCard(card, calculation);
-    lastViewerFingerprint = fingerprint;
+    mountViewerChartWheel(calculation);
   } finally {
     syncingViewerWheel = false;
   }
