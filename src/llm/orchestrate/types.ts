@@ -1,3 +1,4 @@
+import type { InterpretationMap } from "../../interpretation/corpus/types.js";
 import type { JsonRef } from "../../types/base.js";
 import type { WorkKind } from "../../progress/work.js";
 
@@ -43,6 +44,12 @@ export interface InterpretationCall {
   effort?: ReasoningEffort;
   tokens?: number;
   dependsOn?: readonly string[];
+  /**
+   * Reviewed semantic authority for this unit. This is optional only while the
+   * production corpus is being built; deterministic reconstruction and the LLM
+   * writer consume the same map whenever it is present.
+   */
+  semanticMap?: InterpretationMap;
   shape: StrictShape<object>;
   allowedSourceRefs: ReadonlySet<JsonRef>;
   input(context: UnitContext): unknown;
