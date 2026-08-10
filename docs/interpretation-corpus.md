@@ -6,7 +6,7 @@ The semantic side is built from a reviewed corpus. The writing side receives a p
 
 ## Corpus data
 
-Corpus code lives under `src/interpretation/corpus/`.
+Corpus code lives under `src/interpretation/corpus/`. Checked-in semantic data is under `src/interpretation/corpus/data/`.
 
 A corpus contains three main kinds of records:
 
@@ -14,9 +14,9 @@ A corpus contains three main kinds of records:
 - atoms: reusable concepts such as a planet, sign, house or aspect;
 - claims: small semantic statements attached to an atom and backed by one or more approved source references.
 
-Sources are approved per document, not per website. A technical astronomy document can be approved for calculation work without making interpretation pages from the same publisher valid semantic sources.
+Sources are approved per document and per section, not per website. A technical astronomy document can be approved for calculation work without making interpretation pages from the same publisher valid semantic sources. A claim must name an approved section of an approved semantic source; citing the document alone is not sufficient.
 
-The compiler checks that every production atom is approved, has claims, has source provenance and passes the worldview-neutrality rules. Development tools may compile partial corpora, but production compilation uses the complete required atom list in `requirements.ts` and fails if anything is missing.
+The compiler checks that every production atom is approved, has claims, has source provenance and passes the worldview-neutrality rules. Production compilation uses the complete required atom list in `requirements.ts` and fails if anything is missing.
 
 ## Meaning and calculation data
 
@@ -24,13 +24,13 @@ Calculation identifiers are normalised before they reach the corpus. Details tha
 
 For example, mean and true lunar nodes resolve to the same semantic node concept while retaining their calculation variant separately. Zodiac system names, calculation variants and JSON paths are not interpretation vocabulary by themselves.
 
-The same rule applies to larger units. An aspect between two points is assembled from the two point meanings, the aspect meaning and the actual chart evidence rather than looking up a pre-written essay for every possible combination.
+Larger units are composed from reusable atoms. A point placement can contain the point, its sign and its house. An aspect contains its two endpoints and an aspect relation. House units can include the house domain, cusp sign, rulers, occupants and intercepted signs where those calculations are available. Life-domain recipes select relevant chart factors from the same corpus instead of looking up a pre-written essay for every combination.
 
 ## Interpretation maps
 
-`InterpretationMap` is the hand-off between semantic compilation and prose generation. It contains the subject of the unit, permitted chart evidence, approved propositions, corpus provenance and the concepts that must not be inferred.
+`InterpretationMap` is the hand-off between semantic compilation and prose generation. It contains the subject of the unit, chart-specific semantic composition, permitted chart evidence, approved propositions, corpus provenance and concepts that must not be inferred.
 
-Both model-written prose and deterministic reconstruction use this map. This is important during recovery: losing access to the model must not switch the application to a different interpretation system.
+Both model-written prose and deterministic reconstruction use this map. Losing access to the model must not switch the application to a different interpretation system.
 
 The map is internal data. Proposition wording is not a prose template. The writer is expected to express the supported meaning in fresh language, and the audit checks for near-copying of corpus text and leakage of compiler terminology.
 
@@ -56,20 +56,16 @@ The application is also neutral about why astrology might be meaningful to a use
 
 Semantic source material is reviewed before claim extraction. Obvious worldview contamination causes the passage to be rejected. Clean-looking passages still go through the source classifier before they can be distilled into claims.
 
-Contaminated passages are not "cleaned up" and then admitted. If a usable neutral basis for a meaning cannot be found, that part of the corpus stays incomplete until it can be reviewed properly.
+Contaminated passages are not "cleaned up" and then admitted. Approval can be limited to a small neutral section of a document while the rest of the document remains excluded.
 
-Calculation and architecture references are kept separate from semantic sources. They may support astronomy, geometry or compiler design, but they cannot be used as provenance for interpretation claims unless the specific document has also been approved as a semantic source.
+Calculation and architecture references are kept separate from semantic sources. They may support astronomy, geometry or compiler design, but they cannot be used as provenance for interpretation claims unless the specific document and section have also been approved for semantic use.
 
 ## Runtime
 
-For a corpus-backed run, the service prepares and validates all required interpretation maps before starting paid generation. If a required map cannot be produced, generation fails before opening the model conversation.
+The checked-in production corpus is compiled once with completeness checking enabled. Browser generation and the API/server runtime use the resulting semantic provider by default. Low-level service construction still accepts an explicit provider so tests and specialised tooling can supply controlled maps.
 
-Each model call receives the semantic map, the permitted deterministic chart evidence and the writing instructions as separate fields. Output is checked for schema validity, grounding, field duplication, voice problems and worldview neutrality. Rejected output goes through the existing correction/escalation path.
+Before paid generation starts, the service prepares and validates the semantic maps required by the chart's interpretation plan. If a required map cannot be produced, generation fails before opening the model conversation.
 
-If generation still fails, deterministic reconstruction uses the same interpretation map and application-owned sentence templates. The old XML fallback catalogue remains only for legacy, unmapped generation while the reviewed corpus is being completed.
+Each model call receives semantic input, deterministic chart evidence and writing instructions as separate fields. Raw chart evidence can contain fields that a particular recipe did not select; those fields are not permission to invent additional astrological meaning. Output is checked for schema validity, grounding, field duplication, voice problems and worldview neutrality. Rejected output goes through the normal correction/escalation path.
 
-## Current migration state
-
-The runtime can already accept a semantic provider, but the built-in loader does not enable corpus-backed generation by default because the production corpus is not complete yet. Calls without a provider are marked as legacy/unmapped rather than pretending to have reviewed semantic authority.
-
-The migration is complete when the reviewed corpus covers every atom in `requirements.ts`, production compilation succeeds with completeness checking enabled, and the normal generation service always receives the compiled semantic provider. At that point the legacy semantic path can be removed instead of kept as a silent fallback.
+If generation still fails, deterministic reconstruction uses the same interpretation map and application-owned sentence templates. The old XML catalogue is retained only for explicitly unmapped compatibility paths; it is not the semantic authority for normal browser or API generation.
