@@ -84,6 +84,8 @@
 
 .wheel-glyph-image {
   pointer-events: none;
+  filter: invert(1);
+  opacity: .94;
 }
 
 .wheel-glyph-fallback,
@@ -240,7 +242,7 @@
 }
 
 .wheel-untimed-note {
-  fill: var(--muted);
+  fill: #b9afd0;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 14px;
 }
