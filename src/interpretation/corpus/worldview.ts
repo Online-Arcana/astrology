@@ -31,13 +31,13 @@ const rules: readonly Rule[] = [
   {
     category: "religious_agency",
     severity: "reject",
-    pattern: /\b(?:god|gods|a deity|the deity)\s+(?:wants?|asks?|commands?|placed|sent|gave|gives|punishes?|rewards?|guides?|chose|chooses)\b/giu,
+    pattern: /\b(?:god|gods|a deity|the deity)\s+(?:wants?|asks?|is asking|commands?|is commanding|(?:has |had )?(?:placed|sent|given|guided|chosen)|gave|gives|punishes?|rewards?|guides?|is guiding|chose|chooses)\b/giu,
     reason: "a religious being is given causal or directive agency in the user's life",
   },
   {
     category: "religious_agency",
     severity: "reject",
-    pattern: /\b(?:dios|los dioses|una deidad|la deidad)\s+(?:quiere|pide|ordena|coloc[oó]|puso|envi[oó]|dio|da|castiga|premia|gu[ií]a|eligi[oó]|elige)\b/giu,
+    pattern: /\b(?:dios|los dioses|una deidad|la deidad)\s+(?:quiere|pide|est[aá] pidiendo|ordena|est[aá] ordenando|(?:ha |hab[ií]a )?(?:colocado|puesto|enviado|dado|guiado|elegido)|coloc[oó]|puso|envi[oó]|dio|da|castiga|premia|gu[ií]a|est[aá] guiando|eligi[oó]|elige)\b/giu,
     reason: "a religious being is given causal or directive agency in the user's life",
   },
   {
@@ -115,13 +115,13 @@ const rules: readonly Rule[] = [
   {
     category: "cosmic_intentionality",
     severity: "reject",
-    pattern: /\b(?:the universe|the cosmos|cosmic forces?|life)\s+(?:wants?|intends?|needs you to|is telling|is teaching|sends?|sent|places?|placed|guides?|guided|chose|chooses|gave|gives)\b/giu,
+    pattern: /\b(?:the universe|the cosmos|cosmic forces?|life)\s+(?:wants?|intends?|needs you to|is telling|is teaching|is guiding|(?:has |had )?(?:sent|placed|guided|chosen|given)|sends?|places?|guides?|chose|chooses|gave|gives)\b/giu,
     reason: "the universe, cosmos or life is given human-like intention or agency",
   },
   {
     category: "cosmic_intentionality",
     severity: "reject",
-    pattern: /\b(?:el universo|el cosmos|fuerzas c[oó]smicas|la vida)\s+(?:quiere|pretende|te dice|te ense[ñn]a|te env[ií]a|env[ií]a|coloca|puso|gu[ií]a|eligi[oó]|te da)\b/giu,
+    pattern: /\b(?:el universo|el cosmos|fuerzas c[oó]smicas|la vida)\s+(?:quiere|pretende|te dice|te ense[ñn]a|te env[ií]a|est[aá] guiando|(?:ha |hab[ií]a )?(?:enviado|colocado|puesto|guiado|elegido|dado)|env[ií]a|coloca|puso|gu[ií]a|eligi[oó]|te da)\b/giu,
     reason: "the universe, cosmos or life is given human-like intention or agency",
   },
   {
