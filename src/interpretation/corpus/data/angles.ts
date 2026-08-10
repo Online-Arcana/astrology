@@ -1,4 +1,4 @@
-import type { CorpusAtom, CorpusClaim } from "../types.js";
+import type { CorpusAtom, CorpusClaim, CorpusSource } from "../types.js";
 
 const neutral = {
   religious: false,
@@ -9,6 +9,39 @@ const neutral = {
 } as const;
 
 const source = "semantic.hand.transits-jupiter-angles";
+
+export const angleSources: readonly CorpusSource[] = [
+  {
+    id: "semantic.astrodienst.local-space-vertex-axis",
+    title: "Local Space Astrology",
+    author: null,
+    publisher: "Astrodienst",
+    editionOrDate: null,
+    role: "semantic",
+    reviewStatus: "approved",
+    allowedSections: ["vertex-antivertex-event-oriented"],
+    notes: [
+      "Reviewed public source: https://www.astro.com/astrology/in_localspace_e.htm",
+      "Approved only for the comparison that Vertex/Anti-Vertex contacts are treated as more objective or event-oriented than Ascendant/Descendant contacts, and that both ends of the axis should be considered.",
+      "No claim of fate, destiny, inevitable manifestation or supernatural causation is approved.",
+    ],
+  },
+  {
+    id: "semantic.astrodienst.equatorial-ascendant-minor",
+    title: "The Overconfidence of Jupiter",
+    author: null,
+    publisher: "Astrodienst",
+    editionOrDate: null,
+    role: "semantic",
+    reviewStatus: "approved",
+    allowedSections: ["equatorial-ascendant-minor-ascendant"],
+    notes: [
+      "Reviewed public source: https://www.astro.com/astrologia/in_mdbjupiter_e.htm",
+      "Approval is limited to the statement that the equatorial Ascendant acts as a minor Ascendant.",
+      "Predictive, eclipse and fate-related material elsewhere in the article is excluded.",
+    ],
+  },
+] as const;
 
 export const angleClaims: readonly CorpusClaim[] = [
   {
@@ -50,6 +83,36 @@ export const angleClaims: readonly CorpusClaim[] = [
     sourceRefs: [`${source}#ic-home-history`],
     neutrality: neutral,
     confidence: "well-supported",
+  },
+  {
+    id: "angle.vertex.core.event-oriented",
+    atomId: "angle.vertex",
+    category: "core",
+    proposition: "The Vertex is used as a supplementary relationship angle whose contacts are treated as comparatively external or event-oriented rather than primarily as descriptions of attitude or personality.",
+    tags: ["external circumstances", "event-oriented", "supplementary relationship angle", "interaction"],
+    sourceRefs: ["semantic.astrodienst.local-space-vertex-axis#vertex-antivertex-event-oriented"],
+    neutrality: neutral,
+    confidence: "school-specific",
+  },
+  {
+    id: "angle.antivertex.core.event-axis",
+    atomId: "angle.antivertex",
+    category: "core",
+    proposition: "The Antivertex is the opposite end of the Vertex axis and is interpreted together with the Vertex as a supplementary angle for comparatively external or event-oriented context.",
+    tags: ["Vertex axis", "external circumstances", "event-oriented", "supplementary angle"],
+    sourceRefs: ["semantic.astrodienst.local-space-vertex-axis#vertex-antivertex-event-oriented"],
+    neutrality: neutral,
+    confidence: "school-specific",
+  },
+  {
+    id: "angle.east-point.core.minor-ascendant",
+    atomId: "angle.east-point",
+    category: "core",
+    proposition: "The East Point, or Equatorial Ascendant, is used by some astrologers as a secondary or minor Ascendant and can therefore add supplementary context to outward self-presentation.",
+    tags: ["minor Ascendant", "self-presentation", "supplementary angle", "outward expression"],
+    sourceRefs: ["semantic.astrodienst.equatorial-ascendant-minor#equatorial-ascendant-minor-ascendant"],
+    neutrality: neutral,
+    confidence: "school-specific",
   },
 ] as const;
 
@@ -107,6 +170,45 @@ export const angleAtoms: readonly CorpusAtom[] = [
     doNotInfer: ["ancestral karma", "past lives", "a predetermined family fate"],
     relatedAtomIds: ["angle.midheaven"],
     sourceIds: [source],
+    reviewStatus: "approved",
+  },
+  {
+    id: "angle.vertex",
+    kind: "entity",
+    displayName: "Vertex",
+    plainEnglish: "a supplementary relationship angle for comparatively external or event-oriented context",
+    aliases: ["Vertex", "Vx"],
+    internalIds: ["vertex"],
+    claimIds: claimsFor("angle.vertex"),
+    doNotInfer: ["fated events", "destined encounters", "inevitable relationships", "alternate realities", "supernatural causation"],
+    relatedAtomIds: ["angle.antivertex"],
+    sourceIds: ["semantic.astrodienst.local-space-vertex-axis"],
+    reviewStatus: "approved",
+  },
+  {
+    id: "angle.antivertex",
+    kind: "entity",
+    displayName: "Antivertex",
+    plainEnglish: "the opposite end of the Vertex axis and a supplementary event-oriented context angle",
+    aliases: ["Antivertex", "Anti-Vertex"],
+    internalIds: ["antivertex"],
+    claimIds: claimsFor("angle.antivertex"),
+    doNotInfer: ["fate", "destiny", "inevitable events", "supernatural intervention"],
+    relatedAtomIds: ["angle.vertex"],
+    sourceIds: ["semantic.astrodienst.local-space-vertex-axis"],
+    reviewStatus: "approved",
+  },
+  {
+    id: "angle.east-point",
+    kind: "entity",
+    displayName: "East Point",
+    plainEnglish: "a minor Ascendant providing supplementary context for outward self-presentation",
+    aliases: ["East Point", "Equatorial Ascendant", "EqAsc"],
+    internalIds: ["east_point"],
+    claimIds: claimsFor("angle.east-point"),
+    doNotInfer: ["a soul-level identity", "karma", "past incarnations", "a universal true self", "public destiny"],
+    relatedAtomIds: ["angle.ascendant"],
+    sourceIds: ["semantic.astrodienst.equatorial-ascendant-minor"],
     reviewStatus: "approved",
   },
 ] as const;
