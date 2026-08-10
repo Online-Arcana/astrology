@@ -59,6 +59,12 @@ const neutral = {
   supernatural: false,
 } as const;
 
+const sectionFor = (atomId: string): string => atomId.startsWith("point.")
+  ? "nodes"
+  : atomId.startsWith("aspect.")
+    ? "aspects"
+    : "uranus";
+
 const claim = (
   id: string,
   atomId: string,
@@ -70,7 +76,7 @@ const claim = (
   category,
   proposition,
   tags: [],
-  sourceRefs: [`${source.id}#reviewed`],
+  sourceRefs: [`${source.id}#${sectionFor(atomId)}`],
   neutrality: neutral,
   confidence: "well-supported",
 });
@@ -158,6 +164,7 @@ test("map is composed from entity-relation-entity atoms rather than a canned com
     "composed atom identities",
   );
   equal(map.chartEvidence[0], evidenceRef, "deterministic evidence survives into the map");
+  equal(map.composition?.ingredients.length, 3, "chart-specific composition is retained privately");
 });
 
 test("claim categories become semantic buckets", () => {
