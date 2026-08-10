@@ -1,27 +1,28 @@
 import { compileInterpretationCorpus, type CompiledInterpretationCorpus } from "../compile.js";
 import { corpusSources } from "../sources.js";
 import type { CorpusAtom, CorpusClaim, CorpusSource } from "../types.js";
-import { angleAtoms, angleClaims } from "./angles.js";
+import { angleAtoms, angleClaims, angleSources } from "./angles.js";
 import { aspectAtoms, aspectClaims } from "./aspects.js";
 import { bodyAtoms, bodyClaims } from "./bodies.js";
 import { derivedAtoms, derivedClaims, derivedSources } from "./derived.js";
 import { domainAtoms, domainClaims, projectDomainSource } from "./domains.js";
 import { houseAtoms, houseClaims } from "./houses.js";
 import { patternAtoms, patternClaims, patternSources } from "./patterns.js";
-import { pointAtoms, pointClaims } from "./points.js";
+import { pointAtoms, pointClaims, pointSources } from "./points.js";
 import { signAtoms, signClaims } from "./signs.js";
 
 /**
  * Reviewed semantic data that has actually been approved for corpus use.
  *
- * This list is intentionally incomplete while the remaining rare points,
- * angles and eclipse semantics are researched. Production callers compile with
- * requireComplete=true and therefore fail closed until the complete corpus has
- * been reviewed.
+ * The only required semantic atoms intentionally left incomplete here are the
+ * eclipse units. Production callers compile with requireComplete=true and
+ * therefore remain fail-closed until those have defensible agnostic semantics.
  */
 export const reviewedCorpusSources: readonly CorpusSource[] = [
   ...corpusSources,
   projectDomainSource,
+  ...pointSources,
+  ...angleSources,
   ...patternSources,
   ...derivedSources,
 ] as const;
