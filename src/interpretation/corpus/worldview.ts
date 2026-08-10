@@ -1,201 +1,147 @@
-import type {
-  SourceNeutralityAudit,
-  WorldviewCategory,
-  WorldviewFinding,
-  WorldviewTextAudit,
-} from "./types.js";
+const technicalProperNames = [
+  "part of spirit",
+  "lot of spirit",
+  "part of fortune",
+  "lot of fortune",
+] as const;
 
-interface Rule {
-  category: WorldviewCategory;
-  severity: "reject" | "review";
-  pattern: RegExp;
+const shieldTechnicalProperNames = (value: string): string => technicalProperNames.reduce(
+  (current, name) => current.replaceAll(new RegExp(`\\b${name.replaceAll(" ", "\\s+")}\\b`, "giu"), " technical-point "),
+  value,
+);
+
+interface FindingRule {
+  category: import("./types.js").WorldviewCategory;
+  severity: import("./types.js").WorldviewSeverity;
   reason: string;
+  patterns: readonly RegExp[];
 }
 
-const technicalAllowances: readonly RegExp[] = [
-  /\bPart of Spirit\b/giu,
-  /\bLot of Spirit\b/giu,
-  /\bParte del Espíritu\b/giu,
-  /\bLote del Espíritu\b/giu,
-];
-
-const shieldTechnicalNames = (value: string): string => {
-  let output = value;
-  technicalAllowances.forEach((pattern, index) => {
-    output = output.replace(pattern, ` TECHNICAL_ASTROLOGICAL_NAME_${index} `);
-  });
-  return output;
-};
-
-const rules: readonly Rule[] = [
+const rules: readonly FindingRule[] = [
   {
-    category: "religious_agency",
+    category: "religious_doctrine",
     severity: "reject",
-    pattern: /\b(?:god|gods|a deity|the deity)\s+(?:wants?|asks?|is asking|commands?|is commanding|(?:has |had )?(?:placed|sent|given|guided|chosen)|gave|gives|punishes?|rewards?|guides?|is guiding|chose|chooses)\b/giu,
-    reason: "a religious being is given causal or directive agency in the user's life",
+    reason: "asserts or assumes religious doctrine",
+    patterns: [
+      /\b(?:heaven|hell|religious salvation|salvation from sin|original sin)\b/giu,
+      /\b(?:angel|guardian angel|demon)s?\b/giu,
+    ],
   },
   {
     category: "religious_agency",
     severity: "reject",
-    pattern: /\b(?:dios|los dioses|una deidad|la deidad)\s+(?:quiere|pide|est[aá] pidiendo|ordena|est[aá] ordenando|(?:ha |hab[ií]a )?(?:colocado|puesto|enviado|dado|guiado|elegido)|coloc[oó]|puso|envi[oó]|dio|da|castiga|premia|gu[ií]a|est[aá] guiando|eligi[oó]|elige)\b/giu,
-    reason: "a religious being is given causal or directive agency in the user's life",
-  },
-  {
-    category: "religious_doctrine",
-    severity: "reject",
-    pattern: /\b(?:god|gods|goddess|deity|prayer|providence|salvation|heaven|hell|angel|angels|demon|demons)\b/giu,
-    reason: "religious doctrine or being is asserted in interpretation prose",
-  },
-  {
-    category: "religious_doctrine",
-    severity: "reject",
-    pattern: /\b(?:dios|dioses|diosa|deidad|oraci[oó]n|providencia|salvaci[oó]n|cielo|infierno|[aá]ngel(?:es)?|demonio(?:s)?)\b/giu,
-    reason: "religious doctrine or being is asserted in interpretation prose",
+    reason: "assigns events or obligations to religious agency",
+    patterns: [
+      /\b(?:god|gods|a deity|the deity|a higher power)\s+(?:has\s+)?(?:wants?|asks?|gives?|gave|sends?|sent|places?|placed|chooses?|chose|decides?|decided|intends?|intended|guides?|guided|punishes?|punished|rewards?|rewarded)\b/giu,
+      /\b(?:god[- ]given|god's plan|divine punishment|divine reward)\b/giu,
+    ],
   },
   {
     category: "divine_agency",
     severity: "reject",
-    pattern: /\b(?:divine|divinely|god[- ]given|divine intervention|divine purpose|divine plan|divine lesson)\b/giu,
-    reason: "divine agency or purpose is assumed",
-  },
-  {
-    category: "divine_agency",
-    severity: "reject",
-    pattern: /\b(?:divin[oa]s?|intervenci[oó]n divina|prop[oó]sito divino|plan divino|lecci[oó]n divina)\b/giu,
-    reason: "divine agency or purpose is assumed",
+    reason: "assigns purpose or causation to divine intention",
+    patterns: [
+      /\bdivin(?:e|ely)\s+(?:intended|ordained|guided|chosen|sent|placed|planned|purposed|meant)\b/giu,
+      /\bdivine\s+(?:will|purpose|plan|intervention|calling|mission|lesson)\b/giu,
+    ],
   },
   {
     category: "karma_or_reincarnation",
     severity: "reject",
-    pattern: /\b(?:karma|karmic|karmically|karmic debt|past (?:life|lives)|reincarnat(?:e|ed|es|ion|ion's|ing)|previous incarnation)\b/giu,
-    reason: "karma, reincarnation or past-life metaphysics is assumed",
-  },
-  {
-    category: "karma_or_reincarnation",
-    severity: "reject",
-    pattern: /\b(?:karma|k[aá]rmic[oa]s?|deuda k[aá]rmica|vidas? pasadas?|reencarnaci[oó]n|encarnaci[oó]n anterior)\b/giu,
-    reason: "karma, reincarnation or past-life metaphysics is assumed",
-  },
-  {
-    category: "soul_assumption",
-    severity: "reject",
-    pattern: /\b(?:your soul|the soul|soul contracts?|soul purpose|soul lessons?|soul journey|soul chose|soulmate(?:s)?|higher self)\b/giu,
-    reason: "a soul-based metaphysical model is asserted as fact",
+    reason: "assumes karma, reincarnation or past-life causation",
+    patterns: [
+      /\bkarma\b|\bkarmic\b/giu,
+      /\bpast[- ]l(?:ife|ives)\b/giu,
+      /\breincarnat(?:e|ed|es|ion|ions)\b/giu,
+      /\bincarnat(?:e|ed|es|ion|ions)\b/giu,
+    ],
   },
   {
     category: "soul_assumption",
     severity: "reject",
-    pattern: /\b(?:tu alma|su alma|el alma|contratos? del alma|prop[oó]sito del alma|lecciones? del alma|viaje del alma|alma gemela|yo superior)\b/giu,
-    reason: "a soul-based metaphysical model is asserted as fact",
+    reason: "assumes a soul or soul-level obligation as fact",
+    patterns: [
+      /\b(?:your|their|the)\s+soul\b/giu,
+      /\bsoul\s+(?:contract|purpose|mission|lesson|path|journey|choice|chose|chooses|agreement|agenda)s?\b/giu,
+      /\bsoulmate\b|\bsoul mate\b/giu,
+      /\bhigher self\b/giu,
+    ],
   },
   {
     category: "fate_or_predestination",
     severity: "reject",
-    pattern: /\b(?:fate|fated|destiny|destined|predestination|predestined|meant to be|written in the stars)\b/giu,
-    reason: "fate or predestination is asserted",
-  },
-  {
-    category: "fate_or_predestination",
-    severity: "reject",
-    pattern: /\b(?:destino|destinad[oa]s?|predestinaci[oó]n|predestinad[oa]s?|escrito en las estrellas|estaba destinado)\b/giu,
-    reason: "fate or predestination is asserted",
+    reason: "states or implies predestination as a fact",
+    patterns: [
+      /\b(?:fated|destined|predestined)\b/giu,
+      /\b(?:fate|destiny|predestination)\b/giu,
+      /\bmeant\s+to\s+(?:be|happen|meet|occur|become|experience)\b/giu,
+      /\bwas\s+always\s+going\s+to\b/giu,
+    ],
   },
   {
     category: "supernatural_agency",
     severity: "reject",
-    pattern: /\b(?:supernatural|spirit guides?|guardian angels?|higher power|otherworldly intervention|your spirit chose)\b/giu,
-    reason: "supernatural agency is asserted",
-  },
-  {
-    category: "supernatural_agency",
-    severity: "reject",
-    pattern: /\b(?:sobrenatural|gu[ií]as? espirituales?|[aá]ngeles? guardianes?|poder superior|intervenci[oó]n sobrenatural)\b/giu,
-    reason: "supernatural agency is asserted",
+    reason: "assumes supernatural intervention or causation",
+    patterns: [
+      /\bsupernatural\s+(?:agency|cause|causation|intervention|force|guidance)\b/giu,
+      /\b(?:spirit guides?|guardian spirits?)\s+(?:want|guide|send|place|tell|ask)\b/giu,
+    ],
   },
   {
     category: "cosmic_intentionality",
     severity: "reject",
-    pattern: /\b(?:the universe|the cosmos|cosmic forces?|life)\s+(?:wants?|intends?|needs you to|is telling|is teaching|is guiding|(?:has |had )?(?:sent|placed|guided|chosen|given)|sends?|places?|guides?|chose|chooses|gave|gives)\b/giu,
-    reason: "the universe, cosmos or life is given human-like intention or agency",
-  },
-  {
-    category: "cosmic_intentionality",
-    severity: "reject",
-    pattern: /\b(?:el universo|el cosmos|fuerzas c[oó]smicas|la vida)\s+(?:quiere|pretende|te dice|te ense[ñn]a|te env[ií]a|est[aá] guiando|(?:ha |hab[ií]a )?(?:enviado|colocado|puesto|guiado|elegido|dado)|env[ií]a|coloca|puso|gu[ií]a|eligi[oó]|te da)\b/giu,
-    reason: "the universe, cosmos or life is given human-like intention or agency",
+    reason: "assigns intention or a plan to the universe, cosmos or life",
+    patterns: [
+      /\b(?:the\s+)?(?:universe|cosmos|life)\s+(?:has\s+)?(?:wants?|asks?|tells?|sends?|sent|places?|placed|guides?|guided|chooses?|chose|intends?|intended|plans?|planned|decides?|decided|teaches?|taught)\b/giu,
+      /\b(?:cosmic|universal)\s+(?:plan|purpose|intention|lesson|mission|design)\b/giu,
+    ],
   },
   {
     category: "spiritual_worldview",
     severity: "reject",
-    pattern: /\b(?:spiritual destiny|spiritual lesson|spiritual obligation|spiritual mission|spiritually meant to|spiritually required|sacred calling|sacred mission|cosmic purpose|cosmic plan|cosmic lesson)\b/giu,
-    reason: "a spiritual or cosmic worldview is imposed as the explanation",
-  },
-  {
-    category: "spiritual_worldview",
-    severity: "reject",
-    pattern: /\b(?:destino espiritual|lecci[oó]n espiritual|obligaci[oó]n espiritual|misi[oó]n espiritual|espiritualmente destinad[oa]|espiritualmente obligad[oa]|llamado sagrado|misi[oó]n sagrada|prop[oó]sito c[oó]smico|plan c[oó]smico)\b/giu,
-    reason: "a spiritual or cosmic worldview is imposed as the explanation",
+    reason: "imposes a spiritual worldview on the subject",
+    patterns: [
+      /\bspiritual\s+(?:destiny|obligation|mission|purpose|lesson|path|calling|development|evolution)\b/giu,
+      /\bsacred\s+(?:calling|mission|purpose|duty|path)\b/giu,
+    ],
   },
   {
     category: "cosmic_intentionality",
     severity: "review",
-    pattern: /\b(?:entered|came into|appeared in) your life for (?:a|some) reason\b/giu,
-    reason: "the phrase may imply externally assigned purpose without naming an agent",
-  },
-  {
-    category: "cosmic_intentionality",
-    severity: "review",
-    pattern: /\b(?:placed|put|sent) (?:in|on) your path\b/giu,
-    reason: "the phrase may imply an unnamed external directing agency",
-  },
-  {
-    category: "fate_or_predestination",
-    severity: "review",
-    pattern: /\b(?:was supposed to happen|had to happen|was always going to happen|inevitable encounter)\b/giu,
-    reason: "the phrase may imply inevitability or predestination",
-  },
-  {
-    category: "cosmic_intentionality",
-    severity: "review",
-    pattern: /\b(?:larger|greater|bigger) (?:cosmic )?plan\b/giu,
-    reason: "the phrase may imply a purposeful external plan",
-  },
-  {
-    category: "cosmic_intentionality",
-    severity: "review",
-    pattern: /\b(?:lleg[oó]|entr[oó]|apareci[oó]) en tu vida por (?:una|alguna) raz[oó]n\b/giu,
-    reason: "the phrase may imply externally assigned purpose without naming an agent",
-  },
-  {
-    category: "fate_or_predestination",
-    severity: "review",
-    pattern: /\b(?:ten[ií]a que pasar|deb[ií]a pasar|era inevitable)\b/giu,
-    reason: "the phrase may imply inevitability or predestination",
+    reason: "may imply an external purpose or directing agency without naming it",
+    patterns: [
+      /\b(?:person|relationship|encounter|experience|challenge|event|opportunity)\s+(?:entered|came|arrived|appeared)\s+(?:into\s+)?(?:your|their)\s+life\s+for\s+a\s+reason\b/giu,
+      /\b(?:placed|put|sent)\s+(?:in|on)\s+(?:your|their)\s+path\b/giu,
+      /\b(?:life|circumstances|events)\s+(?:brings?|sends?|places?)\s+.+\s+when\s+(?:you|they)\s+are\s+ready\b/giu,
+      /\b(?:part|piece)\s+of\s+(?:a|the)\s+larger\s+(?:plan|design)\b/giu,
+    ],
   },
 ];
 
-const matchedFindings = (raw: string): WorldviewFinding[] => {
-  const value = shieldTechnicalNames(raw);
-  const findings: WorldviewFinding[] = [];
+const matchedFindings = (raw: string): import("./types.js").WorldviewFinding[] => {
+  const value = shieldTechnicalProperNames(raw);
+  const findings: import("./types.js").WorldviewFinding[] = [];
   for (const rule of rules) {
-    rule.pattern.lastIndex = 0;
-    for (const match of value.matchAll(rule.pattern)) {
-      const phrase = match[0]?.trim();
-      if (!phrase) continue;
-      findings.push({
-        category: rule.category,
-        severity: rule.severity,
-        phrase,
-        reason: rule.reason,
-      });
+    for (const pattern of rule.patterns) {
+      pattern.lastIndex = 0;
+      for (const match of value.matchAll(pattern)) {
+        const phrase = match[0]?.trim();
+        if (!phrase) continue;
+        findings.push({
+          category: rule.category,
+          severity: rule.severity,
+          phrase,
+          reason: rule.reason,
+        });
+      }
     }
   }
   return findings;
 };
 
-const dedupe = (findings: readonly WorldviewFinding[]): WorldviewFinding[] => {
+const dedupe = (findings: readonly import("./types.js").WorldviewFinding[]): import("./types.js").WorldviewFinding[] => {
   const seen = new Set<string>();
-  const output: WorldviewFinding[] = [];
+  const output: import("./types.js").WorldviewFinding[] = [];
   for (const finding of findings) {
     const key = `${finding.category}:${finding.severity}:${finding.phrase.toLocaleLowerCase("en-GB")}:${finding.path ?? ""}`;
     if (seen.has(key)) continue;
@@ -205,7 +151,7 @@ const dedupe = (findings: readonly WorldviewFinding[]): WorldviewFinding[] => {
   return output;
 };
 
-export const auditWorldviewText = (value: string): WorldviewTextAudit => {
+export const auditWorldviewText = (value: string): import("./types.js").WorldviewTextAudit => {
   const findings = dedupe(matchedFindings(value));
   return {
     safe: !findings.some(({ severity }) => severity === "reject"),
@@ -223,10 +169,12 @@ const finalChartNonInterpretivePath = (path: string): boolean =>
   || path === "astral-chart.provenance"
   || path.startsWith("astral-chart.provenance.");
 
-export const auditWorldviewObject = (value: unknown, path = "$"): WorldviewTextAudit => {
-  const findings: WorldviewFinding[] = [];
+export const auditWorldviewObject = (value: unknown, path = "$"): import("./types.js").WorldviewTextAudit => {
+  const findings: import("./types.js").WorldviewFinding[] = [];
   const visit = (current: unknown, currentPath: string, key: string | null): void => {
-    if (key === "sourceRefs" || key === "forbiddenClaims" || finalChartNonInterpretivePath(currentPath)) return;
+    // source references, policy prohibitions and composition identifiers are
+    // private metadata. They may legitimately contain words that prose must not.
+    if (key === "sourceRefs" || key === "forbiddenClaims" || key === "composition" || finalChartNonInterpretivePath(currentPath)) return;
     if (typeof current === "string") {
       findings.push(...matchedFindings(current).map((finding) => ({ ...finding, path: currentPath })));
       return;
@@ -247,10 +195,10 @@ export const auditWorldviewObject = (value: unknown, path = "$"): WorldviewTextA
   };
 };
 
-const categoryPresent = (findings: readonly WorldviewFinding[], category: WorldviewCategory): boolean =>
+const categoryPresent = (findings: readonly import("./types.js").WorldviewFinding[], category: import("./types.js").WorldviewCategory): boolean =>
   findings.some((finding) => finding.category === category);
 
-export const auditSourceNeutrality = (passage: string): SourceNeutralityAudit => {
+export const auditSourceNeutrality = (passage: string): import("./types.js").SourceNeutralityAudit => {
   const audit = auditWorldviewText(passage);
   return {
     religiousDoctrine: categoryPresent(audit.findings, "religious_doctrine"),
@@ -269,7 +217,7 @@ export const auditSourceNeutrality = (passage: string): SourceNeutralityAudit =>
   };
 };
 
-export const worldviewFailureMessages = (audit: WorldviewTextAudit): string[] => audit.findings.map((finding) => {
+export const worldviewFailureMessages = (audit: import("./types.js").WorldviewTextAudit): string[] => audit.findings.map((finding) => {
   const location = finding.path === undefined ? "interpretation" : finding.path;
   const prefix = finding.severity === "review" ? "requires worldview review" : "violates worldview neutrality";
   return `${location} ${prefix}: ${finding.reason} (${finding.phrase})`;
