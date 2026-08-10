@@ -1,3 +1,4 @@
+import { auditWorldviewText } from "../../interpretation/corpus/worldview.js";
 import type { JsonRef } from "../../types/base.js";
 import type { InterpretationCall } from "../orchestrate/types.js";
 import { fallbackCatalogue, type FallbackFamily } from "./catalogue.js";
@@ -98,6 +99,8 @@ const cleanText = (raw: unknown, key: string): string | null => {
   if (typeof raw !== "string") return null;
   let value = stripProcessNarration(raw);
   if (value.length === 0) return null;
+  const worldview = auditWorldviewText(value);
+  if (!worldview.safe || worldview.requiresReview) return null;
   if (incompleteEnding.test(value)) value = lastCompleteSentence(value);
   if (value.length === 0) return null;
   if (key !== "title" && key !== "value" && key !== "sign" && !value.startsWith("#/")) {
