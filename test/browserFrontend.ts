@@ -116,6 +116,13 @@ await test("browser tools initialise the interactive chart wheel", async () => {
   assert(/extendSegment/u.test(wheel) && /wheel-aspect-conjunction-marker/u.test(wheelStyles), "conjunctions must remain visible while staying aligned to their actual endpoints");
   assert(/document\.body\.append\(tooltip\)/u.test(bootstrap) && /position:\s*fixed/u.test(wheelStyles), "chart tooltips must use viewport coordinates so they stay beside the pointer");
   assert(/grid-template-areas:\s*"graphic controls"/u.test(wheelStyles) && /position:\s*sticky/u.test(wheelStyles) && /overscroll-behavior:\s*contain/u.test(wheelStyles), "aspect controls must sit beside the chart and scroll independently on wide screens");
+  assert(wheelStyles.includes(".chart-wheel-tab-host") && /container-type:\s*inline-size/u.test(wheelStyles), "dedicated wheel tab must establish the container used by responsive wheel queries");
+  assert(/@container \(max-width: 56rem\)[\s\S]*grid-template-areas:[\s\S]*"graphic"[\s\S]*"controls"/u.test(wheelStyles), "narrow wheel layout must stack the chart and independently scrollable controls instead of overflowing sideways");
+  assert(/100dvh/u.test(wheelStyles) && /overflow-x:\s*clip/u.test(wheelStyles), "wheel sizing must respect narrow and short viewports without leaking horizontal overflow");
+  assert(/-webkit-appearance:\s*none/u.test(wheelStyles) && /appearance:\s*none/u.test(wheelStyles) && /wheel-aspect-group-checkbox:indeterminate/u.test(wheelStyles), "aspect checkboxes must reset global input styling and render checked, unchecked and mixed states consistently");
+  assert(/addGlyphColourFilter/u.test(wheel) && /feColorMatrix/u.test(wheel), "wheel SVG assets must be recoloured inside SVG instead of depending on a CSS filter applied to an external SVG document");
+  assert(wheel.includes('image.setAttribute("filter", `url(#${glyphFilterId})`);'), "every rendered canonical glyph image must use the wheel-local SVG colour filter");
+  assert(!/filter:\s*invert\(/u.test(wheelStyles), "wheel glyph colour must not rely on CSS invert, which is inconsistent for external SVG images");
   assert(!/wheel-detail/u.test(wheel), "renderer must not create a permanent chart detail panel");
   assert(/part_of_spirit/u.test(wheelGlyphs) && /lot_of_spirit\.svg/u.test(wheelGlyphs), "Part of Spirit must use its dedicated SVG glyph");
   assert(/fallback\.textContent = "Φ"/u.test(wheelGlyphs), "Part of Spirit fallback must remain visually distinct from the Sun");

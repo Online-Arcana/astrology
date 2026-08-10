@@ -11,6 +11,7 @@ const radii = {
   houseOuter: 254,
   aspect: 210,
 } as const;
+let wheelInstance = 0;
 
 const signOrder = [
   "aries", "taurus", "gemini", "cancer", "leo", "virgo",
@@ -42,6 +43,30 @@ const radians = (degrees: number): number => degrees * Math.PI / 180;
 
 const svg = <K extends keyof SVGElementTagNameMap>(name: K): SVGElementTagNameMap[K] =>
   document.createElementNS(svgNamespace, name);
+
+const addGlyphColourFilter = (root: SVGSVGElement): string => {
+  const id = `wheelGlyphColour${++wheelInstance}`;
+  const definitions = svg("defs");
+  const filter = svg("filter");
+  filter.id = id;
+  filter.setAttribute("x", "-10%");
+  filter.setAttribute("y", "-10%");
+  filter.setAttribute("width", "120%");
+  filter.setAttribute("height", "120%");
+  filter.setAttribute("color-interpolation-filters", "sRGB");
+  const matrix = svg("feColorMatrix");
+  matrix.setAttribute("type", "matrix");
+  matrix.setAttribute("values", [
+    "0 0 0 0 0.968627451",
+    "0 0 0 0 0.952941176",
+    "0 0 0 0 1",
+    "0 0 0 1 0",
+  ].join(" "));
+  filter.append(matrix);
+  definitions.append(filter);
+  root.append(definitions);
+  return id;
+};
 
 const screenAngle = (longitude: number, ascendant: number): number =>
   Math.PI - radians(normalise(longitude - ascendant));
@@ -138,6 +163,7 @@ const addAssetGlyph = (
   x: number,
   y: number,
   glyphSize: number,
+  glyphFilterId: string,
   rotation = 0,
   modifier?: string,
 ): void => {
@@ -157,6 +183,7 @@ const addAssetGlyph = (
   image.setAttribute("width", String(glyphSize));
   image.setAttribute("height", String(glyphSize));
   image.setAttribute("class", "wheel-glyph-image");
+  image.setAttribute("filter", `url(#${glyphFilterId})`);
   if (rotation !== 0) image.setAttribute("transform", `rotate(${rotation} ${x} ${y})`);
   image.addEventListener("load", () => { fallbackText.style.display = "none"; }, { once: true });
   image.addEventListener("error", () => { image.remove(); }, { once: true });
@@ -264,6 +291,7 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
   root.setAttribute("viewBox", `0 0 ${size} ${size}`);
   root.setAttribute("role", "img");
   root.setAttribute("aria-label", "Interactive deterministic natal chart wheel");
+  const glyphFilterId = addGlyphColourFilter(root);
   graphic.append(root);
   container.append(graphic);
 
@@ -296,7 +324,7 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
     const glyphPoint = polar(normalise(start + 15), (radii.zodiacInner + radii.outer) / 2, ascendant);
     const glyphGroup = svg("g");
     glyphGroup.setAttribute("class", "wheel-sign-glyph");
-    addAssetGlyph(glyphGroup, signAsset(sign), signGlyphs[sign], glyphPoint.x, glyphPoint.y, 31);
+    addAssetGlyph(glyphGroup, signAsset(sign), signGlyphs[sign], glyphPoint.x, glyphPoint.y, 31, glyphFilterId);
     zodiacGroup.append(glyphGroup);
   }
 
@@ -397,7 +425,7 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
       fallback.setAttribute("class", "wheel-point-text");
       group.append(fallback);
     } else {
-      addAssetGlyph(group, asset.path, pointFallback[placed.id] ?? "•", location.x, location.y, 29, asset.rotation ?? 0, asset.modifier);
+      addAssetGlyph(group, asset.path, pointFallback[placed.id] ?? "•", location.x, location.y, 29, glyphFilterId, asset.rotation ?? 0, asset.modifier);
     }
     pointGroup.append(group);
   }
