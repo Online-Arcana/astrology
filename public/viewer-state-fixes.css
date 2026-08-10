@@ -10,6 +10,47 @@
   display: none !important;
 }
 
+.viewer-bulk-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.viewer-bulk-toggle {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  border-color: rgba(213, 200, 255, 0.28) !important;
+  border-radius: 0.7rem;
+  background: rgba(38, 32, 68, 0.58) !important;
+  color: #f5f1ff !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.viewer-bulk-toggle:hover,
+.viewer-bulk-toggle:focus-visible {
+  border-color: rgba(213, 200, 255, 0.52) !important;
+  background: rgba(54, 45, 92, 0.78) !important;
+}
+
+.viewer-index-bulk-controls {
+  margin: 0 0 0.7rem;
+  padding: 0 0 0.7rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.viewer-index-bulk-controls .viewer-bulk-toggle {
+  width: 100%;
+}
+
+.viewer-chart-bulk-controls {
+  order: -1;
+  margin: 0 0 0.1rem;
+}
+
 .compatibility-sign-filter {
   border-color: rgba(213, 200, 255, 0.34) !important;
   background:
@@ -51,4 +92,10 @@
 .compatibility-sign-filter select option {
   background: #130f26;
   color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .viewer-chart-bulk-controls .viewer-bulk-toggle {
+    width: 100%;
+  }
 }
