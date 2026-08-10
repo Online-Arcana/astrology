@@ -3,6 +3,7 @@ const synthesisTitles = new Set([
   "Final portrait",
   "Integrated chart synthesis",
   "Final personal portrait",
+  "Your overall portrait",
 ]);
 
 // "Final synthesis" was the previous customer-facing label. The synthesis now leads the chart as Overview.
@@ -59,6 +60,20 @@ const ensureIndexItem = (): HTMLUListElement | null => {
   return readings;
 };
 
+const updateCount = (details: HTMLDetailsElement, body: HTMLElement): void => {
+  const count = details.querySelector<HTMLElement>(":scope > summary .chart-category-count");
+  if (count === null) return;
+  const groups = body.querySelectorAll(":scope > details.chart-reading-group").length;
+  if (groups > 0) {
+    const label = `${groups} group${groups === 1 ? "" : "s"}`;
+    if (count.textContent !== label) count.textContent = label;
+    return;
+  }
+  const total = body.querySelectorAll(":scope > details.chart-reading").length;
+  const label = `${total} section${total === 1 ? "" : "s"}`;
+  if (count.textContent !== label) count.textContent = label;
+};
+
 let correcting = false;
 const correct = (): void => {
   if (correcting) return;
@@ -77,12 +92,7 @@ const correct = (): void => {
       const item = link?.closest("li") ?? null;
       if (item !== null && !index.contains(item)) index.append(item);
     }
-    const count = target.details.querySelector<HTMLElement>(":scope > summary .chart-category-count");
-    if (count !== null) {
-      const total = target.body.querySelectorAll("details.chart-reading").length;
-      const label = `${total} section${total === 1 ? "" : "s"}`;
-      if (count.textContent !== label) count.textContent = label;
-    }
+    updateCount(target.details, target.body);
   } finally {
     correcting = false;
   }
