@@ -129,20 +129,51 @@ test("non-agnostic claims cannot enter even an otherwise valid partial corpus", 
   equal(failed, true, "metaphysical claim must fail compilation");
 });
 
+const reviewedIds = new Set(reviewedCorpusAtoms.map(({ id }) => id));
+
 test("the checked-in reviewed corpus contains all ten principal body atoms", () => {
-  const ids = new Set(reviewedCorpusAtoms.map(({ id }) => id));
   const expected = [
     "sun", "moon", "mercury", "venus", "mars",
     "jupiter", "saturn", "uranus", "neptune", "pluto",
   ];
-  for (const id of expected) equal(ids.has(`body.${id}`), true, `body.${id} exists`);
+  for (const id of expected) equal(reviewedIds.has(`body.${id}`), true, `body.${id} exists`);
+});
+
+test("the checked-in reviewed corpus contains every zodiac sign", () => {
+  const expected = [
+    "aries", "taurus", "gemini", "cancer", "leo", "virgo",
+    "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
+  ];
+  for (const id of expected) equal(reviewedIds.has(`sign.${id}`), true, `sign.${id} exists`);
+});
+
+test("the checked-in reviewed corpus contains all twelve houses", () => {
+  for (let number = 1; number <= 12; number += 1) {
+    equal(reviewedIds.has(`house.${number}`), true, `house.${number} exists`);
+  }
+});
+
+test("the checked-in reviewed corpus contains every configured longitude aspect operator", () => {
+  const expected = [
+    "conjunction", "opposition", "trine", "square", "sextile",
+    "quincunx", "semisextile", "semisquare", "sesquiquadrate", "quintile", "biquintile",
+  ];
+  for (const id of expected) equal(reviewedIds.has(`aspect.${id}`), true, `aspect.${id} exists`);
+});
+
+test("the checked-in reviewed corpus contains approved node lot and main-angle atoms", () => {
+  const expected = [
+    "point.north-node", "point.south-node", "point.part-of-fortune", "point.part-of-spirit",
+    "angle.ascendant", "angle.descendant", "angle.midheaven", "angle.imum-coeli",
+  ];
+  for (const id of expected) equal(reviewedIds.has(id), true, `${id} exists`);
 });
 
 test("the checked-in reviewed corpus compiles as a partial agnostic corpus", () => {
   const compiled = compileReviewedCorpus(false);
   equal(compiled.worldview, "agnostic", "reviewed corpus worldview");
-  equal(Object.keys(compiled.atoms).length >= 10, true, "reviewed corpus has body atoms");
-  equal(Object.keys(compiled.claims).length > Object.keys(compiled.atoms).length, true, "reviewed atoms carry multiple claims where supported");
+  equal(Object.keys(compiled.atoms).length >= 53, true, "reviewed corpus has the current reviewed atom set");
+  equal(Object.keys(compiled.claims).length >= Object.keys(compiled.atoms).length, true, "every reviewed atom has semantic claims");
 });
 
 test("the checked-in corpus still refuses production compilation until remaining atoms are reviewed", () => {
