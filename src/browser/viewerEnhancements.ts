@@ -1,4 +1,4 @@
-import { readingDescription, stripZodiacPrefix } from "./readingHelp.js";
+import { displayReadingTitle, readingDescription } from "./readingHelp.js";
 
 const element = <T extends Element>(selector: string): T | null => document.querySelector<T>(selector);
 
@@ -6,37 +6,6 @@ const zodiacOrder = [
   "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
   "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
 ] as const;
-
-const replacements: readonly [RegExp, string][] = [
-  [/^life\s+/iu, ""],
-  [/^aspect\s+/iu, ""],
-  [/^point\s+/iu, ""],
-  [/^pattern\s+/iu, ""],
-  [/^eclipse\s+/iu, ""],
-  [/\brulership dignity\b/iu, "Rulership and dignity"],
-  [/\bchildren And Nurturing\b/u, "Children and nurturing"],
-  [/\bcommitted Partnerships\b/u, "Committed partnerships"],
-  [/\bcommunity And Groups\b/u, "Community and groups"],
-  [/\bhome And Family\b/u, "Home and family"],
-  [/\bchildhood Patterns\b/u, "Childhood patterns"],
-  [/\bunconscious Patterns\b/u, "Unconscious patterns"],
-  [/\bnorth node mean south node mean\b/iu, "Mean lunar nodes"],
-  [/\bnorth node true south node true\b/iu, "True lunar nodes"],
-  [/\bantivertex vertex\b/iu, "Vertex–Antivertex"],
-  [/\bascendant descendant\b/iu, "Ascendant–Descendant"],
-  [/\bimum coeli midheaven\b/iu, "Imum Coeli–Midheaven"],
-];
-
-const humanTitle = (raw: string): string => {
-  let value = stripZodiacPrefix(raw)
-    .replaceAll(/([a-z])([A-Z])/gu, "$1 $2")
-    .replaceAll(/[_\.]+/gu, " ")
-    .replaceAll(/\s+/gu, " ")
-    .trim();
-  for (const [pattern, replacement] of replacements) value = value.replace(pattern, replacement).trim();
-  if (value.length === 0) return "Chart section";
-  return `${value[0]?.toLocaleUpperCase("en-GB") ?? ""}${value.slice(1)}`;
-};
 
 const readingSummary = (reading: HTMLDetailsElement): HTMLElement | null =>
   reading.querySelector<HTMLElement>(":scope > summary");
@@ -47,20 +16,24 @@ const readingBody = (reading: HTMLDetailsElement): HTMLElement | null =>
 const normaliseReading = (reading: HTMLDetailsElement): string => {
   const summary = readingSummary(reading);
   if (summary === null) return "Chart section";
-  const original = summary.textContent?.trim() ?? "Chart section";
-  const title = humanTitle(original);
+  const original = reading.dataset["originalTitle"] ?? summary.textContent?.trim() ?? "Chart section";
+  reading.dataset["originalTitle"] = original;
+  const title = displayReadingTitle(original);
   if (summary.textContent !== title) summary.textContent = title;
 
   const link = element<HTMLAnchorElement>(`#formattedChartIndex a[href="#${CSS.escape(reading.id)}"]`);
   if (link !== null) link.textContent = title;
 
   const body = readingBody(reading);
-  const description = readingDescription(title);
-  if (body !== null && description !== null && body.querySelector(":scope > .chart-reading-explainer") === null) {
-    const explanation = document.createElement("p");
-    explanation.className = "chart-reading-explainer";
+  const description = readingDescription(original);
+  if (body !== null && description !== null) {
+    let explanation = body.querySelector<HTMLElement>(":scope > .chart-reading-explainer");
+    if (explanation === null) {
+      explanation = document.createElement("p");
+      explanation.className = "chart-reading-explainer";
+      body.prepend(explanation);
+    }
     explanation.textContent = description;
-    body.prepend(explanation);
   }
   return title;
 };
@@ -70,11 +43,28 @@ interface CompatibilityTitle {
   sign: string | null;
 }
 
+interface CompatibilityReading {
+  sign: string;
+  reading: HTMLDetailsElement;
+}
+
+interface CompatibilityDomainGroup {
+  domain: string;
+  overview: HTMLDetailsElement | null;
+  signs: CompatibilityReading[];
+}
+
+interface CompatibilityBucket {
+  id: string;
+  title: string;
+  domains: Map<string, CompatibilityDomainGroup>;
+}
+
 const compatibilityTitle = (title: string): CompatibilityTitle | null => {
   const match = /^(.*?)\s+compatibility(?:\s+with\s+(.+))?$/iu.exec(title.trim());
   const domain = match?.[1]?.trim();
   if (domain === undefined || domain.length === 0) return null;
-  return { domain: humanTitle(domain), sign: match?.[2]?.trim() ?? null };
+  return { domain, sign: match?.[2]?.trim() ?? null };
 };
 
 const compatibilitySignOrder = (left: string, right: string): number => {
@@ -86,16 +76,56 @@ const compatibilitySignOrder = (left: string, right: string): number => {
   return left.localeCompare(right, "en-GB");
 };
 
-const rebuildCompatibilityIndex = (domains: readonly HTMLDetailsElement[]): void => {
+const domainName = (domain: string): string => {
+  const normal = domain.toLocaleLowerCase("en-GB").replaceAll(/[_\s-]+/gu, " ").trim();
+  const names: Readonly<Record<string, string>> = {
+    overall: "Overall",
+    romantic: "Romantic",
+    sexual: "Sexual",
+    emotional: "Emotional",
+    communication: "Communication",
+    intellectual: "Intellectual",
+    friendship: "Friendship",
+    business: "Business",
+    domestic: "Home and domestic life",
+    "long term": "Long-term",
+    "conflict resolution": "Conflict resolution",
+    spiritual: "Spiritual",
+  };
+  return names[normal] ?? `${normal[0]?.toLocaleUpperCase("en-GB") ?? ""}${normal.slice(1)}`;
+};
+
+const bucketFor = (domain: string): { id: string; title: string } => {
+  const normal = domain.toLocaleLowerCase("en-GB").replaceAll(/[_\s-]+/gu, " ").trim();
+  if (["romantic", "emotional", "domestic", "long term"].includes(normal)) {
+    return { id: "relationships", title: "Relationships" };
+  }
+  if (normal === "sexual") return { id: "sexual", title: "Sexual" };
+  if (["communication", "intellectual", "conflict resolution"].includes(normal)) {
+    return { id: "communication", title: "Communication and understanding" };
+  }
+  if (normal === "friendship") return { id: "friendship", title: "Friendship" };
+  if (normal === "business") return { id: "business", title: "Business" };
+  if (normal === "spiritual") return { id: "spiritual", title: "Spiritual" };
+  return { id: "overall", title: "Overall" };
+};
+
+const slug = (value: string): string => value
+  .normalize("NFKD")
+  .replaceAll(/[^A-Za-z0-9]+/gu, "-")
+  .replaceAll(/^-+|-+$/gu, "")
+  .toLocaleLowerCase("en-GB") || "section";
+
+const rebuildCompatibilityIndex = (buckets: readonly HTMLDetailsElement[]): void => {
   const categoryLink = element<HTMLAnchorElement>('#formattedChartIndex a[href="#chart-category-compatibilities"]');
   const root = categoryLink?.closest("li")?.querySelector<HTMLUListElement>(":scope > ul") ?? null;
   if (root === null) return;
   root.replaceChildren();
-  for (const domain of domains) {
+  for (const bucket of buckets) {
     const item = document.createElement("li");
     const link = document.createElement("a");
-    link.href = `#${domain.id}`;
-    link.textContent = domain.querySelector(":scope > summary .compatibility-domain-title")?.textContent?.trim() ?? "Compatibility";
+    link.href = `#${bucket.id}`;
+    link.textContent = bucket.querySelector(":scope > summary .compatibility-bucket-title")?.textContent?.trim() ?? "Compatibility";
     item.append(link);
     root.append(item);
   }
@@ -107,76 +137,112 @@ const enhanceCompatibilities = (): void => {
   if (category === null || body === null || category.dataset["compatibilityEnhanced"] === "true") return;
 
   const readings = [...body.querySelectorAll<HTMLDetailsElement>(":scope > details.chart-reading")];
-  const grouped = new Map<string, { overview: HTMLDetailsElement | null; signs: { sign: string; reading: HTMLDetailsElement }[] }>();
+  const buckets = new Map<string, CompatibilityBucket>();
+  const allSigns = new Set<string>();
+
   for (const reading of readings) {
     const parsed = compatibilityTitle(normaliseReading(reading));
     if (parsed === null) continue;
-    const selected = grouped.get(parsed.domain) ?? { overview: null, signs: [] };
+    const bucketMeta = bucketFor(parsed.domain);
+    const bucket = buckets.get(bucketMeta.id) ?? { ...bucketMeta, domains: new Map<string, CompatibilityDomainGroup>() };
+    const domain = domainName(parsed.domain);
+    const selected = bucket.domains.get(domain) ?? { domain, overview: null, signs: [] };
     if (parsed.sign === null) selected.overview = reading;
-    else selected.signs.push({ sign: humanTitle(parsed.sign), reading });
-    grouped.set(parsed.domain, selected);
+    else {
+      const sign = displayReadingTitle(parsed.sign);
+      selected.signs.push({ sign, reading });
+      allSigns.add(sign);
+    }
+    bucket.domains.set(domain, selected);
+    buckets.set(bucket.id, bucket);
   }
-  if (grouped.size === 0) return;
+  if (buckets.size === 0) return;
 
-  const domainElements: HTMLDetailsElement[] = [];
-  for (const [domain, values] of grouped) {
-    values.signs.sort((left, right) => compatibilitySignOrder(left.sign, right.sign));
-    const details = document.createElement("details");
-    details.className = "compatibility-domain";
-    details.id = `compatibility-domain-${domain.toLocaleLowerCase("en-GB").replaceAll(/[^a-z0-9]+/gu, "-").replaceAll(/^-+|-+$/gu, "")}`;
+  const orderedBucketIds = ["overall", "relationships", "sexual", "communication", "friendship", "business", "spiritual"];
+  const bucketElements: HTMLDetailsElement[] = [];
+  const signReadings: CompatibilityReading[] = [];
 
-    const summary = document.createElement("summary");
-    const title = document.createElement("span");
-    title.className = "compatibility-domain-title";
-    title.textContent = `${domain} compatibility`;
-    const count = document.createElement("span");
-    count.className = "chart-category-count";
-    count.textContent = `${values.signs.length} signs`;
-    summary.append(title, count);
+  const filter = document.createElement("label");
+  filter.className = "compatibility-sign-filter";
+  const filterLabel = document.createElement("span");
+  filterLabel.textContent = "Show compatibility with";
+  const select = document.createElement("select");
+  select.setAttribute("aria-label", "Filter compatibility readings by zodiac sign");
+  select.append(new Option("All zodiac signs", ""));
+  const sortedSigns = [...allSigns].sort(compatibilitySignOrder);
+  for (const sign of sortedSigns) select.append(new Option(sign, sign.toLocaleLowerCase("en-GB")));
+  filter.append(filterLabel, select);
 
-    const domainBody = document.createElement("div");
-    domainBody.className = "compatibility-domain-body";
+  for (const bucketId of orderedBucketIds) {
+    const bucket = buckets.get(bucketId);
+    if (bucket === undefined) continue;
 
-    if (values.signs.length > 0) {
-      const filter = document.createElement("label");
-      filter.className = "compatibility-sign-filter";
-      const text = document.createElement("span");
-      text.textContent = "Filter by zodiac sign";
-      const select = document.createElement("select");
-      select.append(new Option("All signs", ""));
-      for (const { sign } of values.signs) select.append(new Option(sign, sign.toLocaleLowerCase("en-GB")));
-      filter.append(text, select);
-      domainBody.append(filter);
-      select.addEventListener("change", () => {
-        const selected = select.value;
-        for (const { sign, reading } of values.signs) {
-          reading.hidden = selected.length > 0 && sign.toLocaleLowerCase("en-GB") !== selected;
-          if (!reading.hidden && selected.length > 0) reading.open = true;
-        }
-      });
+    const bucketDetails = document.createElement("details");
+    bucketDetails.className = "compatibility-bucket";
+    bucketDetails.id = `compatibility-bucket-${bucket.id}`;
+    const bucketSummary = document.createElement("summary");
+    const bucketTitle = document.createElement("span");
+    bucketTitle.className = "compatibility-bucket-title";
+    bucketTitle.textContent = bucket.title;
+    const bucketCount = document.createElement("span");
+    bucketCount.className = "chart-category-count";
+    bucketCount.textContent = `${bucket.domains.size} ${bucket.domains.size === 1 ? "area" : "areas"}`;
+    bucketSummary.append(bucketTitle, bucketCount);
+
+    const bucketBody = document.createElement("div");
+    bucketBody.className = "compatibility-bucket-body";
+    const domains = [...bucket.domains.values()];
+    for (const domain of domains) {
+      domain.signs.sort((left, right) => compatibilitySignOrder(left.sign, right.sign));
+      signReadings.push(...domain.signs);
+
+      const domainDetails = document.createElement("details");
+      domainDetails.className = "compatibility-domain";
+      domainDetails.id = `compatibility-domain-${slug(`${bucket.id}-${domain.domain}`)}`;
+      const domainSummary = document.createElement("summary");
+      const domainTitle = document.createElement("span");
+      domainTitle.className = "compatibility-domain-title";
+      domainTitle.textContent = domain.domain;
+      const domainCount = document.createElement("span");
+      domainCount.className = "chart-category-count";
+      domainCount.textContent = `${domain.signs.length} signs`;
+      domainSummary.append(domainTitle, domainCount);
+
+      const domainBody = document.createElement("div");
+      domainBody.className = "compatibility-domain-body";
+      if (domain.overview !== null) {
+        const summaryElement = readingSummary(domain.overview);
+        if (summaryElement !== null) summaryElement.textContent = "Overview";
+        domainBody.append(domain.overview);
+      }
+      for (const { sign, reading } of domain.signs) {
+        const summaryElement = readingSummary(reading);
+        if (summaryElement !== null) summaryElement.textContent = sign;
+        reading.dataset["compatibilitySign"] = sign.toLocaleLowerCase("en-GB");
+        domainBody.append(reading);
+      }
+
+      domainDetails.append(domainSummary, domainBody);
+      bucketBody.append(domainDetails);
     }
 
-    if (values.overview !== null) {
-      const summaryElement = readingSummary(values.overview);
-      if (summaryElement !== null) summaryElement.textContent = "Overview";
-      domainBody.append(values.overview);
-    }
-    for (const { sign, reading } of values.signs) {
-      const summaryElement = readingSummary(reading);
-      if (summaryElement !== null) summaryElement.textContent = sign;
-      reading.dataset["compatibilitySign"] = sign.toLocaleLowerCase("en-GB");
-      domainBody.append(reading);
-    }
-
-    details.append(summary, domainBody);
-    domainElements.push(details);
+    bucketDetails.append(bucketSummary, bucketBody);
+    bucketElements.push(bucketDetails);
   }
 
-  body.replaceChildren(...domainElements);
+  select.addEventListener("change", () => {
+    const selected = select.value;
+    for (const { sign, reading } of signReadings) {
+      reading.hidden = selected.length > 0 && sign.toLocaleLowerCase("en-GB") !== selected;
+    }
+    category.dataset["compatibilityFilter"] = selected;
+  });
+
+  body.replaceChildren(filter, ...bucketElements);
   category.dataset["compatibilityEnhanced"] = "true";
   const categoryCount = category.querySelector<HTMLElement>(":scope > summary .chart-category-count");
-  if (categoryCount !== null) categoryCount.textContent = `${domainElements.length} domain${domainElements.length === 1 ? "" : "s"}`;
-  rebuildCompatibilityIndex(domainElements);
+  if (categoryCount !== null) categoryCount.textContent = `${bucketElements.length} groups`;
+  rebuildCompatibilityIndex(bucketElements);
 };
 
 const enhanceIndex = (): void => {
