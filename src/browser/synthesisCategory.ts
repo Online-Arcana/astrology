@@ -28,9 +28,9 @@ const ensureCategory = (): { details: HTMLDetailsElement; body: HTMLElement } | 
     details.append(summary, body);
   }
   const title = details.querySelector<HTMLElement>(":scope > summary > span:not(.chart-category-count)");
-  if (title !== null) title.textContent = "Overview";
+  if (title !== null && title.textContent !== "Overview") title.textContent = "Overview";
   details.open = true;
-  host.prepend(details);
+  if (host.firstElementChild !== details) host.prepend(details);
   const body = details.querySelector<HTMLElement>(":scope > .chart-category-body");
   return body === null ? null : { details, body };
 };
@@ -48,10 +48,10 @@ const ensureIndexItem = (): HTMLUListElement | null => {
     categoryLink.textContent = "Overview";
     const readings = document.createElement("ul");
     item.append(categoryLink, readings);
-  } else {
+  } else if (categoryLink.textContent !== "Overview") {
     categoryLink.textContent = "Overview";
   }
-  root.prepend(item);
+  if (root.firstElementChild !== item) root.prepend(item);
   let readings = item.querySelector<HTMLUListElement>(":scope > ul");
   if (readings === null) {
     readings = document.createElement("ul");
