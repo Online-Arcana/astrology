@@ -10,6 +10,9 @@ import { initialiseVaultUi } from "./vaultUi.js";
 // removes the need for a page-wide MutationObserver and prevents observer
 // callbacks from reacting to their own status DOM updates.
 await import("./testTools.js");
+await import("./viewerStyle.js");
+await import("./viewerEnhancements.js");
+await import("./viewerHouseLabels.js");
 await import("./credentialLabels.js");
 await import("./credentialRevealPolicy.js");
 await import("./credentialStatus.js");
