@@ -113,12 +113,23 @@ export interface Proposition {
   sourceClaimIds: string[];
 }
 
+export interface InterpretationMapIngredient {
+  kind: string;
+  atomId: string;
+  technicalId: string;
+  metadata: Readonly<Record<string, string | number | boolean | null>>;
+}
+
 export interface InterpretationMap {
   unitId: string;
   subject: {
     title: string;
     plainEnglishDomain: string;
     technicalLabel?: string;
+  };
+  /** Private chart-specific composition. It is semantic control data, not prose. */
+  composition: {
+    ingredients: InterpretationMapIngredient[];
   };
   chartEvidence: JsonRef[];
   semantics: {
