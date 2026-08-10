@@ -44,6 +44,18 @@ await test("index branch labels toggle the same disclosure as their arrows", asy
   assert(/toggle\.click\(\)/u.test(source), "branch labels must use the exact same toggle behaviour as the disclosure arrow");
 });
 
+await test("index and chart bulk disclosure controls are independent", async () => {
+  const source = await readFile("src/browser/viewerInitialState.ts", "utf8");
+  const styles = await readFile("public/viewer-state-fixes.css", "utf8");
+  assert(/viewerIndexBulkToggle/u.test(source) && /viewerChartBulkToggle/u.test(source), "viewer must expose separate index and chart bulk controls");
+  assert(/const indexToggles/u.test(source), "index bulk state must be derived only from index disclosure controls");
+  assert(/const chartDetails/u.test(source), "chart bulk state must be derived only from chart details elements");
+  assert(/for \(const toggle of toggles\)[\s\S]*?toggle\.click\(\)/u.test(source), "index bulk control must operate through index disclosure buttons");
+  assert(/for \(const item of details\) item\.open = expand/u.test(source), "chart bulk control must operate through chart details only");
+  assert(/viewer-index-bulk-controls/u.test(styles), "index bulk control must have its own presentation container");
+  assert(/\.viewer-chart-bulk-controls[\s\S]*?order:\s*-1/u.test(styles), "chart bulk control must render above the actual chart items");
+});
+
 await test("closed details and hidden index branches are actually hidden", async () => {
   const styles = await readFile("public/viewer-state-fixes.css", "utf8");
   assert(/\.formatted-chart-index \[hidden\][\s\S]*?display:\s*none\s*!important/u.test(styles), "hidden index branches must override grid display rules");
