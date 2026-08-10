@@ -7,8 +7,8 @@ import type {
 } from "./types.js";
 import { assertAgnosticText, auditSourceNeutrality, auditWorldviewObject } from "./worldview.js";
 
-export const corpusPolicyVersion = "astral-corpus-policy/1.0.0" as const;
-export const interpretationCorpusVersion = "astral-interpretation-corpus/0.1.0" as const;
+export const corpusPolicyVersion = "astral-corpus-policy/1.1.0" as const;
+export const interpretationCorpusVersion = "astral-interpretation-corpus/0.2.0" as const;
 
 export interface CorpusBuildInput {
   sources: readonly CorpusSource[];
@@ -37,7 +37,19 @@ const unique = <T extends { id: string }>(values: readonly T[], kind: string): M
   return output;
 };
 
-const sourceIdFromRef = (ref: string): string => ref.split("#", 1)[0] ?? ref;
+interface ParsedSourceRef {
+  sourceId: string;
+  sectionId: string | null;
+}
+
+const parseSourceRef = (ref: string): ParsedSourceRef => {
+  const hash = ref.indexOf("#");
+  if (hash < 0) return { sourceId: ref, sectionId: null };
+  return {
+    sourceId: ref.slice(0, hash),
+    sectionId: ref.slice(hash + 1) || null,
+  };
+};
 
 export const validateSourceForSemanticIngestion = (
   source: CorpusSource,
@@ -95,11 +107,17 @@ const validateClaimProvenance = (
   sources: ReadonlyMap<string, CorpusSource>,
 ): void => {
   for (const ref of claim.sourceRefs) {
-    const sourceId = sourceIdFromRef(ref);
+    const { sourceId, sectionId } = parseSourceRef(ref);
     const source = sources.get(sourceId);
     if (source === undefined) throw new Error(`Corpus claim ${claim.id} references unknown source ${sourceId}`);
     if (source.role !== "semantic" || source.reviewStatus !== "approved") {
       throw new Error(`Corpus claim ${claim.id} references source ${sourceId} that is not an approved semantic source`);
+    }
+    if (sectionId === null) {
+      throw new Error(`Corpus claim ${claim.id} must reference an approved section of source ${sourceId}`);
+    }
+    if (!source.allowedSections.includes(sectionId)) {
+      throw new Error(`Corpus claim ${claim.id} references unapproved section ${sourceId}#${sectionId}`);
     }
   }
 };
