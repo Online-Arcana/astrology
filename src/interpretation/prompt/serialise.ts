@@ -61,12 +61,13 @@ const semanticContract = (map: InterpretationMap | null): string => [
   map === null
     ? [
         "SEMANTIC MODE: legacy-unmapped.",
-        "A reviewed compiled InterpretationMap is not attached to this call yet.",
-        "This is transitional compatibility mode while the project corpus is being built; do not infer psychological meaning from machine identifiers, calculation variants or JSON property names.",
+        "A reviewed compiled InterpretationMap is not attached to this call.",
+        "This compatibility mode does not authorise psychological meaning from machine identifiers, calculation variants or JSON property names.",
       ].join("\n")
     : [
         "SEMANTIC MODE: corpus-backed.",
         "Only propositions contained in interpretationMap authorise astrological meaning for this unit.",
+        "interpretationMap.composition identifies the chart-specific semantic atoms selected for this unit when the built-in compiler produced the map.",
         "Do not add an astrological meaning because it is familiar from training, convention or source wording when that meaning is absent from interpretationMap.",
         "forbiddenClaims is policy metadata describing meanings that must not be inferred; it is not semantic content to repeat.",
       ].join("\n"),
@@ -87,7 +88,9 @@ export const serialiseInterpretationPrompt = (
   chartEvidence: {
     contract: [
       "This section is deterministic chart evidence, not prose to imitate.",
-      "Use only evidence needed to express propositions authorised by the semantic input.",
+      "It can contain more facts than the semantic recipe selected for this interpretation unit.",
+      "Use evidence only to ground propositions authorised by semanticInput.",
+      "Do not assign astrological meaning to an identifier, category or value unless semanticInput supplies that meaning for this unit.",
       "Do not expose JSON property names, local reference paths, machine IDs or calculation variants in narrative prose unless an explicitly user-facing technical label is required.",
       "Copy sourceRefs only from permittedSourceRefs and place them only in the schema sourceRefs field.",
     ].join("\n"),
