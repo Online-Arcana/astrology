@@ -6,18 +6,13 @@ import { aspectAtoms, aspectClaims } from "./aspects.js";
 import { bodyAtoms, bodyClaims } from "./bodies.js";
 import { derivedAtoms, derivedClaims, derivedSources } from "./derived.js";
 import { domainAtoms, domainClaims, projectDomainSource } from "./domains.js";
+import { eclipseAtoms, eclipseClaims, eclipseSources } from "./eclipses.js";
 import { houseAtoms, houseClaims } from "./houses.js";
 import { patternAtoms, patternClaims, patternSources } from "./patterns.js";
 import { pointAtoms, pointClaims, pointSources } from "./points.js";
 import { signAtoms, signClaims } from "./signs.js";
 
-/**
- * Reviewed semantic data that has actually been approved for corpus use.
- *
- * The only required semantic atoms intentionally left incomplete here are the
- * eclipse units. Production callers compile with requireComplete=true and
- * therefore remain fail-closed until those have defensible agnostic semantics.
- */
+/** Reviewed semantic data approved for production corpus compilation. */
 export const reviewedCorpusSources: readonly CorpusSource[] = [
   ...corpusSources,
   projectDomainSource,
@@ -25,6 +20,7 @@ export const reviewedCorpusSources: readonly CorpusSource[] = [
   ...angleSources,
   ...patternSources,
   ...derivedSources,
+  ...eclipseSources,
 ] as const;
 
 export const reviewedCorpusAtoms: readonly CorpusAtom[] = [
@@ -36,6 +32,7 @@ export const reviewedCorpusAtoms: readonly CorpusAtom[] = [
   ...aspectAtoms,
   ...patternAtoms,
   ...derivedAtoms,
+  ...eclipseAtoms,
   ...domainAtoms,
 ] as const;
 
@@ -48,6 +45,7 @@ export const reviewedCorpusClaims: readonly CorpusClaim[] = [
   ...aspectClaims,
   ...patternClaims,
   ...derivedClaims,
+  ...eclipseClaims,
   ...domainClaims,
 ] as const;
 
