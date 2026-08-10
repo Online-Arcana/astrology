@@ -61,15 +61,19 @@ await test("compatibility viewer has one extra hierarchy and one global sign fil
   assert(/title: "Business"/u.test(source), "compatibility must have a Business group");
   assert(/Show compatibility with/u.test(source) && /All zodiac signs/u.test(source), "compatibility must provide one sign filter");
   assert(/compatibility-bucket/u.test(source) && /compatibility-domain/u.test(source), "compatibility must retain group and domain tiers");
+  assert(/domainList/u.test(source) && /readingList/u.test(source), "compatibility index must expose group, domain and reading tiers");
 });
 
-await test("chart index is on the right and collapsed by default", async () => {
+await test("chart index stays visible on the left with nested branches collapsed", async () => {
   const source = await readFile("src/browser/viewerEnhancements.ts", "utf8");
   const styles = await readFile("public/viewer-enhancements.css", "utf8");
-  assert(/contents\.hidden = true/u.test(source), "index contents must start hidden");
-  assert(source.includes('toggle.setAttribute("aria-expanded", "false")'), "index toggle must start collapsed for assistive technology");
-  assert(/> \.formatted-chart-index[\s\S]*?grid-column:\s*2/u.test(styles), "desktop index must occupy the right column");
-  assert(/index-collapsed[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto/u.test(styles), "collapsed index must surrender its wide column");
+  assert(/formatted-index-branch-toggle/u.test(source), "index branches must have their own disclosure controls");
+  assert(/children\.hidden = true/u.test(source), "nested index children must start collapsed");
+  assert(source.includes('toggle.setAttribute("aria-expanded", "false")'), "nested disclosure controls must start collapsed for assistive technology");
+  assert(!/formattedChartIndexContents/u.test(source), "the whole chart index must not be wrapped in a collapsed container");
+  assert(/> \.formatted-chart-index[\s\S]*?grid-column:\s*1/u.test(styles), "desktop index must occupy the left column");
+  assert(/> #formattedChart[\s\S]*?grid-column:\s*2/u.test(styles), "formatted chart content must occupy the right column");
+  assert(!/index-collapsed/u.test(styles), "viewer must not collapse the whole index column");
 });
 
 await test("viewer observers remain scoped to formatted chart UI", async () => {
