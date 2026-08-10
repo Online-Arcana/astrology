@@ -36,7 +36,7 @@ await test("audit repair wording does not claim incomplete output", () => {
 await test("preferred gender is optional and legacy metadata defaults to male", () => {
   equal(preferredGenderOf({}), "male", "legacy default");
   equal(preferredGenderOf({ preferredGender: "female" }), "female", "female preference");
-  equal(preferredGenderOf({ preferredGender: "non-binary" }), "non-binary preference");
+  equal(preferredGenderOf({ preferredGender: "non-binary" }), "non-binary", "non-binary preference");
   const request = parseCalculationRequest({
     birth: {
       date: "2000-01-01",
