@@ -127,8 +127,12 @@ export interface InterpretationMap {
     plainEnglishDomain: string;
     technicalLabel?: string;
   };
-  /** Private chart-specific composition. It is semantic control data, not prose. */
-  composition: {
+  /**
+   * Private chart-specific composition emitted by the built-in compiler.
+   * Optional only so external/test providers created before corpus 0.2 remain
+   * source-compatible; production maps produced by this repository include it.
+   */
+  composition?: {
     ingredients: InterpretationMapIngredient[];
   };
   chartEvidence: JsonRef[];
