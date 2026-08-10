@@ -181,6 +181,47 @@ const overviewRecipe = (
   return { ...base, ingredients: uniqueIngredients(ingredients) };
 };
 
+const weightedCondition = (
+  atomId: string,
+  technicalId: string,
+  weight: number,
+  family: string,
+): SemanticIngredient => ({
+  kind: "derived",
+  atomId,
+  technicalId,
+  metadata: { weight, balanceFamily: family },
+});
+
+const chartBalanceRecipe = (
+  calculation: AstralCalculation,
+  base: DecomposedInterpretationUnit,
+): DecomposedInterpretationUnit => {
+  const balances = calculation.system.derived?.balances;
+  if (balances === undefined) return base;
+
+  const ingredients: SemanticIngredient[] = [...base.ingredients];
+  ingredients.push(
+    weightedCondition("condition.element-fire", "fire", balances.elements.fire, "element"),
+    weightedCondition("condition.element-earth", "earth", balances.elements.earth, "element"),
+    weightedCondition("condition.element-air", "air", balances.elements.air, "element"),
+    weightedCondition("condition.element-water", "water", balances.elements.water, "element"),
+    weightedCondition("condition.modality-cardinal", "cardinal", balances.modalities.cardinal, "modality"),
+    weightedCondition("condition.modality-fixed", "fixed", balances.modalities.fixed, "modality"),
+    weightedCondition("condition.modality-mutable", "mutable", balances.modalities.mutable, "modality"),
+    weightedCondition("condition.polarity-active", "active", balances.polarities.active, "polarity"),
+    weightedCondition("condition.polarity-receptive", "receptive", balances.polarities.receptive, "polarity"),
+    weightedCondition("condition.hemisphere-eastern", "eastern", balances.hemispheres.eastern, "hemisphere"),
+    weightedCondition("condition.hemisphere-western", "western", balances.hemispheres.western, "hemisphere"),
+    weightedCondition("condition.hemisphere-northern", "northern", balances.hemispheres.northern, "hemisphere"),
+    weightedCondition("condition.hemisphere-southern", "southern", balances.hemispheres.southern, "hemisphere"),
+    weightedCondition("condition.house-mode-angular", "angular", balances.houseModes.angular, "house-mode"),
+    weightedCondition("condition.house-mode-succedent", "succedent", balances.houseModes.succedent, "house-mode"),
+    weightedCondition("condition.house-mode-cadent", "cadent", balances.houseModes.cadent, "house-mode"),
+  );
+  return { ...base, ingredients: uniqueIngredients(ingredients) };
+};
+
 /**
  * Apply chart-unit composition after technical IDs have been normalised.
  * Recipes use only compiled corpus semantics and deterministic chart facts.
@@ -193,5 +234,6 @@ export const applyInterpretationRecipe = (
 ): DecomposedInterpretationUnit => {
   if (base.family === "life-domain") return lifeDomainRecipe(corpus, calculation, base);
   if (base.family === "overview") return overviewRecipe(calculation, base);
+  if (base.family === "chart-balance") return chartBalanceRecipe(calculation, base);
   return base;
 };
