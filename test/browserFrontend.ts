@@ -97,6 +97,14 @@ await test("generated signing keys can be backed up and restored", async () => {
   assert(/signingIssuer/u.test(tools) && /signingPrivatePkcs8/u.test(tools) && /signingPublicRaw/u.test(tools), "bundle must be shown as separate fields");
 });
 
+await test("browser tools initialise the interactive chart wheel", async () => {
+  const tools = await readFile("src/browser/browserTools.ts", "utf8");
+  const bootstrap = await readFile("src/browser/chartWheelBootstrap.ts", "utf8");
+  assert(/chartWheelBootstrap\.js/u.test(tools), "browser-tools entry must import the chart wheel bootstrap so esbuild includes it");
+  assert(/astral:calculation/u.test(bootstrap), "chart wheel bootstrap must listen for new deterministic calculations");
+  assert(/#rawChart/u.test(bootstrap), "chart wheel bootstrap must reconstruct opened charts from their stored calculation");
+});
+
 await test("opened files use an explicit copy-only maintenance path", async () => {
   const app = await readFile("src/browser/app.ts", "utf8");
   const tools = await readFile("src/browser/testTools.ts", "utf8");
