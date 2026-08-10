@@ -180,10 +180,12 @@ const unavailableSectionAllowed = (unit: InterpretationUnit): boolean => ![
 const fallbackCall = (
   unit: InterpretationUnit,
   refs: readonly JsonRef[],
+  semanticMap: InterpretationMap | null = null,
 ): InterpretationCall => ({
   id: unit.id,
   label: human(unit.id),
   ...route(unit),
+  ...(semanticMap === null ? {} : { semanticMap }),
   shape: shapeForUnit(unit, refs),
   allowedSourceRefs: new Set(refs),
   input: () => ({}),
@@ -194,8 +196,9 @@ const genericFallback = (
   unit: InterpretationUnit,
   refs: readonly JsonRef[],
   warning: string,
+  semanticMap: InterpretationMap | null = null,
 ): UnitResult<object> => {
-  const call = fallbackCall(unit, refs);
+  const call = fallbackCall(unit, refs, semanticMap);
   const rebuilt = reconstructUnit({ unit: call, candidates: [] });
   return {
     id: unit.id,
@@ -204,7 +207,7 @@ const genericFallback = (
     model: "deterministic",
     provenance: {
       repairedBy: "deterministic",
-      repairKind: "xml_fallback",
+      repairKind: rebuilt.usedXmlFallback ? "xml_fallback" : "deterministic_reconstruction",
       fallbackFields: rebuilt.fallbackFields,
       auditWarnings: [...rebuilt.warnings, warning],
     },
@@ -215,15 +218,6 @@ const noSourceFallback = (unit: InterpretationUnit): UnitResult<object> =>
   unavailableSectionAllowed(unit)
     ? genericUnavailable(unit)
     : genericFallback(unit, [], "No unambiguous deterministic source was available for this unit");
-
-const sourceAwareFallback = (
-  calculation: AstralCalculation,
-  unit: InterpretationUnit,
-  warning: string,
-): UnitResult<object> => {
-  const refs = sourceRefsFor(calculation, unit);
-  return refs.length === 0 ? noSourceFallback(unit) : genericFallback(unit, refs, warning);
-};
 
 const semanticMapFor = (
   calculation: AstralCalculation,
@@ -242,6 +236,18 @@ const semanticMapFor = (
     throw new Error(`Interpretation map ${unit.id} contains evidence outside its deterministic source boundary: ${outside.join(", ")}`);
   }
   return map;
+};
+
+const sourceAwareFallback = (
+  calculation: AstralCalculation,
+  unit: InterpretationUnit,
+  warning: string,
+  semanticProvider: InterpretationSemanticProvider | null = null,
+): UnitResult<object> => {
+  const refs = sourceRefsFor(calculation, unit);
+  if (refs.length === 0) return noSourceFallback(unit);
+  const semanticMap = semanticMapFor(calculation, unit, semanticProvider);
+  return genericFallback(unit, refs, warning, semanticMap);
 };
 
 const substantiveCalls = (
@@ -421,11 +427,12 @@ const deterministicPlan = (
   calculation: AstralCalculation,
   hooks: RunHooks,
   cause: unknown,
+  semanticProvider: InterpretationSemanticProvider | null,
 ): PlanInterpretationResult => {
   const warning = `Deterministic plan fallback: ${cause instanceof Error ? cause.message : String(cause)}`;
   const units: Record<string, UnitResult<object>> = {};
   for (const unit of calculation.interpretationPlan.units) {
-    const result = sourceAwareFallback(calculation, unit, warning);
+    const result = sourceAwareFallback(calculation, unit, warning, semanticProvider);
     units[unit.id] = result;
     try { hooks.onComplete?.(result); } catch { /* Diagnostics must not block customer delivery. */ }
   }
@@ -459,7 +466,12 @@ const runPlan = async (
   for (const unit of calculation.interpretationPlan.units) {
     const value = raw.units[unit.id]
       ?? prepared.synthetic[unit.id]
-      ?? sourceAwareFallback(calculation, unit, "Interpretation assembly supplied the final field fallback");
+      ?? sourceAwareFallback(
+        calculation,
+        unit,
+        "Interpretation assembly supplied the final field fallback",
+        semanticProvider,
+      );
     units[unit.id] = value;
   }
 
@@ -478,6 +490,6 @@ export const runInterpretationPlan = async (
     return await runPlan(calculation, config, createClient, hooks, recovery, semanticProvider);
   } catch (cause: unknown) {
     if (config.chart.throwOnInterpretationFailure) throw cause;
-    return deterministicPlan(calculation, hooks, cause);
+    return deterministicPlan(calculation, hooks, cause, semanticProvider);
   }
 };
