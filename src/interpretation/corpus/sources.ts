@@ -1,8 +1,29 @@
 import type { CorpusSource } from "./types.js";
 
+const reviewedHandPage = (
+  id: string,
+  title: string,
+  url: string,
+  allowedSections: readonly string[],
+  exclusions: string,
+): CorpusSource => ({
+  id,
+  title,
+  author: "Robert Hand",
+  publisher: "Astrodienst",
+  editionOrDate: null,
+  role: "semantic",
+  reviewStatus: "approved",
+  allowedSections: [...allowedSections],
+  notes: [
+    `Reviewed public source: ${url}`,
+    exclusions,
+  ],
+});
+
 /**
- * Source approval is document-specific. Approval of one page, book or paper does
- * not approve other material from the same author, publisher or website.
+ * Source approval is document-specific. Section IDs are stable provenance keys
+ * used by CorpusClaim.sourceRefs; descriptive review notes stay in `notes`.
  */
 export const corpusSources: readonly CorpusSource[] = [
   {
@@ -14,199 +35,88 @@ export const corpusSources: readonly CorpusSource[] = [
     role: "calculation",
     reviewStatus: "approved",
     allowedSections: [
-      "planetary and lunar calculations",
-      "lunar nodes",
+      "planetary-lunar-calculations",
+      "lunar-nodes",
       "houses",
-      "Vertex and Antivertex geometry",
-      "coordinate systems",
+      "vertex-antivertex-geometry",
+      "coordinate-systems",
     ],
     notes: [
-      "Calculation reference only. This approval does not extend to interpretation prose on other Astrodienst documents or AstroWiki pages.",
+      "Calculation reference only. Approval does not extend to interpretation prose on other Astrodienst documents or AstroWiki pages.",
     ],
   },
 
-  // Public Robert Hand essays. Only the sections named below are approved.
-  // Other sections on the same pages may contain metaphysical language and are
-  // deliberately outside the semantic source boundary.
-  {
-    id: "semantic.hand.transits-sun-intro",
-    title: "The transits of the planets: The Sun - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "paragraphs describing central function and governing importance",
-      "Qualities of the Sun: integration while retaining distinctions",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_sun_intro_e.htm",
-      "Do not use the page's cosmic-mind or soul language as semantic input.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-moon-effects",
-    title: "The transits of the planets - Effects of the transiting Moon",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "opening Inward paragraph on feelings, emotions, moods and emotional tone",
-      "The Moon at the Personal Level: statement on personal and private experience",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_moon_effects_z.htm?lang=e",
-      "Spiritual or incarnational material elsewhere on the page is excluded.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-mercury-intro",
-    title: "The Transits of the Planets - Mercury - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "opening paragraph on communication and information",
-      "passages on clear versus confused communication",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_mercury_intro_e.htm",
-      "Philosophical logos language outside the reviewed passages is excluded.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-venus-intro",
-    title: "The transits of the planets - Venus - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "Qualities of Venus: connection, joining and relationship",
-      "Qualities of Venus: artistic creativity and aesthetic judgement",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_venus_intro_p.htm?lang=e",
-      "Mythological material is not used as an interpretation claim.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-mars-intro",
-    title: "The transits of the planets - Mars - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "Function in the Natal Chart: separateness, protection and defence",
-      "Function in the Natal Chart: anger and physical vitality",
-      "Qualities of Mars: raised energy and separative force",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_mars_intro_e.htm",
-      "Gender-essentialist and mythological passages are excluded from semantic claims.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-jupiter-effects",
-    title: "The transits of the planets - Effects of transiting Jupiter",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "Inward: visibility and drawing out what is present",
-      "Inward: growth and expansion",
-      "Inward: risk-taking and preparation",
-      "Outward: learning and mental growth before the religious discussion",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_jupiter_effects_e.htm",
-      "Religious and transcendent passages later in the article are excluded.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-saturn-intro",
-    title: "The transits of the planets - Saturn - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "reality-system paragraphs on assumptions, culture and common sense",
-      "paragraph on rules, laws, customs, limits and discipline",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_saturn_intro_e.htm",
-      "The article's discussion of fate and enlightenment is explicitly outside the approved passages.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-uranus-intro",
-    title: "The transits of the planets - Uranus - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "opening paragraphs on disruption, change and unnecessary boundaries",
-      "paragraph on innovation and technology",
-      "Ease or Difficulty: adaptation to change and openness to new ideas",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_uranus_intro_e.htm",
-      "Spiritual-awakening wording elsewhere on the page is excluded.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-neptune-intro",
-    title: "The transits of the planets - Neptune - Introduction",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "opening paragraph on gradual loss of clarity and definition",
-      "Qualities of Neptune: blurred distinctions and diffuse connections",
-      "Outward Manifestations: confusion and uncertainty before religious discussion",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_neptune_intro_e.htm",
-      "All spiritual, psychic, divinatory and religious material is excluded.",
-    ],
-  },
-  {
-    id: "semantic.hand.transits-pluto-effects",
-    title: "The Transits of the Planets - Effects of Transiting Pluto",
-    author: "Robert Hand",
-    publisher: "Astrodienst",
-    editionOrDate: null,
-    role: "semantic",
-    reviewStatus: "approved",
-    allowedSections: [
-      "opening Inward paragraph on pressure, change and transformation",
-      "warnings against pursuing power for its own sake",
-    ],
-    notes: [
-      "Reviewed public source: https://www.astro.com/astrology/in_hand2_pluto_effects_e.htm",
-      "Fate, transcendence, spiritual-teacher and religious material elsewhere on the page is excluded.",
-    ],
-  },
+  reviewedHandPage(
+    "semantic.hand.transits-sun-intro",
+    "The transits of the planets: The Sun - Introduction",
+    "https://www.astro.com/astrology/in_hand2_sun_intro_e.htm",
+    ["central-function", "qualities-integration"],
+    "Cosmic-mind and soul language elsewhere on the page is excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-moon-effects",
+    "The transits of the planets - Effects of the transiting Moon",
+    "https://www.astro.com/astrology/in_hand2_moon_effects_z.htm?lang=e",
+    ["inward-opening", "personal-private"],
+    "Spiritual, incarnational and paranormal material elsewhere on the page is excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-mercury-intro",
+    "The Transits of the Planets - Mercury - Introduction",
+    "https://www.astro.com/astrology/in_hand2_mercury_intro_e.htm",
+    ["communication-information", "clear-communication", "confused-communication"],
+    "Philosophical logos language outside the reviewed passages is excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-venus-intro",
+    "The transits of the planets - Venus - Introduction",
+    "https://www.astro.com/astrology/in_hand2_venus_intro_p.htm?lang=e",
+    ["qualities-connection", "qualities-aesthetics"],
+    "Mythological material is not used as interpretation provenance.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-mars-intro",
+    "The transits of the planets - Mars - Introduction",
+    "https://www.astro.com/astrology/in_hand2_mars_intro_e.htm",
+    ["natal-protection-separateness", "natal-anger-vitality", "qualities-energy-separation"],
+    "Gender-essentialist, mythological and philosophical passages are excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-jupiter-effects",
+    "The transits of the planets - Effects of transiting Jupiter",
+    "https://www.astro.com/astrology/in_hand2_jupiter_effects_e.htm",
+    ["inward-visibility", "inward-growth", "inward-risk", "outward-learning"],
+    "Religious and transcendent passages later in the article are excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-saturn-intro",
+    "The transits of the planets - Saturn - Introduction",
+    "https://www.astro.com/astrology/in_hand2_saturn_intro_e.htm",
+    ["reality-system", "rules-limits-discipline"],
+    "The article's discussion of fate and enlightenment is outside the approved passages.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-uranus-intro",
+    "The transits of the planets - Uranus - Introduction",
+    "https://www.astro.com/astrology/in_hand2_uranus_intro_e.htm",
+    ["opening-change-boundaries", "innovation-technology", "adaptation-new-ideas"],
+    "Spiritual-awakening wording elsewhere on the page is excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-neptune-intro",
+    "The transits of the planets - Neptune - Introduction",
+    "https://www.astro.com/astrology/in_hand2_neptune_intro_e.htm",
+    ["opening-loss-of-clarity", "qualities-blurred-distinctions", "outward-confusion"],
+    "Spiritual, psychic, divinatory and religious material is excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.transits-pluto-effects",
+    "The Transits of the Planets - Effects of Transiting Pluto",
+    "https://www.astro.com/astrology/in_hand2_pluto_effects_e.htm",
+    ["inward-change-pressure", "inward-power-warning"],
+    "Fate, transcendence, spiritual-teacher and religious material elsewhere on the page is excluded.",
+  ),
 
-  // Book-length semantic candidates stay pending until exact passages are
-  // available and have been reviewed. A catalogue or publisher description is
-  // enough to identify a candidate source, but not enough to create claims.
   {
     id: "semantic.tompkins.contemporary-handbook",
     title: "The Contemporary Astrologer's Handbook",
@@ -217,8 +127,8 @@ export const corpusSources: readonly CorpusSource[] = [
     reviewStatus: "pending",
     allowedSections: [],
     notes: [
-      "Candidate source for planets, signs, houses, elements, modes, aspects, nodes and synthesis.",
-      "Do not ingest until exact edition and approved sections have passed passage-level worldview review.",
+      "Candidate for planets, signs, houses, elements, modes, aspects, nodes and synthesis.",
+      "Exact edition and passages still require review.",
     ],
   },
   {
@@ -231,8 +141,8 @@ export const corpusSources: readonly CorpusSource[] = [
     reviewStatus: "pending",
     allowedSections: [],
     notes: [
-      "Candidate source for planetary principles and aspect composition.",
-      "Combination essays must be distilled into atoms/operators rather than copied as canned readings.",
+      "Candidate for planetary principles and aspect composition.",
+      "Combination essays are not used as canned readings.",
     ],
   },
   {
@@ -245,8 +155,8 @@ export const corpusSources: readonly CorpusSource[] = [
     reviewStatus: "pending",
     allowedSections: [],
     notes: [
-      "Candidate source for fundamental symbolic principles, planets/points, aspects, signs, angles and houses.",
-      "No semantic claim may compile until exact passages are reviewed and provenance is recorded.",
+      "Candidate for fundamental symbolic principles, points, aspects, signs, angles and houses.",
+      "Exact passages still require review.",
     ],
   },
   {
@@ -259,8 +169,8 @@ export const corpusSources: readonly CorpusSource[] = [
     reviewStatus: "pending",
     allowedSections: [],
     notes: [
-      "Candidate source for aspects, houses, angles and lunar nodes.",
-      "Any spiritual, karmic, fatalistic or supernatural passage is dropped rather than sanitised for ingestion.",
+      "Candidate for aspects, houses, angles and lunar nodes.",
+      "Any worldview-dependent passage is rejected rather than rewritten into the corpus.",
     ],
   },
   {
@@ -271,9 +181,9 @@ export const corpusSources: readonly CorpusSource[] = [
     editionOrDate: "2022",
     role: "architecture",
     reviewStatus: "approved",
-    allowedSections: ["combinatorial structure"],
+    allowedSections: ["combinatorial-structure"],
     notes: [
-      "Architecture reference only. It may support atom/operator composition design but is not an interpretation-semantic source.",
+      "Architecture reference only; it cannot provide interpretation claims.",
     ],
   },
 ] as const;
