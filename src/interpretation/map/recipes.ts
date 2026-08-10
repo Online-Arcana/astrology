@@ -70,6 +70,17 @@ const pointIds = [
   "vertex", "antivertex", "east_point", "part_of_fortune", "part_of_spirit", "lilith_true",
 ] as const satisfies readonly PointId[];
 
+const pointAvailable = (calculation: AstralCalculation, id: PointId): boolean =>
+  calculation.system.points[id]?.position?.value !== null
+  && calculation.system.points[id]?.position?.value !== undefined;
+
+const houseAvailable = (calculation: AstralCalculation, number: number): boolean => {
+  const houses = calculation.system.houses?.placidus?.houses;
+  if (houses === undefined) return false;
+  const house = houses[String(number) as keyof typeof houses];
+  return house?.cusp?.value !== null && house?.cusp?.value !== undefined;
+};
+
 interface ScoredPoint {
   id: PointId;
   score: number;
@@ -92,6 +103,7 @@ const lifeDomainRecipe = (
   const domainWords = semanticWords(corpus, domainAtom);
 
   const points: ScoredPoint[] = pointIds
+    .filter((id) => pointAvailable(calculation, id))
     .map((id) => {
       const semantic = pointIngredient(id);
       const pointAtom = atom(corpus, semantic.atomId);
@@ -102,6 +114,7 @@ const lifeDomainRecipe = (
     .slice(0, 8);
 
   const houses: ScoredHouse[] = Array.from({ length: 12 }, (_, index) => index + 1)
+    .filter((number) => houseAvailable(calculation, number))
     .map((number) => {
       const houseAtom = atom(corpus, `house.${number}`);
       return { number, score: houseAtom === null ? 0 : overlap(domainWords, semanticWords(corpus, houseAtom)) };
@@ -121,7 +134,7 @@ const lifeDomainRecipe = (
     ingredients.push(houseIngredient(number, { domainRelevance: score }));
   }
 
-  const relevantAspects = calculation.system.aspects
+  const relevantAspects = (calculation.system.aspects ?? [])
     .filter(({ a, b }) => selected.has(a) || selected.has(b))
     .sort((a, b) => b.strength - a.strength || a.id.localeCompare(b.id))
     .slice(0, 10);
@@ -147,13 +160,15 @@ const overviewRecipe = (
   base: DecomposedInterpretationUnit,
 ): DecomposedInterpretationUnit => {
   const ingredients: SemanticIngredient[] = [...base.ingredients];
-  for (const entry of calculation.system.derived.dominantPlanets.slice(0, 4)) {
-    ingredients.push(...pointPlacementIngredients(calculation, entry.planet));
+  for (const entry of calculation.system.derived?.dominantPlanets?.slice(0, 4) ?? []) {
+    if (pointAvailable(calculation, entry.planet)) {
+      ingredients.push(...pointPlacementIngredients(calculation, entry.planet));
+    }
   }
-  for (const entry of calculation.system.derived.dominantSigns.slice(0, 4)) {
+  for (const entry of calculation.system.derived?.dominantSigns?.slice(0, 4) ?? []) {
     ingredients.push(signIngredient(entry.sign));
   }
-  for (const pattern of [...calculation.system.patterns]
+  for (const pattern of [...(calculation.system.patterns ?? [])]
     .sort((a, b) => b.strength - a.strength || a.id.localeCompare(b.id))
     .slice(0, 3)) {
     ingredients.push({
