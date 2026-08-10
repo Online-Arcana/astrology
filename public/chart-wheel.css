@@ -1,29 +1,38 @@
 .chart-wheel-card {
-  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  container-type: inline-size;
 }
 
 .chart-wheel-card .section-heading {
-  margin-bottom: .7rem;
+  margin-bottom: .35rem;
 }
 
 .chart-wheel-card .wheel-intro {
+  max-width: 62rem;
   margin: 0 0 1rem;
   color: var(--muted);
+  font-size: .92rem;
   line-height: 1.55;
 }
 
 .chart-wheel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17rem, .36fr);
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .85rem;
   align-items: start;
+  min-width: 0;
 }
 
 .chart-wheel-graphic {
+  width: 100%;
   min-width: 0;
-  padding: .65rem;
+  max-width: 58rem;
+  margin-inline: auto;
+  padding: clamp(.25rem, 1.2cqw, .7rem);
   border: 1px solid var(--border);
-  border-radius: 1.1rem;
+  border-radius: clamp(.8rem, 2cqw, 1.15rem);
   background:
     radial-gradient(circle at 50% 50%, rgba(182, 156, 255, .08), transparent 52%),
     rgba(9, 7, 21, .55);
@@ -33,7 +42,7 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: min(72vh, 52rem);
+  aspect-ratio: 1;
   overflow: visible;
 }
 
@@ -198,10 +207,10 @@
 }
 
 .wheel-detail {
-  position: sticky;
-  top: 1rem;
-  min-height: 12rem;
-  padding: 1rem;
+  position: static;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(.8rem, 2cqw, 1rem);
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: rgba(11, 9, 27, .72);
@@ -209,33 +218,35 @@
 
 .wheel-detail-title {
   display: block;
-  margin-bottom: .85rem;
+  margin-bottom: .7rem;
   color: #fff;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .wheel-detail-list {
   display: grid;
-  grid-template-columns: minmax(6.2rem, .38fr) 1fr;
-  gap: .5rem .8rem;
+  grid-template-columns: minmax(7rem, max-content) minmax(0, 1fr);
+  gap: .42rem .8rem;
   margin: 0;
 }
 
 .wheel-detail-list dt {
   color: var(--accent-strong);
-  font-size: .77rem;
+  font-size: .76rem;
   font-weight: 800;
 }
 
 .wheel-detail-list dd {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
   color: #eee9fa;
-  font-size: .8rem;
+  font-size: .82rem;
   line-height: 1.45;
 }
 
 .wheel-detail p {
-  margin: .9rem 0 0;
+  margin: .75rem 0 0;
   color: var(--muted);
   font-size: .78rem;
   line-height: 1.5;
@@ -248,28 +259,41 @@
 }
 
 #fileChartWheelCard {
-  margin-bottom: 1rem;
+  margin: 0;
 }
 
-@media (max-width: 900px) {
+@container (min-width: 62rem) {
   .chart-wheel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(32rem, 1fr) minmax(18rem, 22rem);
+    gap: 1rem;
   }
+
+  .chart-wheel-graphic {
+    max-width: none;
+  }
+
   .wheel-detail {
-    position: static;
+    position: sticky;
+    top: 1rem;
   }
 }
 
-@media (max-width: 640px) {
-  .chart-wheel-graphic {
-    padding: .25rem;
-    border-radius: .85rem;
+@container (max-width: 34rem) {
+  .chart-wheel-card .wheel-intro {
+    font-size: .86rem;
   }
+
+  .chart-wheel-graphic {
+    padding: .2rem;
+    border-radius: .8rem;
+  }
+
   .wheel-detail-list {
     grid-template-columns: 1fr;
-    gap: .15rem;
+    gap: .12rem;
   }
+
   .wheel-detail-list dd {
-    margin-bottom: .55rem;
+    margin-bottom: .5rem;
   }
 }
