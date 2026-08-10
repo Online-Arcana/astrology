@@ -23,53 +23,51 @@ const plainFactorNames: Readonly<Record<string, string>> = {
 const plainFactor = (value: string): string => plainFactorNames[value] ?? value;
 const pairTitle = (left: string, right: string, meaning: string): string =>
   `${plainFactor(left)} + ${plainFactor(right)}: ${meaning}`;
-const pairSentence = (left: string, right: string): string =>
-  `${plainFactor(left)} and ${plainFactor(right)}`;
 
 const aspectLanguage: readonly [RegExp, (left: string, right: string) => PlainAspectLanguage][] = [
   [/^(.+?) conjunct (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "strongly combined influences"),
-    description: `${pairSentence(left, right)} are closely linked in this chart, so their themes tend to operate together rather than separately.`,
+    description: "These two parts of the chart are closely linked, so their themes tend to operate together rather than separately.",
   })],
   [/^(.+?) opposite (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "balancing opposite pulls"),
-    description: `${pairSentence(left, right)} pull in different directions, creating a polarity that tends to work best when both sides are acknowledged and balanced.`,
+    description: "These two parts of the chart pull in different directions, creating a polarity that tends to work best when both sides are acknowledged and balanced.",
   })],
   [/^(.+?) trine (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "natural strengths and easy flow"),
-    description: `${pairSentence(left, right)} support one another naturally, so their qualities can work together with relatively little friction.`,
+    description: "These two parts of the chart support one another naturally, so their qualities can work together with relatively little friction.",
   })],
   [/^(.+?) square (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "pressure, friction and growth"),
-    description: `${pairSentence(left, right)} create tension that can feel demanding, but that pressure can also drive action, awareness and development.`,
+    description: "These two parts of the chart create tension that can feel demanding, but that pressure can also drive action, awareness and development.",
   })],
   [/^(.+?) sextile (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "supportive opportunities"),
-    description: `${pairSentence(left, right)} can support one another through opportunities that tend to become more useful when you actively engage with them.`,
+    description: "These two parts of the chart can support one another through opportunities that tend to become more useful when you actively engage with them.",
   })],
   [/^(.+?) quincunx (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "adjustment and compromise"),
-    description: `${pairSentence(left, right)} do not fit together automatically, so their interaction often calls for ongoing adjustment, flexibility and compromise.`,
+    description: "These two parts of the chart do not fit together automatically, so their interaction often calls for ongoing adjustment, flexibility and compromise.",
   })],
   [/^(.+?) semi-sextile (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "a subtle connection"),
-    description: `${pairSentence(left, right)} have a quieter connection that may need conscious attention before its usefulness becomes obvious.`,
+    description: "These two parts of the chart have a quieter connection that may need conscious attention before its usefulness becomes obvious.",
   })],
   [/^(.+?) semi-square (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "low-level friction"),
-    description: `${pairSentence(left, right)} create mild but recurring friction that can encourage small, practical adjustments over time.`,
+    description: "These two parts of the chart create mild but recurring friction that can encourage small, practical adjustments over time.",
   })],
   [/^(.+?) sesquiquadrate (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "persistent pressure"),
-    description: `${pairSentence(left, right)} create persistent tension that tends to push for adjustment rather than offering a quick or effortless resolution.`,
+    description: "These two parts of the chart create persistent tension that tends to push for adjustment rather than offering a quick or effortless resolution.",
   })],
   [/^(.+?) quintile (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "creative talent and unusual strengths"),
-    description: `${pairSentence(left, right)} can combine in specialised or creative ways, especially when the connection is developed deliberately.`,
+    description: "These two parts of the chart can combine in specialised or creative ways, especially when the connection is developed deliberately.",
   })],
   [/^(.+?) biquintile (.+)$/u, (left, right) => ({
     title: pairTitle(left, right, "creative talent and unusual strengths"),
-    description: `${pairSentence(left, right)} can combine in specialised or creative ways, especially when the connection is developed deliberately.`,
+    description: "These two parts of the chart can combine in specialised or creative ways, especially when the connection is developed deliberately.",
   })],
 ];
 
@@ -85,23 +83,28 @@ const patternTitles: Readonly<Record<string, string>> = {
 };
 
 const plainTitles: Readonly<Record<string, string>> = {
-  "North node mean": "Growth direction",
-  "North node true": "Growth direction",
-  "North Node": "Growth direction",
-  "South node mean": "Familiar patterns",
-  "South node true": "Familiar patterns",
-  "South Node": "Familiar patterns",
-  "Part of Fortune": "Ease, fulfilment and natural support",
-  "Part of Spirit": "Purpose and inner direction",
-  "Imum Coeli": "Home, roots and private foundations",
-  "East Point": "Personal presence and first impressions",
-  Lilith: "Autonomy, instinct and taboo",
-  Vertex: "Significant encounters and turning points",
-  Antivertex: "How you respond to significant encounters",
-  "Lunar nodes": "Familiar patterns and growth direction",
-  "Vertex–Antivertex axis": "Significant encounters and your response",
-  "Ascendant–Descendant axis": "Self-presentation and close relationships",
-  "Rulership and dignity": "How strongly each planet can express itself",
+  "north node": "Growth direction",
+  "north node mean": "Growth direction",
+  "north node true": "Growth direction",
+  "south node": "Familiar patterns",
+  "south node mean": "Familiar patterns",
+  "south node true": "Familiar patterns",
+  "part of fortune": "Ease, fulfilment and natural support",
+  "part of spirit": "Purpose and inner direction",
+  "imum coeli": "Home, roots and private foundations",
+  "east point": "Personal presence and first impressions",
+  lilith: "Autonomy, instinct and taboo",
+  "lilith mean": "Autonomy, instinct and taboo",
+  "lilith true": "Autonomy, instinct and taboo",
+  vertex: "Significant encounters and turning points",
+  antivertex: "How you respond to significant encounters",
+  "lunar nodes": "Familiar patterns and growth direction",
+  "vertex–antivertex axis": "Significant encounters and your response",
+  "ascendant–descendant axis": "Self-presentation and close relationships",
+  ascendant: "How you come across to others",
+  descendant: "What you seek and meet in close relationships",
+  midheaven: "Career direction and public life",
+  "rulership and dignity": "How strongly each planet can express itself",
 };
 
 const plainAspect = (technicalTitle: string): PlainAspectLanguage | null => {
@@ -112,11 +115,14 @@ const plainAspect = (technicalTitle: string): PlainAspectLanguage | null => {
   return null;
 };
 
+const plainStandaloneTitle = (technicalTitle: string): string | null =>
+  plainTitles[technicalTitle.toLocaleLowerCase("en-GB")] ?? null;
+
 export const customerReadingTitle = (rawTitle: string): string => {
   const technicalTitle = displayReadingTitle(rawTitle);
   const aspect = plainAspect(technicalTitle);
   if (aspect !== null) return aspect.title;
-  return patternTitles[technicalTitle] ?? plainTitles[technicalTitle] ?? technicalTitle;
+  return patternTitles[technicalTitle] ?? plainStandaloneTitle(technicalTitle) ?? technicalTitle;
 };
 
 export const customerReadingDescription = (rawTitle: string): string | null => {
@@ -129,8 +135,8 @@ export const customerReadingDescription = (rawTitle: string): string | null => {
     return `This is a larger chart-wide pattern. ${pattern} describes how several individual connections reinforce one another, so it is more useful to read them together than as isolated pairs.`;
   }
 
-  const title = plainTitles[technicalTitle];
-  if (title !== undefined) {
+  const title = plainStandaloneTitle(technicalTitle);
+  if (title !== null) {
     const descriptions: Readonly<Record<string, string>> = {
       "Growth direction": "This section looks at qualities and experiences associated with longer-term growth and movement towards less familiar ways of responding.",
       "Familiar patterns": "This section looks at familiar habits, strengths and default responses that may feel natural but can become limiting when relied on automatically.",
@@ -144,6 +150,9 @@ export const customerReadingDescription = (rawTitle: string): string | null => {
       "Familiar patterns and growth direction": "This section contrasts familiar default patterns with qualities and experiences associated with longer-term growth.",
       "Significant encounters and your response": "This section looks at significant encounters as a two-sided pattern: what arrives through other people and how you respond to it.",
       "Self-presentation and close relationships": "This section connects the way you present yourself with the qualities you seek, meet or negotiate through close relationships.",
+      "How you come across to others": "This section focuses on your instinctive presentation style, first impressions and the way you tend to approach unfamiliar situations.",
+      "What you seek and meet in close relationships": "This section focuses on qualities you tend to seek, encounter or negotiate through close one-to-one relationships.",
+      "Career direction and public life": "This section focuses on public direction, reputation, ambition and the kind of contribution you may feel drawn to make.",
       "How strongly each planet can express itself": "This section summarises traditional indicators of whether each planet is considered especially comfortable, constrained or emphasised in its sign.",
     };
     return descriptions[title] ?? readingDescription(rawTitle);
