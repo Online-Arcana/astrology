@@ -91,6 +91,17 @@ const semanticBuckets = (
   };
 };
 
+const uniqueAtoms = (values: readonly CorpusAtom[]): CorpusAtom[] => {
+  const seen = new Set<string>();
+  const output: CorpusAtom[] = [];
+  for (const value of values) {
+    if (seen.has(value.id)) continue;
+    seen.add(value.id);
+    output.push(value);
+  }
+  return output;
+};
+
 const titleFor = (atoms: readonly CorpusAtom[]): string =>
   atoms.map(({ displayName }) => displayName).join(" · ");
 
@@ -102,7 +113,7 @@ export const compileInterpretationMap = (
   unit: DecomposedInterpretationUnit,
 ): InterpretationMap => {
   if (corpus.worldview !== "agnostic") throw new Error("Interpretation map compiler requires an agnostic corpus");
-  const atoms = unit.ingredients.map(({ atomId }) => atomFor(corpus, atomId));
+  const atoms = uniqueAtoms(unit.ingredients.map(({ atomId }) => atomFor(corpus, atomId)));
   if (atoms.length === 0) throw new Error(`Interpretation unit ${unit.unitId} has no semantic atoms`);
 
   const sourceClaimIds = [...new Set(atoms.flatMap(({ claimIds }) => claimIds))];
@@ -118,12 +129,20 @@ export const compileInterpretationMap = (
       plainEnglishDomain: domainFor(atoms),
       technicalLabel: unit.unitId,
     },
+    composition: {
+      ingredients: unit.ingredients.map(({ kind, atomId, technicalId, metadata }) => ({
+        kind,
+        atomId,
+        technicalId,
+        metadata: { ...metadata },
+      })),
+    },
     chartEvidence: [...unit.evidenceRefs],
     semantics: semanticBuckets(corpus, atoms),
     provenance: {
       corpusAtomIds: atoms.map(({ id }) => id),
       sourceClaimIds,
-      corpusVersion: interpretationCorpusVersion,
+      corpusVersion: corpus.corpusVersion ?? interpretationCorpusVersion,
     },
     neutrality: agnosticNeutrality,
     forbiddenClaims,
