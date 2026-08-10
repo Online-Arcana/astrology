@@ -1,0 +1,193 @@
+#formattedView.chart-indexed.active {
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
+  align-items: start;
+}
+
+#formattedView.chart-indexed.active > #formattedChart {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#formattedView.chart-indexed.active > .formatted-chart-index {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#formattedView.chart-indexed.active.index-collapsed {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.formatted-index-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.formatted-index-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 2.75rem;
+  text-align: left;
+}
+
+.formatted-index-toggle-action {
+  color: var(--muted, #b8b3cf);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.formatted-chart-index-contents[hidden] {
+  display: none !important;
+}
+
+.index-collapsed .formatted-chart-index {
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.index-collapsed .formatted-index-toggle {
+  width: auto;
+  white-space: nowrap;
+  background: var(--surface-2, rgba(38, 32, 68, 0.76));
+  border-color: var(--border, rgba(196, 181, 253, 0.18));
+}
+
+.formatted-chart-index-contents {
+  margin-top: 0.7rem;
+}
+
+.chart-reading-explainer {
+  margin: 0 0 1rem;
+  padding: 0.85rem 0.95rem;
+  border-left: 3px solid color-mix(in srgb, var(--accent, #b69cff) 58%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--accent, #b69cff) 7%, transparent);
+  color: var(--muted, #b8b3cf);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.compatibility-domain {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, currentColor 2.5%, transparent);
+  overflow: clip;
+}
+
+.compatibility-domain + .compatibility-domain {
+  margin-top: 0.75rem;
+}
+
+.compatibility-domain > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.compatibility-domain > summary::-webkit-details-marker {
+  display: none;
+}
+
+.compatibility-domain > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+}
+
+.compatibility-domain[open] > summary::after {
+  content: "−";
+}
+
+.compatibility-domain-body {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.compatibility-sign-filter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 14rem);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, currentColor 2%, transparent);
+}
+
+.compatibility-sign-filter > span {
+  color: var(--muted, #b8b3cf);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.compatibility-sign-filter select {
+  min-width: 0;
+  width: 100%;
+}
+
+.compatibility-domain .chart-reading[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  #formattedView.chart-indexed.active,
+  #formattedView.chart-indexed.active.index-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #formattedView.chart-indexed.active > .formatted-chart-index,
+  #formattedView.chart-indexed.active > #formattedChart {
+    grid-column: 1;
+  }
+
+  #formattedView.chart-indexed.active > .formatted-chart-index {
+    grid-row: 1;
+    position: static;
+    max-height: none;
+  }
+
+  #formattedView.chart-indexed.active > #formattedChart {
+    grid-row: 2;
+  }
+
+  .index-collapsed .formatted-chart-index {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 560px) {
+  .formatted-chart-index:not(.index-collapsed *) {
+    padding: 0.8rem;
+  }
+
+  .formatted-index-toggle {
+    min-height: 3rem;
+  }
+
+  .compatibility-domain > summary {
+    align-items: flex-start;
+    padding: 0.85rem;
+  }
+
+  .compatibility-sign-filter {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .compatibility-domain-body {
+    padding: 0 0.55rem 0.55rem;
+  }
+}
