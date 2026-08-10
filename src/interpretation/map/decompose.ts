@@ -150,9 +150,9 @@ export const pointPlacementIngredients = (
 ): SemanticIngredient[] => {
   const point = calculation.system.points[id] as AstrologicalPoint | undefined;
   const ingredients: SemanticIngredient[] = [pointIngredient(id)];
-  const sign = point?.position.value?.sign;
+  const sign = point?.position?.value?.sign;
   if (sign !== undefined) ingredients.push(signIngredient(sign));
-  const house = point?.houses.placidus.value?.house;
+  const house = point?.houses?.placidus?.value?.house;
   if (house !== undefined) ingredients.push(houseIngredient(house, { placementFor: id }));
   return uniqueIngredients(ingredients);
 };
@@ -198,13 +198,14 @@ const houseIngredients = (
   calculation: AstralCalculation,
   houseNumber: number,
 ): SemanticIngredient[] => {
-  const house = calculation.system.houses.placidus.houses[String(houseNumber) as keyof typeof calculation.system.houses.placidus.houses];
+  const placidus = calculation.system.houses?.placidus;
+  const house = placidus?.houses?.[String(houseNumber) as keyof typeof placidus.houses];
   const ingredients: SemanticIngredient[] = [houseIngredient(houseNumber)];
-  const cuspSign = house?.cusp.value?.sign;
+  const cuspSign = house?.cusp?.value?.sign;
   if (cuspSign !== undefined) ingredients.push(signIngredient(cuspSign));
-  const traditionalRuler = house?.rulerTraditional.value;
+  const traditionalRuler = house?.rulerTraditional?.value;
   if (traditionalRuler !== null && traditionalRuler !== undefined) ingredients.push(pointIngredient(traditionalRuler));
-  const modernRuler = house?.rulerModern.value;
+  const modernRuler = house?.rulerModern?.value;
   if (modernRuler !== null && modernRuler !== undefined) ingredients.push(pointIngredient(modernRuler));
   for (const occupant of house?.occupants ?? []) ingredients.push(pointIngredient(occupant));
   for (const intercepted of house?.interceptedSigns ?? []) ingredients.push(signIngredient(intercepted));
@@ -223,9 +224,10 @@ const patternIngredients = (resolvedEvidence: readonly unknown[]): SemanticIngre
   }];
   const focal = evidence?.["focalPoint"];
   if (pointId(focal)) {
+    const focalIngredient = pointIngredient(focal);
     ingredients.push({
-      ...pointIngredient(focal),
-      metadata: { ...pointIngredient(focal).metadata, patternRole: "focal" },
+      ...focalIngredient,
+      metadata: { ...focalIngredient.metadata, patternRole: "focal" },
     });
   }
   const points = evidence?.["points"];
@@ -247,8 +249,8 @@ const eclipseIngredients = (
   };
   const ingredients: SemanticIngredient[] = [derived, pointIngredient("sun"), pointIngredient("moon")];
   const evidence = resolvedEvidence.find(record);
-  const node = evidence?.["value"];
-  const eclipse = record(node) ? node : evidence;
+  const value = evidence?.["value"];
+  const eclipse = record(value) ? value : evidence;
   if (record(eclipse)) {
     const nodeDirection = eclipse["node"];
     if (nodeDirection === "north") ingredients.push(pointIngredient("north_node_true"));
@@ -268,20 +270,11 @@ const dominantIngredients = (
     technicalId: "dominantThemes",
     metadata: {},
   }];
-  for (const entry of calculation.system.derived.dominantPlanets.slice(0, 4)) {
+  for (const entry of calculation.system.derived?.dominantPlanets?.slice(0, 4) ?? []) {
     ingredients.push(pointIngredient(entry.planet));
   }
-  for (const entry of calculation.system.derived.dominantSigns.slice(0, 4)) {
+  for (const entry of calculation.system.derived?.dominantSigns?.slice(0, 4) ?? []) {
     ingredients.push(signIngredient(entry.sign));
-  }
-  const pattern = calculation.system.derived.jonesPattern.value;
-  if (pattern !== null) {
-    ingredients.push({
-      kind: "derived",
-      atomId: "derived.chart-balance",
-      technicalId: `jones:${pattern}`,
-      metadata: { jonesPattern: pattern },
-    });
   }
   return uniqueIngredients(ingredients);
 };
@@ -297,7 +290,7 @@ const rulershipIngredients = (
   }];
   for (const id of ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"] as const) {
     ingredients.push(pointIngredient(id));
-    const sign = calculation.system.points[id].position.value?.sign;
+    const sign = calculation.system.points[id]?.position?.value?.sign;
     if (sign !== undefined) ingredients.push(signIngredient(sign));
   }
   return uniqueIngredients(ingredients);
