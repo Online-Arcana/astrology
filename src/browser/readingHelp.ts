@@ -2,6 +2,29 @@ export const stripZodiacPrefix = (value: string): string => value
   .replace(/^\s*(?:tropical|sidereal)\s+/iu, "")
   .trim();
 
+const houses: Readonly<Record<number, { title: string; description: string }>> = {
+  1: { title: "Self and identity", description: "House 1 covers identity, self-presentation, personal style and the instinctive way you approach new situations." },
+  2: { title: "Money, possessions and values", description: "House 2 covers personal resources, money, possessions, material security, self-worth and what you consider valuable." },
+  3: { title: "Communication and everyday life", description: "House 3 covers communication, learning, siblings, neighbours, short journeys and the exchange of everyday information." },
+  4: { title: "Home, family and roots", description: "House 4 covers home, family, ancestry, private life and the emotional foundations that create a sense of belonging." },
+  5: { title: "Creativity, pleasure and romance", description: "House 5 covers creativity, play, pleasure, dating, self-expression, children and the things you do because they make life feel vivid." },
+  6: { title: "Work, routines and wellbeing", description: "House 6 covers daily routines, practical work, service, habits, health and the systems that keep ordinary life functioning." },
+  7: { title: "Partnerships and close relationships", description: "House 7 covers committed one-to-one relationships, partnership, collaboration, negotiation and the qualities you encounter through other people." },
+  8: { title: "Intimacy, shared resources and change", description: "House 8 covers intimacy, shared money and obligations, trust, vulnerability, inheritance, loss and deep personal transformation." },
+  9: { title: "Beliefs, travel and higher learning", description: "House 9 covers worldview, philosophy, religion, higher education, long-distance travel and experiences that broaden your understanding of life." },
+  10: { title: "Career, reputation and public life", description: "House 10 covers career, vocation, ambition, reputation, responsibility and the role you build in the wider world." },
+  11: { title: "Friendships, community and future goals", description: "House 11 covers friendships, groups, networks, communities, collective causes and the hopes or long-term goals you pursue with others." },
+  12: { title: "Inner life, retreat and hidden patterns", description: "House 12 covers solitude, retreat, the unconscious, hidden patterns, endings and experiences that happen away from public view." },
+};
+
+const houseNumber = (value: string): number | null => {
+  const stripped = stripZodiacPrefix(value).replaceAll(/[_\.]+/gu, " ").replaceAll(/\s+/gu, " ").trim();
+  const match = /^house\s+(\d+)(?:\s+interpretation)?$/iu.exec(stripped);
+  if (match?.[1] === undefined) return null;
+  const number = Number.parseInt(match[1], 10);
+  return number >= 1 && number <= 12 ? number : null;
+};
+
 const pointNames: Readonly<Record<string, string>> = {
   "north node true": "North Node",
   "north node mean": "North Node",
@@ -33,50 +56,17 @@ const pointNames: Readonly<Record<string, string>> = {
 const pointPhrases = Object.keys(pointNames).sort((left, right) => right.length - left.length);
 
 const aspectNames: Readonly<Record<string, { label: string; description: string }>> = {
-  conjunction: {
-    label: "conjunct",
-    description: "A conjunction places two chart points close together, so astrologers interpret their themes as strongly combined.",
-  },
-  opposition: {
-    label: "opposite",
-    description: "An opposition places two chart points roughly 180° apart and is interpreted as a polarity that asks for balance between them.",
-  },
-  trine: {
-    label: "trine",
-    description: "A trine is an approximately 120° aspect traditionally interpreted as a relatively easy flow between the two factors.",
-  },
-  square: {
-    label: "square",
-    description: "A square is an approximately 90° aspect traditionally interpreted as friction or pressure that requires an active response.",
-  },
-  sextile: {
-    label: "sextile",
-    description: "A sextile is an approximately 60° aspect traditionally interpreted as a supportive opportunity that benefits from being used deliberately.",
-  },
-  quincunx: {
-    label: "quincunx",
-    description: "A quincunx is an approximately 150° aspect traditionally associated with adjustment between factors that do not fit together automatically.",
-  },
-  semisextile: {
-    label: "semi-sextile",
-    description: "A semi-sextile is an approximately 30° minor aspect usually read as a subtle connection that requires awareness to use constructively.",
-  },
-  semisquare: {
-    label: "semi-square",
-    description: "A semi-square is an approximately 45° minor aspect traditionally associated with low-level friction or pressure.",
-  },
-  sesquiquadrate: {
-    label: "sesquiquadrate",
-    description: "A sesquiquadrate is an approximately 135° minor aspect traditionally associated with persistent tension that encourages adjustment.",
-  },
-  quintile: {
-    label: "quintile",
-    description: "A quintile is an approximately 72° minor aspect traditionally associated with creative or specialised ways of combining two factors.",
-  },
-  biquintile: {
-    label: "biquintile",
-    description: "A biquintile is an approximately 144° minor aspect traditionally associated with creative or specialised expression.",
-  },
+  conjunction: { label: "conjunct", description: "A conjunction places two chart points close together, so astrologers interpret their themes as strongly combined." },
+  opposition: { label: "opposite", description: "An opposition places two chart points roughly 180° apart and is interpreted as a polarity that asks for balance between them." },
+  trine: { label: "trine", description: "A trine is an approximately 120° aspect traditionally interpreted as a relatively easy flow between the two factors." },
+  square: { label: "square", description: "A square is an approximately 90° aspect traditionally interpreted as friction or pressure that requires an active response." },
+  sextile: { label: "sextile", description: "A sextile is an approximately 60° aspect traditionally interpreted as a supportive opportunity that benefits from being used deliberately." },
+  quincunx: { label: "quincunx", description: "A quincunx is an approximately 150° aspect traditionally associated with adjustment between factors that do not fit together automatically." },
+  semisextile: { label: "semi-sextile", description: "A semi-sextile is an approximately 30° minor aspect usually read as a subtle connection that requires awareness to use constructively." },
+  semisquare: { label: "semi-square", description: "A semi-square is an approximately 45° minor aspect traditionally associated with low-level friction or pressure." },
+  sesquiquadrate: { label: "sesquiquadrate", description: "A sesquiquadrate is an approximately 135° minor aspect traditionally associated with persistent tension that encourages adjustment." },
+  quintile: { label: "quintile", description: "A quintile is an approximately 72° minor aspect traditionally associated with creative or specialised ways of combining two factors." },
+  biquintile: { label: "biquintile", description: "A biquintile is an approximately 144° minor aspect traditionally associated with creative or specialised expression." },
 };
 
 interface AspectTitle {
@@ -151,6 +141,9 @@ const replacements: readonly [RegExp, string][] = [
 ];
 
 export const displayReadingTitle = (rawTitle: string): string => {
+  const number = houseNumber(rawTitle);
+  if (number !== null) return houses[number]?.title ?? `House ${number}`;
+
   const aspect = parseAspect(rawTitle);
   if (aspect !== null) return aspect.title;
 
@@ -193,6 +186,9 @@ const topicDescriptions: Readonly<Record<string, string>> = {
 };
 
 export const readingDescription = (rawTitle: string): string | null => {
+  const number = houseNumber(rawTitle);
+  if (number !== null) return houses[number]?.description ?? null;
+
   const aspect = parseAspect(rawTitle);
   if (aspect !== null) return aspect.description;
 
@@ -200,50 +196,19 @@ export const readingDescription = (rawTitle: string): string | null => {
   const topic = topicDescriptions[title];
   if (topic !== undefined) return topic;
 
-  if (/\bascendant\b/u.test(title)) {
-    return "The Ascendant describes the style you present to the world, your instinctive approach to new situations, and how other people may first experience you.";
-  }
-  if (/\bdescendant\b/u.test(title)) {
-    return "The Descendant describes the qualities you tend to meet, seek or negotiate through close one-to-one relationships.";
-  }
-  if (/\bmidheaven\b/u.test(title)) {
-    return "The Midheaven describes public direction, reputation, ambition and the kind of contribution you may feel drawn to make.";
-  }
-  if (/\bimum coeli\b/u.test(title) || /\bhome–public life axis\b/u.test(title)) {
-    return "The Imum Coeli describes private foundations, roots, home life and the inner sense of belonging beneath your public identity.";
-  }
-  if (/\bvertex–antivertex axis\b/u.test(title)) {
-    return "The Vertex–Antivertex axis is used to describe encounters or turning points that can feel unusually significant, especially through other people.";
-  }
-  if (/\blunar nodes\b/u.test(title)) {
-    return "The lunar-node axis is used to contrast familiar patterns with directions of growth and development.";
-  }
-  if (/\blilith\b/u.test(title)) {
-    return "Lilith interpretations explore themes of autonomy, exclusion, instinct, taboo and the parts of yourself that resist being domesticated or simplified.";
-  }
-  if (/\blunar phase\b/u.test(title)) {
-    return "The lunar phase describes the relationship between the Sun and Moon at birth. Astrologers use it as a broad description of emotional rhythm, momentum and how experience is processed over time.";
-  }
-  if (/\bprenatal lunar eclipse\b/u.test(title)) {
-    return "The prenatal lunar eclipse is the most recent lunar eclipse before birth. Astrologers use it as a background theme for emotional culmination, release and inherited patterns.";
-  }
-  if (/\bprenatal solar eclipse\b/u.test(title)) {
-    return "The prenatal solar eclipse is the most recent solar eclipse before birth. Astrologers use it as a background theme for beginnings, direction and long-running life motifs.";
-  }
-  if (/\brulership(?: and| ) dignity\b/u.test(title)) {
-    return "Rulership and dignity describe how comfortably or strongly planets are traditionally considered to operate in their signs and how that modifies their expression.";
-  }
-  if (/\bchart balance\b/u.test(title)) {
-    return "Chart balance summarises how the chart is distributed across elements, modalities, polarities and other structural emphases.";
-  }
-  if (/\bdominant themes\b/u.test(title)) {
-    return "Dominant themes pull together the strongest repeating patterns across the chart rather than treating each placement in isolation.";
-  }
-  if (/^house\s+\d+/u.test(title)) {
-    return "A house describes an area of life where the signs and planets placed there are interpreted as becoming especially visible or active.";
-  }
-  if (/\bcompatibility\b/u.test(title)) {
-    return "Compatibility compares this natal chart with the symbolic profile of another zodiac sign for the selected relationship domain.";
-  }
+  if (/\bascendant\b/u.test(title)) return "The Ascendant describes the style you present to the world, your instinctive approach to new situations, and how other people may first experience you.";
+  if (/\bdescendant\b/u.test(title)) return "The Descendant describes the qualities you tend to meet, seek or negotiate through close one-to-one relationships.";
+  if (/\bmidheaven\b/u.test(title)) return "The Midheaven describes public direction, reputation, ambition and the kind of contribution you may feel drawn to make.";
+  if (/\bimum coeli\b/u.test(title) || /\bhome–public life axis\b/u.test(title)) return "The Imum Coeli describes private foundations, roots, home life and the inner sense of belonging beneath your public identity.";
+  if (/\bvertex–antivertex axis\b/u.test(title)) return "The Vertex–Antivertex axis is used to describe encounters or turning points that can feel unusually significant, especially through other people.";
+  if (/\blunar nodes\b/u.test(title)) return "The lunar-node axis is used to contrast familiar patterns with directions of growth and development.";
+  if (/\blilith\b/u.test(title)) return "Lilith interpretations explore themes of autonomy, exclusion, instinct, taboo and the parts of yourself that resist being domesticated or simplified.";
+  if (/\blunar phase\b/u.test(title)) return "The lunar phase describes the relationship between the Sun and Moon at birth. Astrologers use it as a broad description of emotional rhythm, momentum and how experience is processed over time.";
+  if (/\bprenatal lunar eclipse\b/u.test(title)) return "The prenatal lunar eclipse is the most recent lunar eclipse before birth. Astrologers use it as a background theme for emotional culmination, release and inherited patterns.";
+  if (/\bprenatal solar eclipse\b/u.test(title)) return "The prenatal solar eclipse is the most recent solar eclipse before birth. Astrologers use it as a background theme for beginnings, direction and long-running life motifs.";
+  if (/\brulership(?: and| ) dignity\b/u.test(title)) return "Rulership and dignity describe how comfortably or strongly planets are traditionally considered to operate in their signs and how that modifies their expression.";
+  if (/\bchart balance\b/u.test(title)) return "Chart balance summarises how the chart is distributed across elements, modalities, polarities and other structural emphases.";
+  if (/\bdominant themes\b/u.test(title)) return "Dominant themes pull together the strongest repeating patterns across the chart rather than treating each placement in isolation.";
+  if (/\bcompatibility\b/u.test(title)) return "Compatibility compares this natal chart with the symbolic profile of another zodiac sign for the selected relationship domain.";
   return null;
 };
