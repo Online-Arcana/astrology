@@ -136,7 +136,11 @@ const plainReadings = (): void => {
       if (explanation.textContent !== description) explanation.textContent = description;
     }
 
-    reading.dataset["viewerTitleLocked"] = "true";
+    // The canonical title remains in data-original-title. Do not lock the
+    // rendered title: the technical enhancement pass may need to restore it
+    // briefly before regrouping late-arriving sections, after which this pass
+    // translates it back to customer language.
+    reading.dataset["viewerTitleLocked"] = "false";
   }
 };
 
