@@ -1,4 +1,4 @@
-import type { Aspect, PointId, Sign, SignPosition } from "../types/astro.js";
+import type { Aspect, PointId, Sign } from "../types/astro.js";
 import type { AstralCalculation } from "../types/file.js";
 
 const svgNamespace = "http://www.w3.org/2000/svg";
@@ -23,30 +23,13 @@ const signGlyphs: Readonly<Record<Sign, string>> = {
   sagittarius: "♐︎", capricorn: "♑︎", aquarius: "♒︎", pisces: "♓︎",
 };
 
-const pointNames: Readonly<Partial<Record<PointId, string>>> = {
-  sun: "Sun", moon: "Moon", mercury: "Mercury", venus: "Venus", mars: "Mars",
-  jupiter: "Jupiter", saturn: "Saturn", uranus: "Uranus", neptune: "Neptune", pluto: "Pluto",
-  north_node_true: "True North Node", south_node_true: "True South Node",
-  north_node_mean: "Mean North Node", south_node_mean: "Mean South Node",
-  ascendant: "Ascendant", descendant: "Descendant", midheaven: "Midheaven", imum_coeli: "Imum Coeli",
-  vertex: "Vertex", antivertex: "Antivertex", east_point: "East Point",
-  part_of_fortune: "Part of Fortune", part_of_spirit: "Part of Spirit",
-  lilith_mean: "Mean Black Moon Lilith", lilith_true: "True Black Moon Lilith",
-};
-
 const pointFallback: Readonly<Partial<Record<PointId, string>>> = {
   sun: "☉", moon: "☽", mercury: "☿", venus: "♀︎", mars: "♂︎",
   jupiter: "♃", saturn: "♄", uranus: "♅", neptune: "♆", pluto: "♇",
-  north_node_true: "☊", south_node_true: "☋", north_node_mean: "☊", south_node_mean: "☋",
+  north_node_true: "T", south_node_true: "T", north_node_mean: "M", south_node_mean: "M",
   ascendant: "As", descendant: "Ds", midheaven: "Mc", imum_coeli: "IC",
   vertex: "Vx", antivertex: "AV", east_point: "Ep",
-  part_of_fortune: "⊗", part_of_spirit: "⊙", lilith_mean: "⚸", lilith_true: "⚸",
-};
-
-const aspectGlyph: Readonly<Record<Aspect["kind"], string>> = {
-  conjunction: "☌", opposition: "☍", trine: "△", square: "□", sextile: "⚹",
-  quincunx: "⚻", semisextile: "⚺", semisquare: "∠", sesquiquadrate: "⚼",
-  quintile: "Q", biquintile: "bQ",
+  part_of_fortune: "⊗", part_of_spirit: "Φ", lilith_mean: "⚸", lilith_true: "⚸",
 };
 
 const titleCase = (value: string): string => value
@@ -63,7 +46,12 @@ const svg = <K extends keyof SVGElementTagNameMap>(name: K): SVGElementTagNameMa
 const screenAngle = (longitude: number, ascendant: number): number =>
   Math.PI - radians(normalise(longitude - ascendant));
 
-const polar = (longitude: number, radius: number, ascendant: number): { x: number; y: number } => {
+interface WheelPointAnchor {
+  x: number;
+  y: number;
+}
+
+const polar = (longitude: number, radius: number, ascendant: number): WheelPointAnchor => {
   const angle = screenAngle(longitude, ascendant);
   return {
     x: centre + radius * Math.cos(angle),
@@ -80,8 +68,8 @@ const sectorPath = (
 ): string => {
   const distance = Math.max(0.01, forwardDistance(start, end));
   const steps = Math.max(3, Math.ceil(distance / 3));
-  const outerPoints: { x: number; y: number }[] = [];
-  const innerPoints: { x: number; y: number }[] = [];
+  const outerPoints: WheelPointAnchor[] = [];
+  const innerPoints: WheelPointAnchor[] = [];
   for (let index = 0; index <= steps; index += 1) {
     const longitude = normalise(start + distance * index / steps);
     outerPoints.push(polar(longitude, outer, ascendant));
@@ -116,9 +104,6 @@ const line = (
   return element;
 };
 
-const formatPosition = (position: SignPosition): string =>
-  `${titleCase(position.sign)} ${position.degree}° ${String(position.minute).padStart(2, "0")}′ ${String(position.second).padStart(2, "0")}″`;
-
 const glyphAsset = (id: PointId): { path: string; rotation?: number; modifier?: string } | null => {
   const base = "./assets/astrology-glyphs/svg";
   if (["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto"].includes(id)) {
@@ -132,11 +117,12 @@ const glyphAsset = (id: PointId): { path: string; rotation?: number; modifier?: 
     case "vertex":
     case "east_point": return { path: `${base}/angles/${id}.svg` };
     case "antivertex": return { path: `${base}/angles/vertex.svg`, rotation: 180 };
-    case "north_node_true": return { path: `${base}/points/north_node.svg`, modifier: "T" };
-    case "south_node_true": return { path: `${base}/points/south_node.svg`, modifier: "T" };
-    case "north_node_mean": return { path: `${base}/points/north_node.svg`, modifier: "M" };
-    case "south_node_mean": return { path: `${base}/points/south_node.svg`, modifier: "M" };
+    case "north_node_true": return { path: `${base}/misc/true_node.svg`, modifier: "N" };
+    case "south_node_true": return { path: `${base}/misc/true_node.svg`, modifier: "S" };
+    case "north_node_mean": return { path: `${base}/misc/mean_node.svg`, modifier: "N" };
+    case "south_node_mean": return { path: `${base}/misc/mean_node.svg`, modifier: "S" };
     case "part_of_fortune": return { path: `${base}/points/lot_of_fortune.svg` };
+    case "part_of_spirit": return { path: `${base}/points/lot_of_spirit.svg` };
     case "lilith_mean": return { path: `${base}/points/black_moon_lilith.svg`, modifier: "M" };
     case "lilith_true": return { path: `${base}/points/black_moon_lilith.svg`, modifier: "T" };
     default: return null;
@@ -215,46 +201,57 @@ const pointLayout = (calculation: AstralCalculation): PlacedPoint[] => {
   });
 };
 
-const detailRows = (rows: readonly [string, string][]): HTMLElement => {
-  const list = document.createElement("dl");
-  list.className = "wheel-detail-list";
-  for (const [label, value] of rows) {
-    const term = document.createElement("dt");
-    term.textContent = label;
-    const description = document.createElement("dd");
-    description.textContent = value;
-    list.append(term, description);
-  }
-  return list;
+const shortenSegment = (
+  start: WheelPointAnchor,
+  end: WheelPointAnchor,
+  padding: number,
+): { start: WheelPointAnchor; end: WheelPointAnchor } => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) return { start, end };
+  const inset = Math.min(padding, Math.max(0, length / 2 - 2));
+  const ux = dx / length;
+  const uy = dy / length;
+  return {
+    start: { x: start.x + ux * inset, y: start.y + uy * inset },
+    end: { x: end.x - ux * inset, y: end.y - uy * inset },
+  };
 };
 
-const aspectText = (aspect: Aspect): string =>
-  `${pointNames[aspect.a] ?? titleCase(aspect.a)} ${titleCase(aspect.kind)} ${pointNames[aspect.b] ?? titleCase(aspect.b)} · orb ${aspect.orbDegrees.toFixed(2)}° · ${titleCase(aspect.phase)} · strength ${aspect.strength.toFixed(2)}`;
+const extendSegment = (
+  start: WheelPointAnchor,
+  end: WheelPointAnchor,
+  extension: number,
+): { start: WheelPointAnchor; end: WheelPointAnchor } => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) return { start, end };
+  const ux = dx / length;
+  const uy = dy / length;
+  return {
+    start: { x: start.x - ux * extension, y: start.y - uy * extension },
+    end: { x: end.x + ux * extension, y: end.y + uy * extension },
+  };
+};
 
-const renderDetail = (
-  target: HTMLElement,
-  heading: string,
-  rows: readonly [string, string][],
-  note?: string,
+const aspectSegment = (
+  aspect: Aspect,
+  start: WheelPointAnchor,
+  end: WheelPointAnchor,
+): { start: WheelPointAnchor; end: WheelPointAnchor } =>
+  aspect.kind === "conjunction" ? extendSegment(start, end, 18) : shortenSegment(start, end, 15);
+
+const setSegment = (
+  element: SVGLineElement,
+  segment: { start: WheelPointAnchor; end: WheelPointAnchor },
 ): void => {
-  target.replaceChildren();
-  const title = document.createElement("strong");
-  title.className = "wheel-detail-title";
-  title.textContent = heading;
-  target.append(title, detailRows(rows));
-  if (note !== undefined) {
-    const paragraph = document.createElement("p");
-    paragraph.textContent = note;
-    target.append(paragraph);
-  }
+  element.setAttribute("x1", segment.start.x.toFixed(3));
+  element.setAttribute("y1", segment.start.y.toFixed(3));
+  element.setAttribute("x2", segment.end.x.toFixed(3));
+  element.setAttribute("y2", segment.end.y.toFixed(3));
 };
-
-const defaultDetail = (target: HTMLElement): void => renderDetail(
-  target,
-  "Explore the wheel",
-  [["Interaction", "Hover, focus or tap a sign, point, house or aspect for deterministic chart detail."]],
-  "The wheel is reconstructed entirely from the stored astral-calculation data.",
-);
 
 export const renderChartWheel = (calculation: AstralCalculation): HTMLElement => {
   const container = document.createElement("section");
@@ -268,12 +265,7 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
   root.setAttribute("role", "img");
   root.setAttribute("aria-label", "Interactive deterministic natal chart wheel");
   graphic.append(root);
-
-  const detail = document.createElement("aside");
-  detail.className = "wheel-detail";
-  detail.setAttribute("aria-live", "polite");
-  defaultDetail(detail);
-  container.append(graphic, detail);
+  container.append(graphic);
 
   const ascendantPosition = calculation.system.points.ascendant.position.value;
   const ascendant = ascendantPosition?.longitudeDegrees ?? 180;
@@ -285,41 +277,6 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
   frame.setAttribute("r", String(radii.outer));
   frame.setAttribute("class", "wheel-frame");
   root.append(frame);
-
-  let pinned: Element | null = null;
-  const activate = (element: Element, heading: string, rows: readonly [string, string][], note?: string): void => {
-    for (const active of container.querySelectorAll(".is-active")) active.classList.remove("is-active");
-    element.classList.add("is-active");
-    container.classList.add("wheel-has-selection");
-    renderDetail(detail, heading, rows, note);
-  };
-  const clear = (): void => {
-    if (pinned !== null) return;
-    for (const active of container.querySelectorAll(".is-active")) active.classList.remove("is-active");
-    container.classList.remove("wheel-has-selection");
-    defaultDetail(detail);
-  };
-  const interactive = (
-    element: Element,
-    heading: string,
-    rows: readonly [string, string][],
-    note?: string,
-  ): void => {
-    element.addEventListener("mouseenter", () => activate(element, heading, rows, note));
-    element.addEventListener("mouseleave", clear);
-    element.addEventListener("focus", () => activate(element, heading, rows, note));
-    element.addEventListener("blur", clear);
-    element.addEventListener("click", (event) => {
-      event.stopPropagation();
-      pinned = pinned === element ? null : element;
-      if (pinned === null) clear();
-      else activate(element, heading, rows, note);
-    });
-  };
-  container.addEventListener("click", () => { pinned = null; clear(); });
-  container.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") { pinned = null; clear(); }
-  });
 
   const zodiacGroup = svg("g");
   zodiacGroup.setAttribute("class", "wheel-zodiac");
@@ -336,20 +293,7 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
     sector.dataset["sign"] = sign;
     zodiacGroup.append(sector);
 
-    const pointsInSign = Object.values(calculation.system.points)
-      .filter((point) => point.position.value?.sign === sign)
-      .map((point) => pointNames[point.id] ?? titleCase(point.id));
-    const cuspNumbers = Object.values(calculation.system.houses[calculation.settings.primaryHouseSystem].houses)
-      .filter((house) => house.cusp.value?.sign === sign)
-      .map((house) => String(house.number));
-    interactive(sector, `${signGlyphs[sign]} ${titleCase(sign)}`, [
-      ["Longitude", `${start}°–${end}°`],
-      ["Points", pointsInSign.length === 0 ? "None" : pointsInSign.join(", ")],
-      ["House cusps", cuspNumbers.length === 0 ? "None" : cuspNumbers.join(", ")],
-    ]);
-
-    const mid = normalise(start + 15);
-    const glyphPoint = polar(mid, (radii.zodiacInner + radii.outer) / 2, ascendant);
+    const glyphPoint = polar(normalise(start + 15), (radii.zodiacInner + radii.outer) / 2, ascendant);
     const glyphGroup = svg("g");
     glyphGroup.setAttribute("class", "wheel-sign-glyph");
     addAssetGlyph(glyphGroup, signAsset(sign), signGlyphs[sign], glyphPoint.x, glyphPoint.y, 31);
@@ -376,14 +320,6 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
       sector.setAttribute("tabindex", "0");
       sector.dataset["house"] = String(house.number);
       houseGroup.append(sector);
-      const intercepted = house.interceptedSigns.map(titleCase);
-      interactive(sector, `House ${house.number}`, [
-        ["Cusp", formatPosition(cusp)],
-        ["End", formatPosition(end)],
-        ["Occupants", house.occupants.length === 0 ? "None" : house.occupants.map((id) => pointNames[id] ?? titleCase(id)).join(", ")],
-        ["Intercepted signs", intercepted.length === 0 ? "None" : intercepted.join(", ")],
-        ["Traditional ruler", house.rulerTraditional.value === null ? "Unavailable" : pointNames[house.rulerTraditional.value] ?? titleCase(house.rulerTraditional.value)],
-      ]);
       line(houseGroup, cusp.longitudeDegrees, radii.aspect, radii.zodiacInner, ascendant,
         [1, 4, 7, 10].includes(house.number) ? "wheel-house-cusp angular" : "wheel-house-cusp");
       const middle = normalise(cusp.longitudeDegrees + forwardDistance(cusp.longitudeDegrees, end.longitudeDegrees) / 2);
@@ -398,46 +334,50 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
     }
   }
 
+  const placedPoints = pointLayout(calculation);
+  const pointAnchors = new Map<PointId, WheelPointAnchor>();
+  for (const placed of placedPoints) {
+    const radius = radii.pointBase - placed.lane * 24;
+    pointAnchors.set(placed.id, polar(placed.longitude, radius, ascendant));
+  }
+
   const aspects = svg("g");
   aspects.setAttribute("class", "wheel-aspects");
   root.append(aspects);
   for (const aspect of calculation.system.aspects) {
-    const a = calculation.system.points[aspect.a].position.value;
-    const b = calculation.system.points[aspect.b].position.value;
-    if (a === null || b === null) continue;
-    const start = polar(a.longitudeDegrees, radii.aspect - 5, ascendant);
-    const end = polar(b.longitudeDegrees, radii.aspect - 5, ascendant);
+    const startAnchor = pointAnchors.get(aspect.a);
+    const endAnchor = pointAnchors.get(aspect.b);
+    if (startAnchor === undefined || endAnchor === undefined) continue;
+    const segment = aspectSegment(aspect, startAnchor, endAnchor);
     const visible = svg("line");
-    visible.setAttribute("x1", String(start.x)); visible.setAttribute("y1", String(start.y));
-    visible.setAttribute("x2", String(end.x)); visible.setAttribute("y2", String(end.y));
-    visible.setAttribute("class", `wheel-aspect wheel-aspect-${aspect.character} ${aspect.class}`);
+    setSegment(visible, segment);
+    visible.setAttribute("class", `wheel-aspect wheel-aspect-${aspect.character} ${aspect.class}${aspect.kind === "conjunction" ? " wheel-aspect-conjunction-marker" : ""}`);
     visible.dataset["aspect"] = aspect.id;
+    visible.dataset["aspectKind"] = aspect.kind;
+    visible.dataset["endpointA"] = aspect.a;
+    visible.dataset["endpointB"] = aspect.b;
     aspects.append(visible);
+
     const hit = svg("line");
-    hit.setAttribute("x1", String(start.x)); hit.setAttribute("y1", String(start.y));
-    hit.setAttribute("x2", String(end.x)); hit.setAttribute("y2", String(end.y));
+    setSegment(hit, segment);
     hit.setAttribute("class", "wheel-aspect-hit");
     hit.setAttribute("tabindex", "0");
+    hit.dataset["aspect"] = aspect.id;
+    hit.dataset["aspectKind"] = aspect.kind;
+    hit.dataset["endpointA"] = aspect.a;
+    hit.dataset["endpointB"] = aspect.b;
     aspects.append(hit);
-    interactive(hit, `${aspectGlyph[aspect.kind]} ${titleCase(aspect.kind)}`, [
-      ["Points", `${pointNames[aspect.a] ?? titleCase(aspect.a)} ↔ ${pointNames[aspect.b] ?? titleCase(aspect.b)}`],
-      ["Exact angle", `${aspect.exactAngleDegrees.toFixed(2)}°`],
-      ["Actual angle", `${aspect.actualAngleDegrees.toFixed(2)}°`],
-      ["Orb", `${aspect.orbDegrees.toFixed(2)}° of ${aspect.allowedOrbDegrees.toFixed(2)}° allowed`],
-      ["Phase", titleCase(aspect.phase)],
-      ["Strength", aspect.strength.toFixed(2)],
-    ], aspectText(aspect));
   }
 
   const pointGroup = svg("g");
   pointGroup.setAttribute("class", "wheel-points");
   root.append(pointGroup);
-  for (const placed of pointLayout(calculation)) {
+  for (const placed of placedPoints) {
     const point = calculation.system.points[placed.id];
     const position = point.position.value;
-    if (position === null) continue;
+    const location = pointAnchors.get(placed.id);
+    if (position === null || location === undefined) continue;
     const radius = radii.pointBase - placed.lane * 24;
-    const location = polar(placed.longitude, radius, ascendant);
     line(pointGroup, placed.longitude, radii.zodiacInner - 3, radius + 16, ascendant, "wheel-point-leader");
     line(pointGroup, placed.longitude, radii.zodiacInner - 10, radii.zodiacInner + 1, ascendant, "wheel-point-tick");
     const group = svg("g");
@@ -445,6 +385,8 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
     group.setAttribute("tabindex", "0");
     group.setAttribute("role", "button");
     group.dataset["point"] = placed.id;
+    group.dataset["anchorX"] = location.x.toFixed(3);
+    group.dataset["anchorY"] = location.y.toFixed(3);
     const asset = glyphAsset(placed.id);
     if (asset === null) {
       const fallback = svg("text");
@@ -458,15 +400,6 @@ export const renderChartWheel = (calculation: AstralCalculation): HTMLElement =>
       addAssetGlyph(group, asset.path, pointFallback[placed.id] ?? "•", location.x, location.y, 29, asset.rotation ?? 0, asset.modifier);
     }
     pointGroup.append(group);
-    const house = point.houses[calculation.settings.primaryHouseSystem].value;
-    const relatedAspects = calculation.system.aspects.filter(({ a, b }) => a === placed.id || b === placed.id);
-    interactive(group, pointNames[placed.id] ?? titleCase(placed.id), [
-      ["Position", formatPosition(position)],
-      ["Longitude", `${position.longitudeDegrees.toFixed(4)}°`],
-      ["House", house === null ? "Unavailable" : String(house.house)],
-      ["Motion", titleCase(point.motion)],
-      ["Aspects", relatedAspects.length === 0 ? "None" : relatedAspects.map((item) => `${aspectGlyph[item.kind]} ${pointNames[item.a === placed.id ? item.b : item.a] ?? titleCase(item.a === placed.id ? item.b : item.a)} (${item.orbDegrees.toFixed(2)}°)`).join(" · ")],
-    ]);
   }
 
   if (!timed) {

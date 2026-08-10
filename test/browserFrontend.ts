@@ -100,17 +100,23 @@ await test("generated signing keys can be backed up and restored", async () => {
 await test("browser tools initialise the interactive chart wheel", async () => {
   const tools = await readFile("src/browser/browserTools.ts", "utf8");
   const bootstrap = await readFile("src/browser/chartWheelBootstrap.ts", "utf8");
+  const wheel = await readFile("src/browser/chartWheel.ts", "utf8");
   const wheelGlyphs = await readFile("src/browser/chartWheelGlyphs.ts", "utf8");
   const wheelStyles = await readFile("public/chart-wheel.css", "utf8");
   assert(/chartWheelBootstrap\.js/u.test(tools), "browser-tools entry must import the chart wheel bootstrap so esbuild includes it");
   assert(/astral:calculation/u.test(bootstrap), "chart wheel bootstrap must listen for new deterministic calculations");
   assert(/#rawChart/u.test(bootstrap), "chart wheel bootstrap must reconstruct opened charts from their stored calculation");
+  assert(/wheelView/u.test(bootstrap) && /wheelChart/u.test(bootstrap) && /Chart wheel/u.test(bootstrap), "opened charts must expose the wheel as its own viewer tab");
   assert(/wheel-aspect-groups/u.test(bootstrap) && /wheel-aspect-child/u.test(bootstrap), "aspect controls must expose expandable groups and individual deterministic lines");
   assert(/parent\.indeterminate/u.test(bootstrap), "aspect group checkboxes must represent mixed child state");
-  assert(/defaultAspectVisible/u.test(bootstrap) && /coreAspectPoints/u.test(bootstrap), "default view must use major planet-to-planet aspects without deleting the rest");
+  assert(/defaultAspectVisible/u.test(bootstrap) && /defaultAspectPoints/u.test(bootstrap) && /corePlanets/u.test(bootstrap), "default view must preserve a conventional major-aspect presentation without deleting the rest");
+  assert(/"ascendant"/u.test(bootstrap) && /"midheaven"/u.test(bootstrap) && /"north_node_true"/u.test(bootstrap), "default aspect presentation must include the main angles and True North Node with the planets");
   assert(/Restore default aspect lines/u.test(bootstrap) && /Hide all aspect lines/u.test(bootstrap) && /Show all aspect lines/u.test(bootstrap), "chart wheel must provide default, none and all aspect actions");
-  assert(/prepareConjunctionGeometry/u.test(bootstrap) && /wheel-aspect-conjunction-marker/u.test(wheelStyles), "conjunctions must use visible dedicated geometry rather than a collapsed chord");
-  assert(/wheel\.querySelector\("\.wheel-detail"\)\?\.remove\(\)/u.test(bootstrap) && /wheel-tooltip/u.test(bootstrap), "chart details must use contextual tooltips instead of a permanent panel");
+  assert(/pointAnchors/u.test(wheel) && /aspectSegment/u.test(wheel) && /endpointA/u.test(wheel), "aspect lines must be drawn from the rendered point anchors rather than an unrelated inner radius");
+  assert(/extendSegment/u.test(wheel) && /wheel-aspect-conjunction-marker/u.test(wheelStyles), "conjunctions must remain visible while staying aligned to their actual endpoints");
+  assert(/document\.body\.append\(tooltip\)/u.test(bootstrap) && /position:\s*fixed/u.test(wheelStyles), "chart tooltips must use viewport coordinates so they stay beside the pointer");
+  assert(/grid-template-areas:\s*"graphic controls"/u.test(wheelStyles) && /position:\s*sticky/u.test(wheelStyles) && /overscroll-behavior:\s*contain/u.test(wheelStyles), "aspect controls must sit beside the chart and scroll independently on wide screens");
+  assert(!/wheel-detail/u.test(wheel), "renderer must not create a permanent chart detail panel");
   assert(/part_of_spirit/u.test(wheelGlyphs) && /lot_of_spirit\.svg/u.test(wheelGlyphs), "Part of Spirit must use its dedicated SVG glyph");
   assert(/fallback\.textContent = "Φ"/u.test(wheelGlyphs), "Part of Spirit fallback must remain visually distinct from the Sun");
   assert(wheelGlyphs.includes('north_node_true: { path: `${glyphBase}/true_node.svg`, modifier: "N"'), "True North Node must use the True Node glyph with N");

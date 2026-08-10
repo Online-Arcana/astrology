@@ -74,9 +74,16 @@ const signOrder = [
   "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
 ] as const satisfies readonly Sign[];
 
-const coreAspectPoints = new Set<PointId>([
+const corePlanets = new Set<PointId>([
   "sun", "moon", "mercury", "venus", "mars",
   "jupiter", "saturn", "uranus", "neptune", "pluto",
+]);
+
+const defaultAspectPoints = new Set<PointId>([
+  ...corePlanets,
+  "ascendant",
+  "midheaven",
+  "north_node_true",
 ]);
 
 const pointNames: Readonly<Partial<Record<PointId, string>>> = {
@@ -101,13 +108,11 @@ const cardShell = (id: string, heading: string): HTMLElement => {
   const card = document.createElement("section");
   card.id = id;
   card.className = "card chart-wheel-card";
-
   const header = document.createElement("div");
   header.className = "section-heading";
   const title = document.createElement("h2");
   title.textContent = heading;
   header.append(title);
-
   card.append(header);
   return card;
 };
@@ -119,80 +124,23 @@ interface WheelAspectEntry {
 }
 
 const wheelAspectEntries = (wheel: HTMLElement, calculation: AstralCalculation): WheelAspectEntry[] => {
-  const drawableAspects = calculation.system.aspects.filter((aspect) =>
-    calculation.system.points[aspect.a].position.value !== null
-    && calculation.system.points[aspect.b].position.value !== null);
-  const hitLines = [...wheel.querySelectorAll<SVGLineElement>(".wheel-aspect-hit")];
-
-  return hitLines.flatMap((hit, index) => {
-    const aspect = drawableAspects[index];
+  const byId = new Map(calculation.system.aspects.map((aspect) => [aspect.id, aspect] as const));
+  return [...wheel.querySelectorAll<SVGLineElement>(".wheel-aspect-hit")].flatMap((hit) => {
+    const id = hit.dataset["aspect"];
+    if (id === undefined) return [];
+    const aspect = byId.get(id);
     if (aspect === undefined) return [];
     const previous = hit.previousElementSibling;
-    const visible = previous instanceof SVGLineElement && previous.classList.contains("wheel-aspect")
-      ? previous
-      : null;
-    hit.dataset["aspect"] = aspect.id;
-    hit.dataset["aspectKind"] = aspect.kind;
-    visible?.setAttribute("data-aspect", aspect.id);
-    visible?.setAttribute("data-aspect-kind", aspect.kind);
+    const visible = previous instanceof SVGLineElement && previous.classList.contains("wheel-aspect") ? previous : null;
     return [{ aspect, visible, hit }];
   });
 };
 
-const setLineCoordinates = (
-  line: SVGLineElement,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-): void => {
-  line.setAttribute("x1", x1.toFixed(3));
-  line.setAttribute("y1", y1.toFixed(3));
-  line.setAttribute("x2", x2.toFixed(3));
-  line.setAttribute("y2", y2.toFixed(3));
-};
-
-const prepareConjunctionGeometry = (entries: readonly WheelAspectEntry[]): void => {
-  const centre = 400;
-  let conjunctionIndex = 0;
-  for (const { aspect, visible, hit } of entries) {
-    if (aspect.kind !== "conjunction") continue;
-    const source = visible ?? hit;
-    const x1 = Number(source.getAttribute("x1") ?? centre);
-    const y1 = Number(source.getAttribute("y1") ?? centre);
-    const x2 = Number(source.getAttribute("x2") ?? centre);
-    const y2 = Number(source.getAttribute("y2") ?? centre);
-    const middleX = (x1 + x2) / 2;
-    const middleY = (y1 + y2) / 2;
-    let dx = middleX - centre;
-    let dy = middleY - centre;
-    let length = Math.hypot(dx, dy);
-    if (length < 1) {
-      dx = 1;
-      dy = 0;
-      length = 1;
-    }
-    const unitX = dx / length;
-    const unitY = dy / length;
-    const perpendicularX = -unitY;
-    const perpendicularY = unitX;
-    const offset = ((conjunctionIndex % 5) - 2) * 3.5;
-    conjunctionIndex += 1;
-    const innerRadius = 164;
-    const outerRadius = 205;
-    const startX = centre + unitX * innerRadius + perpendicularX * offset;
-    const startY = centre + unitY * innerRadius + perpendicularY * offset;
-    const endX = centre + unitX * outerRadius + perpendicularX * offset;
-    const endY = centre + unitY * outerRadius + perpendicularY * offset;
-    for (const line of [visible, hit]) {
-      if (line !== null) setLineCoordinates(line, startX, startY, endX, endY);
-    }
-    visible?.classList.add("wheel-aspect-conjunction-marker");
-  }
-};
-
 const defaultAspectVisible = (aspect: Aspect): boolean =>
-  aspect.class === "major" && coreAspectPoints.has(aspect.a) && coreAspectPoints.has(aspect.b);
+  aspect.class === "major"
+  && defaultAspectPoints.has(aspect.a)
+  && defaultAspectPoints.has(aspect.b)
+  && (corePlanets.has(aspect.a) || corePlanets.has(aspect.b));
 
 const setAspectVisibility = (entry: WheelAspectEntry, enabled: boolean): void => {
   for (const element of [entry.visible, entry.hit]) {
@@ -209,16 +157,13 @@ const setAspectVisibility = (entry: WheelAspectEntry, enabled: boolean): void =>
 
 const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntry[]): void => {
   if (entries.length === 0) return;
-
   const presentKinds = aspectOrder.filter((kind) => entries.some(({ aspect }) => aspect.kind === kind));
   const childCheckboxes = new Map<string, HTMLInputElement>();
   const parentCheckboxes = new Map<AspectKind, HTMLInputElement>();
-
   const controls = document.createElement("fieldset");
   controls.className = "wheel-aspect-controls";
   const legend = document.createElement("legend");
   legend.textContent = "Aspect lines";
-
   const actions = document.createElement("div");
   actions.className = "wheel-aspect-actions";
   const makeAction = (text: string, ariaLabel: string, run: () => void): HTMLButtonElement => {
@@ -230,10 +175,8 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
     button.addEventListener("click", run);
     return button;
   };
-
   const groups = document.createElement("div");
   groups.className = "wheel-aspect-groups";
-
   const updateParents = (): void => {
     for (const kind of presentKinds) {
       const children = entries
@@ -247,14 +190,10 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
       parent.indeterminate = checked > 0 && checked < children.length;
     }
   };
-
   const apply = (): void => {
-    for (const entry of entries) {
-      setAspectVisibility(entry, childCheckboxes.get(entry.aspect.id)?.checked === true);
-    }
+    for (const entry of entries) setAspectVisibility(entry, childCheckboxes.get(entry.aspect.id)?.checked === true);
     updateParents();
   };
-
   const setSelection = (enabled: (aspect: Aspect) => boolean): void => {
     for (const { aspect } of entries) {
       const checkbox = childCheckboxes.get(aspect.id);
@@ -262,18 +201,15 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
     }
     apply();
   };
-
   actions.append(
     makeAction("Default", "Restore default aspect lines", () => setSelection(defaultAspectVisible)),
     makeAction("None", "Hide all aspect lines", () => setSelection(() => false)),
     makeAction("All", "Show all aspect lines", () => setSelection(() => true)),
   );
-
   for (const kind of presentKinds) {
     const kindEntries = entries.filter(({ aspect }) => aspect.kind === kind);
     const group = document.createElement("details");
     group.className = "wheel-aspect-group";
-
     const summary = document.createElement("summary");
     summary.className = "wheel-aspect-group-summary";
     const parent = document.createElement("input");
@@ -290,7 +226,6 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
       apply();
     });
     parentCheckboxes.set(kind, parent);
-
     const heading = document.createElement("span");
     heading.className = "wheel-aspect-group-copy";
     const name = document.createElement("strong");
@@ -298,16 +233,13 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
     const category = document.createElement("small");
     category.textContent = kindEntries[0]?.aspect.class === "major" ? "Major" : "Minor";
     heading.append(name, category);
-
     const count = document.createElement("span");
     count.className = "wheel-aspect-group-count";
     count.textContent = String(kindEntries.length);
     summary.append(parent, heading, count);
-
     const children = document.createElement("div");
     children.className = "wheel-aspect-children";
-    for (const entry of kindEntries) {
-      const { aspect } = entry;
+    for (const { aspect } of kindEntries) {
       const label = document.createElement("label");
       label.className = "wheel-aspect-child";
       const checkbox = document.createElement("input");
@@ -316,7 +248,6 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
       checkbox.dataset["aspectId"] = aspect.id;
       checkbox.addEventListener("change", apply);
       childCheckboxes.set(aspect.id, checkbox);
-
       const copy = document.createElement("span");
       copy.className = "wheel-aspect-child-copy";
       const relationship = document.createElement("strong");
@@ -327,13 +258,11 @@ const addAspectControls = (wheel: HTMLElement, entries: readonly WheelAspectEntr
       label.append(checkbox, copy);
       children.append(label);
     }
-
     group.append(summary, children);
     groups.append(group);
   }
-
   controls.append(legend, actions, groups);
-  wheel.prepend(controls);
+  wheel.append(controls);
   apply();
 };
 
@@ -345,11 +274,7 @@ interface TooltipContent {
 
 let tooltipCounter = 0;
 
-const tooltipContent = (
-  target: Element,
-  calculation: AstralCalculation,
-  aspectById: ReadonlyMap<string, Aspect>,
-): TooltipContent | null => {
+const tooltipContent = (target: Element, calculation: AstralCalculation, aspectById: ReadonlyMap<string, Aspect>): TooltipContent | null => {
   const aspectId = target.getAttribute("data-aspect");
   if (aspectId !== null) {
     const aspect = aspectById.get(aspectId);
@@ -367,7 +292,6 @@ const tooltipContent = (
       aspect,
     };
   }
-
   const pointId = target.getAttribute("data-point") as PointId | null;
   if (pointId !== null) {
     const point = calculation.system.points[pointId];
@@ -385,7 +309,6 @@ const tooltipContent = (
       ],
     };
   }
-
   const sign = target.getAttribute("data-sign") as Sign | null;
   if (sign !== null) {
     const index = signOrder.indexOf(sign);
@@ -405,7 +328,6 @@ const tooltipContent = (
       ],
     };
   }
-
   const houseValue = target.getAttribute("data-house");
   if (houseValue !== null) {
     const number = Number(houseValue);
@@ -423,35 +345,24 @@ const tooltipContent = (
       ],
     };
   }
-
   return null;
 };
 
-const addWheelTooltip = (
-  wheel: HTMLElement,
-  calculation: AstralCalculation,
-  entries: readonly WheelAspectEntry[],
-): void => {
-  wheel.querySelector(".wheel-detail")?.remove();
+const addWheelTooltip = (wheel: HTMLElement, calculation: AstralCalculation, entries: readonly WheelAspectEntry[]): void => {
   wheel.classList.add("wheel-tooltip-mode");
-
   const aspectById = new Map(entries.map(({ aspect }) => [aspect.id, aspect] as const));
   const tooltip = document.createElement("div");
   tooltip.className = "wheel-tooltip";
   tooltip.id = `chartWheelTooltip${++tooltipCounter}`;
   tooltip.setAttribute("role", "tooltip");
   tooltip.hidden = true;
-  wheel.append(tooltip);
-
+  wheel.dataset["tooltipId"] = tooltip.id;
+  document.body.append(tooltip);
   let current: Element | null = null;
   let pinned: Element | null = null;
-
   const clearHighlight = (): void => {
-    for (const active of wheel.querySelectorAll(".wheel-tooltip-active, .wheel-tooltip-endpoint")) {
-      active.classList.remove("wheel-tooltip-active", "wheel-tooltip-endpoint");
-    }
+    for (const active of wheel.querySelectorAll(".wheel-tooltip-active, .wheel-tooltip-endpoint")) active.classList.remove("wheel-tooltip-active", "wheel-tooltip-endpoint");
   };
-
   const highlight = (target: Element, content: TooltipContent): void => {
     clearHighlight();
     target.classList.add("wheel-tooltip-active");
@@ -461,7 +372,6 @@ const addWheelTooltip = (
     wheel.querySelector(`.wheel-point[data-point="${content.aspect.a}"]`)?.classList.add("wheel-tooltip-endpoint");
     wheel.querySelector(`.wheel-point[data-point="${content.aspect.b}"]`)?.classList.add("wheel-tooltip-endpoint");
   };
-
   const render = (content: TooltipContent): void => {
     tooltip.replaceChildren();
     const title = document.createElement("strong");
@@ -478,7 +388,6 @@ const addWheelTooltip = (
     }
     tooltip.append(title, list);
   };
-
   const place = (x: number, y: number): void => {
     tooltip.hidden = false;
     tooltip.style.left = "0px";
@@ -495,12 +404,10 @@ const addWheelTooltip = (
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
   };
-
   const anchor = (target: Element): { x: number; y: number } => {
     const bounds = target.getBoundingClientRect();
     return { x: bounds.right, y: bounds.top + bounds.height / 2 };
   };
-
   const show = (target: Element, position?: { x: number; y: number }): void => {
     const content = tooltipContent(target, calculation, aspectById);
     if (content === null) return;
@@ -512,18 +419,13 @@ const addWheelTooltip = (
     const point = position ?? anchor(target);
     place(point.x, point.y);
   };
-
   const hide = (): void => {
     current?.removeAttribute("aria-describedby");
     current = null;
     tooltip.hidden = true;
     clearHighlight();
   };
-
-  const targets = [...wheel.querySelectorAll(
-    ".wheel-sign[data-sign], .wheel-house-sector[data-house], .wheel-point[data-point], .wheel-aspect-hit[data-aspect]",
-  )];
-
+  const targets = [...wheel.querySelectorAll(".wheel-sign[data-sign], .wheel-house-sector[data-house], .wheel-point[data-point], .wheel-aspect-hit[data-aspect]")];
   for (const target of targets) {
     target.addEventListener("pointerenter", (event) => {
       const pointer = event as PointerEvent;
@@ -535,16 +437,11 @@ const addWheelTooltip = (
       const pointer = event as PointerEvent;
       place(pointer.clientX, pointer.clientY);
     });
-    target.addEventListener("pointerleave", () => {
-      if (pinned === null) hide();
-    });
-    target.addEventListener("focus", () => {
-      if (pinned === null) show(target);
-    });
-    target.addEventListener("blur", () => {
-      if (pinned === null) hide();
-    });
-    target.addEventListener("click", () => {
+    target.addEventListener("pointerleave", () => { if (pinned === null) hide(); });
+    target.addEventListener("focus", () => { if (pinned === null) show(target); });
+    target.addEventListener("blur", () => { if (pinned === null) hide(); });
+    target.addEventListener("click", (event) => {
+      event.stopPropagation();
       if (pinned === target) {
         pinned = null;
         hide();
@@ -554,7 +451,6 @@ const addWheelTooltip = (
       show(target);
     });
   }
-
   wheel.addEventListener("click", () => {
     pinned = null;
     hide();
@@ -565,10 +461,10 @@ const addWheelTooltip = (
       hide();
     }
   });
-
   const outsidePointer = (event: PointerEvent): void => {
     if (!wheel.isConnected) {
       document.removeEventListener("pointerdown", outsidePointer, true);
+      tooltip.remove();
       return;
     }
     if (pinned === null || !(event.target instanceof Node) || wheel.contains(event.target)) return;
@@ -578,15 +474,21 @@ const addWheelTooltip = (
   document.addEventListener("pointerdown", outsidePointer, true);
 };
 
-const renderIntoCard = (card: HTMLElement, calculation: AstralCalculation): void => {
-  card.querySelector(".chart-wheel")?.remove();
+const removeRenderedWheel = (host: HTMLElement): void => {
+  const existing = host.querySelector<HTMLElement>(".chart-wheel");
+  const tooltipId = existing?.dataset["tooltipId"];
+  if (tooltipId !== undefined) document.getElementById(tooltipId)?.remove();
+  existing?.remove();
+};
+
+const renderIntoHost = (host: HTMLElement, calculation: AstralCalculation): void => {
+  removeRenderedWheel(host);
   const wheel = renderChartWheel(calculation);
   applyCanonicalWheelGlyphs(wheel);
   const entries = wheelAspectEntries(wheel, calculation);
-  prepareConjunctionGeometry(entries);
   addAspectControls(wheel, entries);
   addWheelTooltip(wheel, calculation, entries);
-  card.append(wheel);
+  host.append(wheel);
 };
 
 const ensureLiveCard = (): HTMLElement | null => {
@@ -604,61 +506,64 @@ const ensureLiveCard = (): HTMLElement | null => {
 const showLiveCalculation = (calculation: AstralCalculation): void => {
   const card = ensureLiveCard();
   if (card === null) return;
-  renderIntoCard(card, calculation);
+  renderIntoHost(card, calculation);
   card.classList.remove("hidden");
 };
 
-const viewerCard = (): HTMLElement | null => {
-  const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
-  if (formattedChart === null) return null;
-  formattedChart.classList.add("chart-wheel-host");
-
-  const existing = document.querySelector<HTMLElement>("#fileChartWheelCard");
-  if (existing !== null && !(existing instanceof HTMLDetailsElement)) existing.remove();
-
-  const current = document.querySelector<HTMLDetailsElement>("#fileChartWheelCard");
-  if (current !== null) {
-    if (current.parentElement !== formattedChart) formattedChart.prepend(current);
-    const body = current.querySelector<HTMLElement>(":scope > .chart-wheel-category-body");
-    if (body !== null) return body;
-    current.remove();
-  }
-
-  const category = document.createElement("details");
-  category.id = "fileChartWheelCard";
-  category.className = "chart-category chart-wheel-card chart-wheel-category";
-  category.open = true;
-
-  const summary = document.createElement("summary");
-  const title = document.createElement("span");
-  title.textContent = "Chart wheel";
-  summary.append(title);
-
-  const body = document.createElement("div");
-  body.className = "chart-category-body chart-wheel-category-body";
-  category.append(summary, body);
-  formattedChart.prepend(category);
-  return body;
+const selectFileView = (id: string): void => {
+  for (const view of document.querySelectorAll<HTMLElement>(".file-view")) view.classList.toggle("active", view.id === id);
+  for (const tab of document.querySelectorAll<HTMLButtonElement>(".subtab")) tab.classList.toggle("active", tab.dataset["view"] === id);
 };
 
+const ensureViewerWheelTab = (): HTMLElement | null => {
+  const viewerCard = document.querySelector<HTMLElement>("#viewerCard");
+  const tabs = viewerCard?.querySelector<HTMLElement>(":scope > .subtabs") ?? null;
+  const rawView = viewerCard?.querySelector<HTMLElement>("#rawView") ?? null;
+  if (viewerCard === null || tabs === null || rawView === null) return null;
+  let tab = tabs.querySelector<HTMLButtonElement>('button[data-view="wheelView"]');
+  if (tab === null) {
+    tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "subtab";
+    tab.dataset["view"] = "wheelView";
+    tab.textContent = "Chart wheel";
+    tab.addEventListener("click", () => selectFileView("wheelView"));
+    const rawTab = tabs.querySelector<HTMLButtonElement>('button[data-view="rawView"]');
+    if (rawTab === null) tabs.append(tab);
+    else tabs.insertBefore(tab, rawTab);
+  }
+  let view = viewerCard.querySelector<HTMLElement>("#wheelView");
+  if (view === null) {
+    view = document.createElement("section");
+    view.id = "wheelView";
+    view.className = "file-view";
+    const host = document.createElement("div");
+    host.id = "wheelChart";
+    host.className = "chart-wheel-tab-host";
+    view.append(host);
+    rawView.before(view);
+  }
+  return view.querySelector<HTMLElement>("#wheelChart");
+};
+
+const viewerWheelHost = (): HTMLElement | null => ensureViewerWheelTab();
+
 export const mountViewerChartWheel = (calculation: AstralCalculation): void => {
-  const card = viewerCard();
-  if (card === null) return;
-  renderIntoCard(card, calculation);
+  const host = viewerWheelHost();
+  if (host === null) return;
+  renderIntoHost(host, calculation);
   lastViewerFingerprint = calculation.provenance.calculationFingerprint;
 };
 
 let lastViewerFingerprint: string | null = null;
 let syncingViewerWheel = false;
 
-const viewerWheelPresent = (): boolean =>
-  document.querySelector("#fileChartWheelCard .chart-wheel svg") !== null;
+const viewerWheelPresent = (): boolean => document.querySelector("#wheelChart .chart-wheel svg") !== null;
 
 const syncViewerWheel = (): void => {
   if (syncingViewerWheel) return;
   const raw = document.querySelector<HTMLElement>("#rawChart")?.textContent?.trim() ?? "";
   if (raw.length === 0) return;
-
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -666,11 +571,9 @@ const syncViewerWheel = (): void => {
     return;
   }
   if (!isAstralWithCalculation(parsed)) return;
-
   const calculation = parsed["astral-calculation"];
   const fingerprint = calculation.provenance.calculationFingerprint;
   if (fingerprint === lastViewerFingerprint && viewerWheelPresent()) return;
-
   syncingViewerWheel = true;
   try {
     mountViewerChartWheel(calculation);
@@ -693,13 +596,6 @@ if (rawChart !== null) {
   });
 }
 
-const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
-if (formattedChart !== null) {
-  new MutationObserver(syncViewerWheel).observe(formattedChart, {
-    childList: true,
-    subtree: false,
-  });
-}
-
+ensureViewerWheelTab();
 window.addEventListener("pageshow", syncViewerWheel);
 queueMicrotask(syncViewerWheel);
