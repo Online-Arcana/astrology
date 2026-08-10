@@ -1,5 +1,3 @@
-import { housePromptRules } from "../housePrompt.js";
-
 export const baseInterpretationRules = [
   "Return only the strict schema.",
   "Fill every required field.",
@@ -47,13 +45,6 @@ export const directInterpretationRules = [
   ...completionInterpretationRules,
 ] as const;
 
-const unitSpecificRules = (task: string): readonly string[] => {
-  const lower = task.toLocaleLowerCase("en-GB");
-  return /\bhouse\b/u.test(lower) && /\binterpretation\b/u.test(lower)
-    ? housePromptRules
-    : [];
-};
-
 export const sectionPrompt = (
   task: string,
   refinements: readonly string[] = [],
@@ -61,6 +52,5 @@ export const sectionPrompt = (
   task.trim(),
   "",
   ...directInterpretationRules,
-  ...unitSpecificRules(task),
   ...refinements,
 ].join("\n");
