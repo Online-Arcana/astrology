@@ -29,10 +29,12 @@ await import("./authorityUi.js");
 
 // Synthesis correction runs before the hierarchy pass. The hierarchy classifies
 // from each reading's preserved canonical title, while the final presentation
-// pass translates the rendered labels into plain customer language.
+// pass translates the rendered labels into plain customer language. The initial
+// state pass then owns the customer-facing default collapse state and its CSS.
 await import("./synthesisCategory.js");
 await import("./viewerHierarchy.js");
 await import("./customerLanguagePass.js");
+await import("./viewerInitialState.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
 

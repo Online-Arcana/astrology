@@ -1,0 +1,54 @@
+.formatted-chart-index [hidden] {
+  display: none !important;
+}
+
+.chart-category:not([open]) > .chart-category-body,
+.chart-reading-group:not([open]) > .chart-reading-group-body,
+.chart-reading:not([open]) > .chart-reading-body,
+.compatibility-bucket:not([open]) > .compatibility-bucket-body,
+.compatibility-domain:not([open]) > .compatibility-domain-body {
+  display: none !important;
+}
+
+.compatibility-sign-filter {
+  border-color: rgba(213, 200, 255, 0.34) !important;
+  background:
+    linear-gradient(135deg, rgba(182, 156, 255, 0.15), rgba(38, 32, 68, 0.82)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0.7rem 1.8rem rgba(0, 0, 0, 0.14);
+}
+
+.compatibility-sign-filter > span {
+  color: #f5f1ff !important;
+  font-size: 0.92rem !important;
+  font-weight: 820 !important;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.compatibility-sign-filter select {
+  min-height: 2.7rem;
+  border: 1px solid rgba(213, 200, 255, 0.42) !important;
+  border-radius: 0.78rem !important;
+  background: #130f26 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  font-weight: 720 !important;
+}
+
+.compatibility-sign-filter select:hover {
+  border-color: rgba(213, 200, 255, 0.64) !important;
+}
+
+.compatibility-sign-filter select:focus,
+.compatibility-sign-filter select:focus-visible {
+  border-color: var(--accent, #b69cff) !important;
+  box-shadow: 0 0 0 0.22rem rgba(182, 156, 255, 0.16) !important;
+  outline: none;
+}
+
+.compatibility-sign-filter select option {
+  background: #130f26;
+  color: #ffffff;
+}
