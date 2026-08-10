@@ -7,7 +7,7 @@ import { parseCalculationRequest } from "../src/interface/request.js";
 const equal = <T>(actual: T, expected: T, message: string): void => {
   if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);
 };
-const assert: (condition: unknown, message: string): asserts condition = (condition, message) => {
+const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) throw new Error(message);
 };
 
