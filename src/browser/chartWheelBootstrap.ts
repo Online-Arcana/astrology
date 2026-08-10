@@ -76,17 +76,22 @@ const showLiveCalculation = (calculation: AstralCalculation): void => {
 };
 
 const viewerCard = (): HTMLElement | null => {
-  const formattedView = document.querySelector<HTMLElement>("#formattedView");
-  if (formattedView === null) return null;
-  const existing = formattedView.querySelector<HTMLElement>("#fileChartWheelCard");
-  if (existing !== null) return existing;
+  const formattedChart = document.querySelector<HTMLElement>("#formattedChart");
+  if (formattedChart === null) return null;
+
+  const existing = document.querySelector<HTMLElement>("#fileChartWheelCard");
+  if (existing !== null) {
+    if (existing.parentElement !== formattedChart) formattedChart.prepend(existing);
+    return existing;
+  }
+
   const card = cardShell(
     "fileChartWheelCard",
     "Deterministic reconstruction",
     "Chart wheel",
-    "This wheel is rebuilt from the deterministic calculation already stored in the .astral file. No additional metadata is required.",
+    "Rebuilt directly from the deterministic calculation stored in this .astral file.",
   );
-  formattedView.prepend(card);
+  formattedChart.prepend(card);
   return card;
 };
 
