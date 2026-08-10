@@ -1,4 +1,4 @@
-import type { CorpusAtom, CorpusClaim } from "../types.js";
+import type { CorpusAtom, CorpusClaim, CorpusSource } from "../types.js";
 
 const neutral = {
   religious: false,
@@ -7,6 +7,24 @@ const neutral = {
   fatalistic: false,
   supernatural: false,
 } as const;
+
+export const pointSources: readonly CorpusSource[] = [
+  {
+    id: "semantic.mirti.black-moon-lilith",
+    title: "Lilith - Black Moon: A Golden Ally in the Astrological Interpretation",
+    author: "Grazia Mirti",
+    publisher: "Constellation News / Astrodienst",
+    editionOrDate: "2020-03-24",
+    role: "semantic",
+    reviewStatus: "approved",
+    allowedSections: ["unfulfilled-wishes-lacks"],
+    notes: [
+      "Reviewed public source: https://www.astro.com/astrology/ivccn_article200506_e.htm",
+      "Approval is limited to the sentence treating Black Moon Lilith as an indicator of unfulfilled wishes, lacks and areas needing closer attention.",
+      "Mythology, religion, spirituality, gender archetypes, medical associations, sexual-orientation claims and other material elsewhere in the article are excluded.",
+    ],
+  },
+] as const;
 
 export const pointClaims: readonly CorpusClaim[] = [
   {
@@ -46,6 +64,16 @@ export const pointClaims: readonly CorpusClaim[] = [
     proposition: "Within the nodal cycle, the South Node can be read as a receiving and integrating phase rather than as evidence of a past life, karmic debt or a predetermined past.",
     tags: ["integration", "receiving", "network cycle"],
     sourceRefs: ["semantic.hand.transits-moon-nodes#node-network-cycle"],
+    neutrality: neutral,
+    confidence: "school-specific",
+  },
+  {
+    id: "point.black-moon-lilith.core.lacks",
+    atomId: "point.black-moon-lilith",
+    category: "core",
+    proposition: "In this reviewed modern interpretation, Black Moon Lilith is used as an indicator of unfulfilled wishes, perceived lacks and areas of life that may call for closer attention.",
+    tags: ["unfulfilled wishes", "perceived lacks", "closer attention", "unmet concerns"],
+    sourceRefs: ["semantic.mirti.black-moon-lilith#unfulfilled-wishes-lacks"],
     neutrality: neutral,
     confidence: "school-specific",
   },
@@ -119,6 +147,22 @@ export const pointAtoms: readonly CorpusAtom[] = [
     doNotInfer: ["past lives", "karmic debt", "past-life talents", "a predetermined past", "what must be left behind"],
     relatedAtomIds: ["point.north-node"],
     sourceIds: ["semantic.hand.transits-moon-nodes"],
+    reviewStatus: "approved",
+  },
+  {
+    id: "point.black-moon-lilith",
+    kind: "entity",
+    displayName: "Black Moon Lilith",
+    plainEnglish: "unfulfilled wishes, perceived lacks and areas needing closer attention",
+    aliases: ["Black Moon Lilith", "Black Moon", "Lilith"],
+    internalIds: ["lilith_mean", "lilith_true"],
+    claimIds: claimsFor("point.black-moon-lilith"),
+    doNotInfer: [
+      "a feminine essence", "a goddess archetype", "demonic meaning", "spiritual femininity", "karma", "past lives",
+      "medical conditions", "fertility or menstruation", "sexual orientation", "trauma", "unconscious material as clinical fact",
+    ],
+    relatedAtomIds: [],
+    sourceIds: ["semantic.mirti.black-moon-lilith"],
     reviewStatus: "approved",
   },
   {
