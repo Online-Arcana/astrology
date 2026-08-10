@@ -1,5 +1,7 @@
-import { decomposeInterpretationUnit } from "../src/interpretation/map/decompose.js";
+import { compileReviewedCorpus } from "../src/interpretation/corpus/data/index.js";
 import { requiredCorpusAtomSet } from "../src/interpretation/corpus/requirements.js";
+import { decomposeInterpretationUnit } from "../src/interpretation/map/decompose.js";
+import { semanticProviderFromCorpus } from "../src/interpretation/map/provider.js";
 import type { JsonRef } from "../src/types/base.js";
 import type { AstralCalculation, InterpretationUnit } from "../src/types/file.js";
 
@@ -137,6 +139,45 @@ test("compatibility separates domain from sign", () => {
     "business",
   ));
   equal(result.ingredients.map(({ atomId }) => atomId).join("|"), "compatibility-domain.business|sign.capricorn", "compatibility decomposition");
+});
+
+test("life-domain recipes keep available house evidence and omit unavailable angles", () => {
+  const careerCalculation = {
+    system: {
+      zodiac: "tropical",
+      ayanamsha: null,
+      points: {
+        midheaven: {
+          id: "midheaven",
+          position: { status: "unavailable", value: null },
+        },
+      },
+      houses: {
+        placidus: {
+          houses: {
+            "10": {
+              number: 10,
+              cusp: { status: "exact", value: { longitudeDegrees: 270, sign: "capricorn" } },
+            },
+          },
+        },
+      },
+      aspects: [],
+      patterns: [],
+      derived: { dominantPlanets: [], dominantSigns: [] },
+    },
+  } as unknown as AstralCalculation;
+  const careerUnit = unit(
+    "tropical.life.careerAndVocation",
+    "life.careerAndVocation",
+    [ref("astral-calculation/system/houses/placidus/houses/10")],
+  );
+  const provider = semanticProviderFromCorpus(compileReviewedCorpus(true));
+  const map = provider.mapFor(careerCalculation, careerUnit);
+  const atoms = map.composition?.ingredients.map(({ atomId }) => atomId) ?? [];
+  assert(atoms.includes("life-domain.careerAndVocation"), "career domain itself must be present");
+  assert(atoms.includes("house.10"), "available career house should be selected by the recipe");
+  equal(atoms.includes("angle.midheaven"), false, "unavailable Midheaven must not enter semantic composition");
 });
 
 console.log(`1..${passed}`);
