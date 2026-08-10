@@ -1,3 +1,4 @@
+import { auditWorldviewText, worldviewFailureMessages } from "../../interpretation/corpus/worldview.js";
 import { forbiddenPatterns, unwantedExamples } from "./catalogue.js";
 import { repairTerminalPunctuation } from "./completion.js";
 import { duplicateMatch, type NarrativeEntry, type PriorNarrative } from "./duplicate.js";
@@ -17,7 +18,8 @@ export type AuditCode =
   | "reference_leakage"
   | "impersonal_voice"
   | "technical_opening"
-  | "technical_density";
+  | "technical_density"
+  | "worldview_assumption";
 
 export interface AuditIssue {
   code: AuditCode;
@@ -40,6 +42,7 @@ export interface FieldAudit {
   value: string;
   repaired: boolean;
   issues: AuditIssue[];
+  worldviewReview: string[];
 }
 
 const placeholders = /^(?:n\/a|none|unknown|tbd|todo|placeholder|\.\.\.)$/iu;
@@ -142,6 +145,21 @@ const styleIssues = (value: string, id: string): AuditIssue[] => {
   return issues;
 };
 
+const worldviewIssues = (value: string, id: string): { issues: AuditIssue[]; review: string[] } => {
+  const audit = auditWorldviewText(value);
+  const hard = audit.findings.filter(({ severity }) => severity === "reject");
+  const review = audit.findings.filter(({ severity }) => severity === "review");
+  return {
+    issues: hard.map((finding) => ({
+      code: "worldview_assumption" as const,
+      message: `${id} violates worldview neutrality: ${finding.reason} (${finding.phrase})`,
+      repairable: false,
+    })),
+    review: worldviewFailureMessages({ safe: true, requiresReview: review.length > 0, findings: review })
+      .map((message) => `${id}: ${message}`),
+  };
+};
+
 export const auditField = (input: string, profile: FieldProfile): FieldAudit => {
   const issues: AuditIssue[] = [];
   const cleaned = clean(input);
@@ -159,6 +177,8 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
   }
 
   issues.push(...styleIssues(value, profile.id));
+  const worldview = worldviewIssues(value, profile.id);
+  issues.push(...worldview.issues);
   issues.push(...semanticIssues(value, {
     id: profile.id,
     ...(profile.semanticField === undefined ? {} : { field: profile.semanticField }),
@@ -184,20 +204,23 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
     value,
     repaired: cleaned.repaired || completed.repaired,
     issues,
+    worldviewReview: worldview.review,
   };
 };
 
 export const auditList = (
   items: readonly string[],
   profile: FieldProfile,
-): { valid: boolean; values: string[]; issues: AuditIssue[] } => {
+): { valid: boolean; values: string[]; issues: AuditIssue[]; worldviewReview: string[] } => {
   const values: string[] = [];
   const issues: AuditIssue[] = [];
+  const worldviewReview: string[] = [];
   const seen = new Set<string>();
   items.forEach((item, index) => {
     const id = `${profile.id}[${index}]`;
     const result = auditField(item, { ...profile, id });
     issues.push(...result.issues);
+    worldviewReview.push(...result.worldviewReview);
     const key = normaliseText(result.value);
     if (seen.has(key)) {
       issues.push({ code: "duplicate", message: `${profile.id} contains duplicate entries`, repairable: true });
@@ -206,7 +229,12 @@ export const auditList = (
       values.push(result.value);
     }
   });
-  return { valid: issues.every((issue) => issue.repairable) && values.length > 0, values, issues };
+  return {
+    valid: issues.every((issue) => issue.repairable) && values.length > 0,
+    values,
+    issues,
+    worldviewReview: [...new Set(worldviewReview)],
+  };
 };
 
 export type { NarrativeEntry, PriorNarrative } from "./duplicate.js";
