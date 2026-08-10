@@ -73,11 +73,19 @@ export const parseSigningKey = (text: string): BrowserSigningKey => {
   };
 };
 
-export const isTestSigningKey = (key: Pick<BrowserSigningKey, "issuer" | "testOnly">): boolean =>
+const hasTestMarker = (key: Pick<BrowserSigningKey, "testOnly">): boolean =>
   key.testOnly?.schema === TEST_SIGNING_KEY_SCHEMA
   && key.testOnly.purpose === "chart-ui-testing"
-  && key.testOnly.warning === "TEST_ONLY_NOT_FOR_PRODUCTION"
-  && key.issuer.startsWith(TEST_KEY_ISSUER_PREFIX);
+  && key.testOnly.warning === "TEST_ONLY_NOT_FOR_PRODUCTION";
+
+const hasTestIssuer = (key: Pick<BrowserSigningKey, "issuer">): boolean =>
+  key.issuer.startsWith(TEST_KEY_ISSUER_PREFIX);
+
+// Either signal is enough to quarantine the bundle from production operations.
+// This prevents simply deleting the marker or changing only the issuer from
+// turning a TEST-ONLY bundle into an accepted production credential.
+export const isTestSigningKey = (key: Pick<BrowserSigningKey, "issuer" | "testOnly">): boolean =>
+  hasTestMarker(key) || hasTestIssuer(key);
 
 const publicRawFromPrivate = async (privatePkcs8: string): Promise<string> => {
   const privateKey = await crypto.subtle.importKey(
@@ -116,6 +124,11 @@ export const validateSigningKey = async (
   key: BrowserSigningKey,
   allowTestOnly = false,
 ): Promise<void> => {
+  const marker = hasTestMarker(key);
+  const issuer = hasTestIssuer(key);
+  if (marker !== issuer) {
+    throw new Error("TEST-ONLY signing identity is inconsistent: its reserved issuer and test marker must either both be present or both be absent");
+  }
   if (isTestSigningKey(key) && !allowTestOnly) {
     throw new Error("TEST-ONLY signing bundles are not valid production signing bundles and cannot be used for normal generation or re-signing");
   }

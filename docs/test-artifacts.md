@@ -4,7 +4,7 @@ The browser includes a development chart tester for exercising the deterministic
 
 A generated test chart contains real deterministic astrology calculation data, while interpretation fields are synthetic Lorem Ipsum placeholders. When no ordinary browser signing identity is available, the tester creates an ephemeral Ed25519 bundle marked `astral-test-signing-key/1.0.0` and signs a chart whose signed provenance contains `astral-test-artifact/1.0.0`.
 
-A test-key artifact is not a production identity. The UI must label it `TEST SIGNATURE — NOT VALID`, the key cannot be persisted in the production passkey vault, and maintenance/canonicalisation cannot use it to sign another chart.
+A test-key artifact is not a production identity. The UI must label it `TEST SIGNATURE — NOT VALID`, the key cannot be persisted in the production passkey vault, and maintenance/canonicalisation cannot use it to sign another chart. Either the reserved TEST issuer or the `testOnly` bundle marker is enough to quarantine a key; one-sided attempts to strip or change those markers are rejected as inconsistent.
 
 ## Package bypass boundary
 
@@ -22,4 +22,10 @@ Opening through the test bypass requires all of the following after the inner `A
 
 Changing a normal file's issuer, adding a test prefix, editing its test marker, or changing its key ID cannot make it eligible. Prefixing an ordinary encrypted package with `ASTRTEST1` also cannot reveal it: the inner ASTRPKG payload must first decrypt with the public test password, which a normal password-protected package will not do.
 
-This does not attempt to prevent someone who already possesses plaintext chart JSON from creating their own test artifact; possession of the plaintext already means confidentiality has been lost. The security property is that an unknown-password real encrypted package cannot be converted into the test bypass without first obtaining its plaintext by the normal decryption path.
+## Threat-model boundary
+
+A random Ed25519 private/public pair has no intrinsic cryptographic bit saying where it was generated. If someone already possesses a test private key and deliberately removes **all** test metadata while also changing its issuer, the raw key material is mathematically indistinguishable from another self-generated Ed25519 key. A client-only application cannot infer that historical origin from the key bytes alone.
+
+That limitation does **not** create a password bypass. To use the public test-package path, the resulting `.astral` must carry the signed test-artifact marker and matching TEST authority and must pass the full integrity/signature checks. Creating such a replacement file requires the chart plaintext first. Someone holding only an unknown-password real `ASTRPKG` container cannot obtain that plaintext by relabelling a key, relabelling the package, or wrapping the ciphertext in `ASTRTEST1`.
+
+Likewise, this design does not attempt to prevent someone who already possesses plaintext chart JSON from creating their own test artifact; possession of the plaintext already means confidentiality has been lost. The security property is that an unknown-password real encrypted package cannot be converted into the test bypass without first obtaining its plaintext by the normal decryption path.

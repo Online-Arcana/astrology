@@ -65,6 +65,29 @@ try {
 }
 assert(!persisted, "TEST-ONLY signing bundles must not be persisted");
 
+const markerStripped = { ...testKey };
+delete markerStripped.testOnly;
+assert(isTestSigningKey(markerStripped), "reserved TEST issuer alone must quarantine a bundle whose marker was stripped");
+let strippedMarkerAccepted = false;
+try {
+  await validateSigningKey(markerStripped, true);
+  strippedMarkerAccepted = true;
+} catch {
+  // Expected: one-sided metadata editing must never produce an accepted identity.
+}
+assert(!strippedMarkerAccepted, "stripping only the test marker must be rejected as inconsistent test identity");
+
+const issuerChanged = { ...testKey, issuer: "astral-browser/local" };
+assert(isTestSigningKey(issuerChanged), "TEST marker alone must quarantine a bundle whose issuer was changed");
+let changedIssuerAccepted = false;
+try {
+  await validateSigningKey(issuerChanged, true);
+  changedIssuerAccepted = true;
+} catch {
+  // Expected: one-sided metadata editing must never produce an accepted identity.
+}
+assert(!changedIssuerAccepted, "changing only the reserved test issuer must be rejected as inconsistent test identity");
+
 const innerMagic = new TextEncoder().encode("ASTRPKGfixture");
 const wrapped = wrapTestPackage(innerMagic);
 assert(new TextDecoder().decode(wrapped.slice(0, TEST_PACKAGE_MAGIC.length)) === TEST_PACKAGE_MAGIC, "test wrapper must have distinct ASTRTEST1 magic");
@@ -99,7 +122,9 @@ console.log("ok 2 - test signing key is unmistakably marked");
 console.log("ok 3 - production validation rejects test signing keys");
 console.log("ok 4 - explicit test validation accepts a cryptographically sound test key");
 console.log("ok 5 - test signing keys cannot enter the credential vault");
-console.log("ok 6 - test package wrapper is distinct and lossless");
-console.log("ok 7 - wrapping an ordinary encrypted package cannot bypass its real password");
-console.log("ok 8 - public test password opens only intentionally test-encrypted transport");
-console.log("1..8");
+console.log("ok 6 - stripping only the test marker remains quarantined and is rejected");
+console.log("ok 7 - changing only the test issuer remains quarantined and is rejected");
+console.log("ok 8 - test package wrapper is distinct and lossless");
+console.log("ok 9 - wrapping an ordinary encrypted package cannot bypass its real password");
+console.log("ok 10 - public test password opens only intentionally test-encrypted transport");
+console.log("1..10");
