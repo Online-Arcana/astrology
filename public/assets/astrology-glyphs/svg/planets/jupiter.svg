@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Jupiter">
+  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;jupiter&quot;, &quot;label&quot;: &quot;Jupiter&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;♃&quot;, &quot;code_points&quot;: [&quot;U+2643&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/jupiter.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(22.206799 238.000000) scale(0.311615 -0.311615)">
+  <path d="M558 0V186H56V250H104Q189 250 250.5 281.0Q312 312 345.5 366.5Q379 421 379 489Q379 564 342.5 603.0Q306 642 250 642Q195 642 158.0 604.5Q121 567 121 501H51Q51 561 75.0 607.0Q99 653 144.0 679.5Q189 706 250 706Q344 706 396.5 648.0Q449 590 449 495Q449 452 436.0 406.5Q423 361 393.5 320.5Q364 280 312 250H558V694H628V0Z"/>
+  </g>
+  </g>
+</svg>

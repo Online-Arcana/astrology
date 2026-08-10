@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Retrograde">
+  <!-- {&quot;category&quot;: &quot;misc&quot;, &quot;slug&quot;: &quot;retrograde&quot;, &quot;label&quot;: &quot;Retrograde&quot;, &quot;type&quot;: &quot;vector-text-abbreviation&quot;, &quot;text&quot;: &quot;℞&quot;, &quot;code_points&quot;: [&quot;U+211E&quot;], &quot;note&quot;: &quot;Common typographic approximation for retrograde.&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/misc/retrograde.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(-6.819760 237.632844) scale(0.146862 -0.146862)">
+  <path d="M371 1327V766H625Q766 766 843.0 839.0Q920 912 920 1047Q920 1181 843.0 1254.0Q766 1327 625 1327ZM913 654Q798 600 625 600H371V0H169V1493H625Q876 1493 1004.5 1379.5Q1133 1266 1133 1047Q1133 875 1055 768L1229 549L1419 783H1651L1344 405L1667 0H1434L1227 260L1015 0H783L1112 405Z"/>
+  </g>
+  </g>
+</svg>

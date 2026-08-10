@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Semi-square">
+  <!-- {&quot;category&quot;: &quot;aspects&quot;, &quot;slug&quot;: &quot;semi_square&quot;, &quot;label&quot;: &quot;Semi-square&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;∠&quot;, &quot;code_points&quot;: [&quot;U+2220&quot;], &quot;note&quot;: &quot;Conventional mathematical angle symbol often used for the semi-square.&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/aspects/semi_square.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(-3.440054 238.000000) scale(0.147354 -0.147354)">
+  <path d="M1609 202V0H175L1128 1493H1370L549 202Z"/>
+  </g>
+  </g>
+</svg>

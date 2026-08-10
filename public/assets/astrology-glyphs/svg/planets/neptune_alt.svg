@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Neptune (form two)">
+  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;neptune_alt&quot;, &quot;label&quot;: &quot;Neptune (form two)&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯉&quot;, &quot;code_points&quot;: [&quot;U+2BC9&quot;], &quot;note&quot;: &quot;Unicode Neptune form two.&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/neptune_alt.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(65.741935 204.666667) scale(0.215054 -0.215054)">
+  <path d="M51 300V868H123V371H130L251 588V792H323V717L407 868H480L323 586V371H528V300H323V208Q365 199 397.5 173.0Q430 147 449.0 109.5Q468 72 468 28Q468 -23 443.5 -64.5Q419 -106 377.5 -130.5Q336 -155 284 -155Q233 -155 191.5 -130.5Q150 -106 125.5 -64.5Q101 -23 101 28Q101 74 120.5 112.0Q140 150 174.0 175.5Q208 201 251 209V300ZM204 371H251V456ZM284 -83Q315 -83 340.5 -68.0Q366 -53 381.0 -27.5Q396 -2 396 28Q396 75 363.5 107.5Q331 140 284 140Q254 140 228.5 125.0Q203 110 188.0 84.5Q173 59 173 28Q173 -18 205.5 -50.5Q238 -83 284 -83Z"/>
+  </g>
+  </g>
+</svg>

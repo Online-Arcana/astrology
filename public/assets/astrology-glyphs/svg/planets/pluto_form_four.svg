@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Pluto form four">
+  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;pluto_form_four&quot;, &quot;label&quot;: &quot;Pluto form four&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯕&quot;, &quot;code_points&quot;: [&quot;U+2BD5&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/pluto_form_four.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(8.063762 212.984060) scale(0.233794 -0.233794)">
+  <path d="M514 371Q450 371 397.5 402.0Q345 433 314.0 485.5Q283 538 283 602Q283 667 314.0 719.5Q345 772 397.5 803.0Q450 834 514 834Q579 834 631.5 803.0Q684 772 715.0 719.5Q746 667 746 602Q746 538 715.0 485.5Q684 433 631.5 402.0Q579 371 514 371ZM514 444Q558 444 594.0 465.0Q630 486 651.5 522.0Q673 558 673 602Q673 646 651.5 682.0Q630 718 594.0 739.5Q558 761 514 761Q470 761 434.0 739.5Q398 718 377.0 682.0Q356 646 356 602Q356 558 377.0 522.0Q398 486 434.0 465.0Q470 444 514 444ZM513 -107Q423 -107 343.5 -76.5Q264 -46 201.5 10.5Q139 67 100.0 144.0Q61 221 52 314L69 382Q100 346 148.0 315.5Q196 285 256.0 262.0Q316 239 381.5 226.0Q447 213 512 213Q600 213 685.5 235.5Q771 258 841.5 296.5Q912 335 953 381L974 314Q966 221 927.0 144.0Q888 67 825.0 10.5Q762 -46 682.5 -76.5Q603 -107 513 -107ZM512 141Q403 141 306.5 167.5Q210 194 136 243Q160 159 216.0 96.5Q272 34 348.5 -0.5Q425 -35 513 -35Q601 -35 678.5 -1.0Q756 33 812.0 95.5Q868 158 892 243Q818 194 721.0 167.5Q624 141 512 141Z"/>
+  </g>
+  </g>
+</svg>

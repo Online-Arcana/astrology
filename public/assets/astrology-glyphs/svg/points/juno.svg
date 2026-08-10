@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Juno">
+  <!-- {&quot;category&quot;: &quot;points&quot;, &quot;slug&quot;: &quot;juno&quot;, &quot;label&quot;: &quot;Juno&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⚵&quot;, &quot;code_points&quot;: [&quot;U+26B5&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/points/juno.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(43.514593 238.000000) scale(0.337942 -0.337942)">
+  <path d="M223 0V108H105V155H223V387L128 292L90 330L185 425H51V479H185L90 574L128 612L223 517V651H277V517L372 612L410 574L315 479H449V425H315L410 330L372 292L277 387V155H388V108H277V0Z"/>
+  </g>
+  </g>
+</svg>
