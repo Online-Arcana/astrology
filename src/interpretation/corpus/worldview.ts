@@ -226,7 +226,7 @@ const finalChartNonInterpretivePath = (path: string): boolean =>
 export const auditWorldviewObject = (value: unknown, path = "$"): WorldviewTextAudit => {
   const findings: WorldviewFinding[] = [];
   const visit = (current: unknown, currentPath: string, key: string | null): void => {
-    if (key === "sourceRefs" || finalChartNonInterpretivePath(currentPath)) return;
+    if (key === "sourceRefs" || key === "forbiddenClaims" || finalChartNonInterpretivePath(currentPath)) return;
     if (typeof current === "string") {
       findings.push(...matchedFindings(current).map((finding) => ({ ...finding, path: currentPath })));
       return;
