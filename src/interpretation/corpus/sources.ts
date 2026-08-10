@@ -116,6 +116,20 @@ export const corpusSources: readonly CorpusSource[] = [
     ["inward-change-pressure", "inward-power-warning"],
     "Fate, transcendence, spiritual-teacher and religious material elsewhere on the page is excluded.",
   ),
+  reviewedHandPage(
+    "semantic.hand.transits-moon-nodes",
+    "The transits of the planets - Transits of the Moon",
+    "https://www.astro.com/astrology/in_hand2_moon_transits_e.htm",
+    ["node-network-cycle", "north-node-initiation", "south-node-consequences"],
+    "Only the Lunar Nodes section describing network interaction and the North/South phases is approved. Other Moon transit sections may contain religious, paranormal or gender-essentialist wording and are excluded.",
+  ),
+  reviewedHandPage(
+    "semantic.hand.lot-fortune-spirit",
+    "The Lot or Part of Fortune",
+    "https://www.astro.com/astrology/in_fortune_e.htm",
+    ["fortune-physical-social-world", "fortune-material-support", "spirit-will-intention", "spirit-chosen-career-direction"],
+    "Only the named neutral passages are approved. Karmic, soul, spiritual-basis-of-illness, death, sex-role and other worldview-dependent material elsewhere in the article is excluded.",
+  ),
 
   {
     id: "semantic.tompkins.contemporary-handbook",
