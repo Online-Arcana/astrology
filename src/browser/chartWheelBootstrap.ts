@@ -21,26 +21,18 @@ const isAstralWithCalculation = (value: unknown): value is Pick<AstralFile, "ast
   return isCalculation((value as { "astral-calculation"?: unknown })["astral-calculation"]);
 };
 
-const cardShell = (id: string, eyebrow: string, heading: string, intro: string): HTMLElement => {
+const cardShell = (id: string, heading: string): HTMLElement => {
   const card = document.createElement("section");
   card.id = id;
   card.className = "card chart-wheel-card";
 
   const header = document.createElement("div");
   header.className = "section-heading";
-  const copy = document.createElement("div");
-  const overline = document.createElement("p");
-  overline.className = "eyebrow";
-  overline.textContent = eyebrow;
   const title = document.createElement("h2");
   title.textContent = heading;
-  copy.append(overline, title);
-  header.append(copy);
+  header.append(title);
 
-  const paragraph = document.createElement("p");
-  paragraph.className = "wheel-intro";
-  paragraph.textContent = intro;
-  card.append(header, paragraph);
+  card.append(header);
   return card;
 };
 
@@ -56,12 +48,7 @@ const ensureLiveCard = (): HTMLElement | null => {
   if (createPanel === null) return null;
   const existing = createPanel.querySelector<HTMLElement>("#liveChartWheelCard");
   if (existing !== null) return existing;
-  const card = cardShell(
-    "liveChartWheelCard",
-    "Deterministic chart",
-    "Your chart wheel",
-    "The astronomical calculation is complete. You can explore the wheel while the interpretation is still being generated.",
-  );
+  const card = cardShell("liveChartWheelCard", "Your chart wheel");
   const progress = createPanel.querySelector<HTMLElement>("#progressCard");
   if (progress === null) createPanel.append(card);
   else progress.insertAdjacentElement("afterend", card);
@@ -85,12 +72,7 @@ const viewerCard = (): HTMLElement | null => {
     return existing;
   }
 
-  const card = cardShell(
-    "fileChartWheelCard",
-    "Deterministic reconstruction",
-    "Chart wheel",
-    "Rebuilt directly from the deterministic calculation stored in this .astral file.",
-  );
+  const card = cardShell("fileChartWheelCard", "Chart wheel");
   formattedChart.prepend(card);
   return card;
 };
