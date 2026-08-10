@@ -27,10 +27,12 @@ await import("./packageWording.js");
 await import("./packageFlow.js");
 await import("./authorityUi.js");
 
-// Synthesis correction runs before the hierarchy pass. The final presentation
-// pass then translates canonical technical names into plain customer language
-// without changing the underlying chart identifiers or data.
+// Synthesis correction runs before the hierarchy pass. Canonical titles are
+// restored only when a late ungrouped reading needs classification. The final
+// presentation pass then translates the completed hierarchy into plain customer
+// language without changing the underlying chart identifiers or data.
 await import("./synthesisCategory.js");
+await import("./viewerRegroupGuard.js");
 await import("./viewerHierarchy.js");
 await import("./customerLanguagePass.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
