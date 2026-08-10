@@ -58,6 +58,28 @@ export interface CorpusSource {
   notes: string[];
 }
 
+export type CorpusAtomKind =
+  | "entity"
+  | "domain"
+  | "style"
+  | "relation"
+  | "condition"
+  | "derived-construct";
+
+export interface CorpusAtom {
+  id: string;
+  kind: CorpusAtomKind;
+  displayName: string;
+  plainEnglish: string;
+  aliases: string[];
+  internalIds: string[];
+  claimIds: string[];
+  doNotInfer: string[];
+  relatedAtomIds: string[];
+  sourceIds: string[];
+  reviewStatus: CorpusReviewStatus;
+}
+
 export type CorpusClaimCategory =
   | "core"
   | "constructive"
