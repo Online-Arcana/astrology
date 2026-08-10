@@ -50,6 +50,87 @@
   min-width: 0;
 }
 
+.wheel-aspect-controls {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  padding: .72rem .82rem .82rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(11, 9, 27, .62);
+}
+
+.wheel-aspect-controls legend {
+  padding: 0 .35rem;
+  color: #f7f3ff;
+  font-size: .86rem;
+  font-weight: 850;
+}
+
+.wheel-aspect-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .42rem;
+  margin-bottom: .7rem;
+}
+
+.wheel-aspect-control-button {
+  min-height: 2.15rem;
+  padding: .42rem .68rem;
+  border-radius: .65rem;
+  font-size: .76rem;
+  font-weight: 800;
+}
+
+.wheel-aspect-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: .42rem;
+}
+
+.wheel-aspect-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .52rem;
+  min-width: 0;
+  padding: .55rem .62rem;
+  border: 1px solid rgba(213, 200, 255, .14);
+  border-radius: .72rem;
+  background: rgba(255, 255, 255, .018);
+  cursor: pointer;
+}
+
+.wheel-aspect-option:hover {
+  border-color: rgba(213, 200, 255, .3);
+  background: rgba(182, 156, 255, .055);
+}
+
+.wheel-aspect-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: .12rem 0 0;
+  accent-color: var(--accent, #b69cff);
+}
+
+.wheel-aspect-option-copy {
+  display: grid;
+  gap: .08rem;
+  min-width: 0;
+}
+
+.wheel-aspect-option-copy strong {
+  color: #f5f1ff;
+  font-size: .78rem;
+  line-height: 1.25;
+}
+
+.wheel-aspect-option-copy small {
+  color: var(--muted, #b8b3cf);
+  font-size: .69rem;
+  line-height: 1.2;
+}
+
 .chart-wheel-graphic {
   width: 100%;
   min-width: 0;
@@ -316,6 +397,19 @@
     font-size: .86rem;
   }
 
+  .wheel-aspect-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wheel-aspect-control-button {
+    width: 100%;
+  }
+
+  .wheel-aspect-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .chart-wheel-graphic {
     padding: .2rem;
     border-radius: .8rem;
@@ -328,5 +422,11 @@
 
   .wheel-detail-list dd {
     margin-bottom: .5rem;
+  }
+}
+
+@container (max-width: 22rem) {
+  .wheel-aspect-options {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

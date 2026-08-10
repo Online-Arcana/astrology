@@ -7,7 +7,7 @@ import { parseCalculationRequest } from "../src/interface/request.js";
 const equal = <T>(actual: T, expected: T, message: string): void => {
   if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);
 };
-const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
+const assert: (condition: unknown, message: string): asserts condition = (condition, message) => {
   if (!condition) throw new Error(message);
 };
 
@@ -103,6 +103,9 @@ await test("browser tools initialise the interactive chart wheel", async () => {
   assert(/chartWheelBootstrap\.js/u.test(tools), "browser-tools entry must import the chart wheel bootstrap so esbuild includes it");
   assert(/astral:calculation/u.test(bootstrap), "chart wheel bootstrap must listen for new deterministic calculations");
   assert(/#rawChart/u.test(bootstrap), "chart wheel bootstrap must reconstruct opened charts from their stored calculation");
+  assert(/wheel-aspect-controls/u.test(bootstrap), "chart wheel must expose aspect-line controls");
+  assert(/aspect\.class === "major"/u.test(bootstrap), "chart wheel default must derive from canonical major aspects");
+  assert(/Restore default aspect lines/u.test(bootstrap) && /Hide all aspect lines/u.test(bootstrap) && /Show all aspect lines/u.test(bootstrap), "chart wheel must provide default, none and all aspect actions");
 });
 
 await test("opened files use an explicit copy-only maintenance path", async () => {

@@ -1,4 +1,4 @@
-import type { Aspect } from "../types/astro.js";
+import type { Aspect, AspectKind } from "../types/astro.js";
 import type { AstralCalculation, AstralFile } from "../types/file.js";
 import { renderChartWheel } from "./chartWheel.js";
 import { applyCanonicalWheelGlyphs } from "./chartWheelGlyphs.js";
@@ -22,7 +22,7 @@ const isAstralWithCalculation = (value: unknown): value is Pick<AstralFile, "ast
   return isCalculation((value as { "astral-calculation"?: unknown })["astral-calculation"]);
 };
 
-const aspectMeanings: Readonly<Record<Aspect["kind"], string>> = {
+const aspectMeanings: Readonly<Record<AspectKind, string>> = {
   conjunction: "The two points act together and intensify one another. Their themes are difficult to separate in this part of the chart.",
   opposition: "The two points pull from opposite sides. The aspect asks for balance, awareness and integration between them.",
   trine: "The two points tend to work together easily. Their themes reinforce one another with relatively little friction.",
@@ -35,6 +35,25 @@ const aspectMeanings: Readonly<Record<Aspect["kind"], string>> = {
   quintile: "The two points are linked through creative or specialised potential that can be developed deliberately.",
   biquintile: "The two points form a strong creative or inventive connection, often expressed through refinement, technique or unusual problem-solving.",
 };
+
+const aspectLabels: Readonly<Record<AspectKind, string>> = {
+  conjunction: "Conjunction",
+  opposition: "Opposition",
+  trine: "Trine",
+  square: "Square",
+  sextile: "Sextile",
+  quincunx: "Quincunx",
+  semisextile: "Semi-sextile",
+  semisquare: "Semi-square",
+  sesquiquadrate: "Sesquiquadrate",
+  quintile: "Quintile",
+  biquintile: "Biquintile",
+};
+
+const aspectOrder = [
+  "conjunction", "opposition", "trine", "square", "sextile",
+  "quincunx", "semisextile", "semisquare", "sesquiquadrate", "quintile", "biquintile",
+] as const satisfies readonly AspectKind[];
 
 const cardShell = (id: string, heading: string): HTMLElement => {
   const card = document.createElement("section");
@@ -51,22 +70,37 @@ const cardShell = (id: string, heading: string): HTMLElement => {
   return card;
 };
 
-const addAspectExplanations = (wheel: HTMLElement, calculation: AstralCalculation): void => {
-  const detail = wheel.querySelector<HTMLElement>(".wheel-detail");
-  if (detail === null) return;
+interface WheelAspectEntry {
+  aspect: Aspect;
+  visible: SVGLineElement | null;
+  hit: SVGLineElement;
+}
 
+const wheelAspectEntries = (wheel: HTMLElement, calculation: AstralCalculation): WheelAspectEntry[] => {
   const visibleAspects = calculation.system.aspects.filter((aspect) =>
     calculation.system.points[aspect.a].position.value !== null
     && calculation.system.points[aspect.b].position.value !== null);
   const hitLines = [...wheel.querySelectorAll<SVGLineElement>(".wheel-aspect-hit")];
 
-  hitLines.forEach((hit, index) => {
+  return hitLines.flatMap((hit, index) => {
     const aspect = visibleAspects[index];
-    if (aspect === undefined) return;
-    const visible = hit.previousElementSibling?.classList.contains("wheel-aspect") === true
-      ? hit.previousElementSibling as SVGLineElement
+    if (aspect === undefined) return [];
+    const previous = hit.previousElementSibling;
+    const visible = previous instanceof SVGLineElement && previous.classList.contains("wheel-aspect")
+      ? previous
       : null;
+    return [{ aspect, visible, hit }];
+  });
+};
+
+const addAspectExplanations = (wheel: HTMLElement, calculation: AstralCalculation): void => {
+  const detail = wheel.querySelector<HTMLElement>(".wheel-detail");
+  if (detail === null) return;
+
+  for (const { aspect, visible, hit } of wheelAspectEntries(wheel, calculation)) {
     hit.dataset["aspect"] = aspect.id;
+    hit.dataset["aspectKind"] = aspect.kind;
+    visible?.setAttribute("data-aspect-kind", aspect.kind);
 
     const showMeaning = (): void => {
       const list = detail.querySelector<HTMLDListElement>(".wheel-detail-list");
@@ -90,7 +124,88 @@ const addAspectExplanations = (wheel: HTMLElement, calculation: AstralCalculatio
     hit.addEventListener("click", showMeaning);
     hit.addEventListener("mouseleave", clearHighlight);
     hit.addEventListener("blur", clearHighlight);
-  });
+  }
+};
+
+const addAspectControls = (wheel: HTMLElement, calculation: AstralCalculation): void => {
+  const entries = wheelAspectEntries(wheel, calculation);
+  if (entries.length === 0) return;
+
+  const presentKinds = aspectOrder.filter((kind) => entries.some(({ aspect }) => aspect.kind === kind));
+  const defaultKinds = new Set<AspectKind>(
+    entries.filter(({ aspect }) => aspect.class === "major").map(({ aspect }) => aspect.kind),
+  );
+  const checkboxes = new Map<AspectKind, HTMLInputElement>();
+
+  const controls = document.createElement("fieldset");
+  controls.className = "wheel-aspect-controls";
+  const legend = document.createElement("legend");
+  legend.textContent = "Aspect lines";
+
+  const actions = document.createElement("div");
+  actions.className = "wheel-aspect-actions";
+  const makeAction = (text: string, ariaLabel: string, run: () => void): HTMLButtonElement => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ghost wheel-aspect-control-button";
+    button.textContent = text;
+    button.setAttribute("aria-label", ariaLabel);
+    button.addEventListener("click", run);
+    return button;
+  };
+
+  const options = document.createElement("div");
+  options.className = "wheel-aspect-options";
+
+  const apply = (): void => {
+    for (const { aspect, visible, hit } of entries) {
+      const enabled = checkboxes.get(aspect.kind)?.checked === true;
+      for (const element of [visible, hit]) {
+        if (element === null) continue;
+        element.style.display = enabled ? "" : "none";
+        element.setAttribute("aria-hidden", String(!enabled));
+      }
+      hit.setAttribute("tabindex", enabled ? "0" : "-1");
+      if (!enabled) visible?.classList.remove("is-active");
+    }
+  };
+
+  const setSelection = (enabled: (kind: AspectKind) => boolean): void => {
+    for (const [kind, checkbox] of checkboxes) checkbox.checked = enabled(kind);
+    apply();
+  };
+
+  actions.append(
+    makeAction("Default", "Restore default aspect lines", () => setSelection((kind) => defaultKinds.has(kind))),
+    makeAction("None", "Hide all aspect lines", () => setSelection(() => false)),
+    makeAction("All", "Show all aspect lines", () => setSelection(() => true)),
+  );
+
+  for (const kind of presentKinds) {
+    const aspects = entries.filter(({ aspect }) => aspect.kind === kind);
+    const label = document.createElement("label");
+    label.className = "wheel-aspect-option";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = defaultKinds.has(kind);
+    checkbox.dataset["aspectKind"] = kind;
+    checkbox.addEventListener("change", apply);
+    checkboxes.set(kind, checkbox);
+
+    const copy = document.createElement("span");
+    copy.className = "wheel-aspect-option-copy";
+    const name = document.createElement("strong");
+    name.textContent = aspectLabels[kind];
+    const meta = document.createElement("small");
+    meta.textContent = `${aspects[0]?.aspect.class === "major" ? "Major" : "Minor"} · ${aspects.length}`;
+    copy.append(name, meta);
+    label.append(checkbox, copy);
+    options.append(label);
+  }
+
+  controls.append(legend, actions, options);
+  wheel.prepend(controls);
+  apply();
 };
 
 const renderIntoCard = (card: HTMLElement, calculation: AstralCalculation): void => {
@@ -98,6 +213,7 @@ const renderIntoCard = (card: HTMLElement, calculation: AstralCalculation): void
   const wheel = renderChartWheel(calculation);
   applyCanonicalWheelGlyphs(wheel);
   addAspectExplanations(wheel, calculation);
+  addAspectControls(wheel, calculation);
   card.append(wheel);
 };
 
