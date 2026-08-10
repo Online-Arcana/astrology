@@ -136,10 +136,9 @@ const plainReadings = (): void => {
       if (explanation.textContent !== description) explanation.textContent = description;
     }
 
-    // The canonical title remains in data-original-title. Once the hierarchy is
-    // complete, keep the visible customer label stable. The regroup guard
-    // explicitly unlocks/restores canonical titles only when a late ungrouped
-    // reading needs to be classified again.
+    // data-original-title remains canonical and is what the hierarchy uses for
+    // classification. The visible summary is therefore free to remain stable,
+    // customer-facing copy without changing the underlying chart semantics.
     reading.dataset["viewerTitleLocked"] = "true";
   }
 };
