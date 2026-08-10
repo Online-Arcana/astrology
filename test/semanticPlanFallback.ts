@@ -94,7 +94,7 @@ test("whole-run failure reconstructs from the same semantic map", async () => {
 
   const result = await runInterpretationPlan(
     calculation,
-    readConfig({ ASTRAL_MAX_RETRIES: "0" }),
+    readConfig({ ASTRAL_MAX_RETRIES: "1" }),
     unavailableConversation,
     {},
     null,
