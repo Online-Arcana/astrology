@@ -1,3 +1,8 @@
+import {
+  interpretiveVoiceContract,
+  semanticRegisterContract,
+} from "../../interpretation/voice/profile.js";
+
 export const worldviewNeutralityRules = [
   "Keep every interpretation religiously and metaphysically agnostic.",
   "Do not assume, assert or imply belief in God or gods, divine will, providence, prayer, angels, demons, heaven, hell, salvation or religious doctrine.",
@@ -20,6 +25,8 @@ export const baseInterpretationRules = [
   "Use only the supplied deterministic astrology and permitted references.",
   "Keep tropical and sidereal factors distinct.",
   "Do not change supplied scores, ranks, levels, relations or availability.",
+  "Astrology has no named astrologer, narrator, oracle or character voice. Do not use first-person opinion or pretend to be a speaker inside the interpretation.",
+  "Treat any corpus or semantic material as private meaning input, not as wording or a style sample.",
   ...worldviewNeutralityRules,
 ] as const;
 
@@ -65,5 +72,9 @@ export const sectionPrompt = (
   task.trim(),
   "",
   ...directInterpretationRules,
+  "",
+  semanticRegisterContract(),
+  "",
+  interpretiveVoiceContract(),
   ...refinements,
 ].join("\n");
