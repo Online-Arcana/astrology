@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { customerReadingDescription, customerReadingTitle } from "../src/browser/customerReadingHelp.js";
 import { displayReadingTitle, readingDescription, stripZodiacPrefix } from "../src/browser/readingHelp.js";
 
 const equal = <T>(actual: T, expected: T, message: string): void => {
@@ -27,7 +28,7 @@ await test("houses use plain-English life-area titles", () => {
   assert(readingDescription("tropical house 8")?.startsWith("House 8 covers intimacy") === true, "House 8 must explain its life area");
 });
 
-await test("machine aspect IDs become readable aspect titles", () => {
+await test("canonical aspect names remain available internally", () => {
   equal(
     displayReadingTitle("tropical aspect part of spirit vertex trine"),
     "Part of Spirit trine Vertex",
@@ -43,9 +44,32 @@ await test("machine aspect IDs become readable aspect titles", () => {
     "Imum Coeli sesquiquadrate Moon",
     "Imum Coeli aspect",
   );
-  const description = readingDescription("tropical aspect imum coeli moon sesquiquadrate") ?? "";
-  assert(description.includes("relationship between Imum Coeli and Moon"), "aspect explainer must name both factors");
-  assert(!/tropical|sidereal/iu.test(description), "aspect explainer must not repeat the chart zodiac basis");
+});
+
+await test("customer aspect titles explain meaning instead of exposing jargon", () => {
+  equal(
+    customerReadingTitle("tropical aspect part of spirit vertex trine"),
+    "Purpose and inner direction + Significant encounters: natural strengths and easy flow",
+    "plain trine title",
+  );
+  equal(
+    customerReadingTitle("tropical aspect north node mean uranus conjunction"),
+    "Growth direction + Uranus: strongly combined influences",
+    "plain conjunction title",
+  );
+  equal(
+    customerReadingTitle("tropical aspect imum coeli moon sesquiquadrate"),
+    "Home and private foundations + Moon: persistent pressure",
+    "plain persistent-pressure title",
+  );
+  const title = customerReadingTitle("tropical aspect imum coeli moon sesquiquadrate");
+  const description = customerReadingDescription("tropical aspect imum coeli moon sesquiquadrate") ?? "";
+  assert(!/tropical|sidereal|sesquiquadrate|imum coeli/iu.test(`${title} ${description}`), "customer aspect copy must not expose internal or obscure technical naming");
+});
+
+await test("customer pattern titles explain the pattern instead of naming it", () => {
+  equal(customerReadingTitle("tropical pattern t square"), "Focused pressure that needs an outlet", "T-square display");
+  equal(customerReadingTitle("tropical pattern grand trine"), "Strong natural flow across the chart", "grand-trine display");
 });
 
 await test("life-section machine labels are customer-facing", () => {
@@ -57,10 +81,12 @@ await test("life-section machine labels are customer-facing", () => {
 await test("overview leads the chart and owns synthesis readings", async () => {
   const source = await readFile("src/browser/viewerHierarchy.ts", "utf8");
   const synthesis = await readFile("src/browser/synthesisCategory.ts", "utf8");
+  const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
   assert(/title\.textContent = "Overview"/u.test(synthesis), "synthesis category must be renamed Overview");
   assert(/host\.prepend\(details\)/u.test(synthesis), "Overview must be moved to the beginning of the chart");
   assert(/navRoot\.prepend\(item\)/u.test(source), "Overview must be moved to the beginning of the index");
   assert(/Integrated chart synthesis/u.test(source) && /Final personal portrait/u.test(source), "Overview must recognise canonical synthesis readings");
+  assert(/"chart-category-synthesis": "Overview"/u.test(customer), "customer presentation must preserve the Overview label");
 });
 
 await test("every ordinary category is organised as category group section", async () => {
@@ -71,14 +97,37 @@ await test("every ordinary category is organised as category group section", asy
   assert(/\.chart-reading-group\{/u.test(source), "reading groups must have customer-facing styling");
 });
 
-await test("aspect and pattern readings are divided into useful groups", async () => {
-  const source = await readFile("src/browser/viewerHierarchy.ts", "utf8");
-  assert(/title: "Aspect patterns"/u.test(source), "patterns must have their own group");
-  assert(/title: "Declination aspects"/u.test(source), "declination aspects must have their own group");
-  assert(/title: "Major planetary aspects"/u.test(source), "major planetary aspects must have their own group");
-  assert(/title: "Major aspects to angles and calculated points"/u.test(source), "major point aspects must have their own group");
-  assert(/title: "Minor planetary aspects"/u.test(source), "minor planetary aspects must have their own group");
-  assert(/title: "Minor aspects to angles and calculated points"/u.test(source), "minor point aspects must have their own group");
+await test("large aspect collections are divided into stable meaning groups", async () => {
+  const hierarchy = await readFile("src/browser/viewerHierarchy.ts", "utf8");
+  const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
+  for (const id of ["patterns", "conjunctions", "oppositions", "trines", "squares", "sextiles", "quincunxes", "semi-sextiles", "semi-squares", "sesquiquadrates", "creative-minor", "declination"]) {
+    assert(hierarchy.includes(`"${id}"`), `aspect hierarchy must include ${id}`);
+  }
+  for (const label of [
+    "Big-picture interaction patterns",
+    "Strongly combined influences",
+    "Balancing opposite pulls",
+    "Natural strengths and easy flow",
+    "Pressure, friction and growth",
+    "Supportive opportunities",
+    "Adjustment and compromise",
+    "Subtle connections",
+    "Low-level friction",
+    "Persistent pressure",
+    "Creative talents and unusual strengths",
+    "Parallel and contrasting influences",
+  ]) {
+    assert(customer.includes(label), `customer aspect group must expose ${label}`);
+  }
+});
+
+await test("customer categories and point groups use meaning-first labels", async () => {
+  const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
+  assert(/"chart-category-points": "Personality and life direction"/u.test(customer), "point category must use a meaning-first label");
+  assert(/"chart-category-houses": "Life areas"/u.test(customer), "houses must be presented as life areas");
+  assert(/"chart-category-aspects": "How your chart factors work together"/u.test(customer), "aspects category must explain what it contains");
+  assert(/"chart-group-points-personal-planets": "Thinking, relating and taking action"/u.test(customer), "personal planets group must describe its meaning");
+  assert(/"chart-group-points-nodes-points": "Life direction and significant turning points"/u.test(customer), "technical points group must describe its meaning");
 });
 
 await test("compatibility viewer has group domain section hierarchy and a styled sign filter", async () => {
@@ -111,10 +160,20 @@ await test("nested index links open their complete details path", async () => {
   assert(/parent instanceof HTMLDetailsElement/u.test(source), "nested navigation must open intermediate groups before scrolling");
 });
 
+await test("late regrouping preserves canonical classification without exposing it", async () => {
+  const guard = await readFile("src/browser/viewerRegroupGuard.ts", "utf8");
+  const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
+  assert(/data-original-title|originalTitle/u.test(guard), "regroup guard must use the stored canonical title");
+  assert(/viewerTitleLocked.*false/u.test(guard), "regroup guard must temporarily unlock titles for classification");
+  assert(/viewerTitleLocked.*true/u.test(customer), "customer pass must lock the final visible wording");
+});
+
 await test("viewer observers remain scoped to formatted chart UI", async () => {
   const source = await readFile("src/browser/viewerEnhancements.ts", "utf8");
   const hierarchy = await readFile("src/browser/viewerHierarchy.ts", "utf8");
-  assert(!/observe\(document\.body/u.test(source) && !/observe\(document\.body/u.test(hierarchy), "viewer must not install a page-wide observer");
+  const customer = await readFile("src/browser/customerLanguagePass.ts", "utf8");
+  const guard = await readFile("src/browser/viewerRegroupGuard.ts", "utf8");
+  assert(!/observe\(document\.body/u.test(source) && !/observe\(document\.body/u.test(hierarchy) && !/observe\(document\.body/u.test(customer) && !/observe\(document\.body/u.test(guard), "viewer must not install a page-wide observer");
   assert(/#formattedChart/u.test(source) && /#formattedView/u.test(source), "viewer observers must stay scoped to formatted-chart containers");
 });
 
