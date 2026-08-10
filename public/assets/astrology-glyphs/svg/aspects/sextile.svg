@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Sextile">
+  <!-- {&quot;category&quot;: &quot;aspects&quot;, &quot;slug&quot;: &quot;sextile&quot;, &quot;label&quot;: &quot;Sextile&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⚹&quot;, &quot;code_points&quot;: [&quot;U+26B9&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/aspects/sextile.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(-2.971963 262.672897) scale(0.411215 -0.411215)">
+  <path d="M207 83 163 108 274 302H51V353H274L163 547L207 572L318 379L430 572L474 547L362 353H586V302H362L474 108L430 83L318 277Z"/>
+  </g>
+  </g>
+</svg>

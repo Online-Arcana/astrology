@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Transpluto">
+  <!-- {&quot;category&quot;: &quot;points&quot;, &quot;slug&quot;: &quot;transpluto&quot;, &quot;label&quot;: &quot;Transpluto&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯗&quot;, &quot;code_points&quot;: [&quot;U+2BD7&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/points/transpluto.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(51.081683 226.019802) scale(0.272277 -0.272277)">
+  <path d="M282 -44Q218 -44 165.5 -13.0Q113 18 82.0 71.0Q51 124 51 188Q51 246 77.0 295.0Q103 344 147.0 376.0Q191 408 247 416V576H159L284 764L407 576H319V416Q375 407 419.0 375.0Q463 343 488.5 294.5Q514 246 514 188Q514 124 483.0 71.0Q452 18 399.5 -13.0Q347 -44 282 -44ZM282 349Q246 349 214.5 334.0Q183 319 161 294Q182 268 213.5 252.5Q245 237 282 237Q319 237 350.5 252.5Q382 268 404 293Q381 319 349.5 334.0Q318 349 282 349ZM282 26Q326 26 363.0 48.0Q400 70 422.0 107.0Q444 144 444 188Q444 210 438 232Q407 202 367.5 185.5Q328 169 282 169Q237 169 197.5 185.0Q158 201 127 231Q121 210 121 188Q121 144 143.0 107.0Q165 70 201.5 48.0Q238 26 282 26Z"/>
+  </g>
+  </g>
+</svg>

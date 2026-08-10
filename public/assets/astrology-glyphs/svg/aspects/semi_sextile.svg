@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Semi-sextile">
+  <!-- {&quot;category&quot;: &quot;aspects&quot;, &quot;slug&quot;: &quot;semi_sextile&quot;, &quot;label&quot;: &quot;Semi-sextile&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⚺&quot;, &quot;code_points&quot;: [&quot;U+26BA&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/aspects/semi_sextile.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(-5.872340 230.978723) scale(0.468085 -0.468085)">
+  <path d="M51 0V71H232L51 440H129L286 109L443 440H521L340 71H521V0Z"/>
+  </g>
+  </g>
+</svg>

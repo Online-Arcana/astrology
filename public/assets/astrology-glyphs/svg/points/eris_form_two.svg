@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Eris form two">
+  <!-- {&quot;category&quot;: &quot;points&quot;, &quot;slug&quot;: &quot;eris_form_two&quot;, &quot;label&quot;: &quot;Eris form two&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯱&quot;, &quot;code_points&quot;: [&quot;U+2BF1&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/points/eris_form_two.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(59.552863 215.224670) scale(0.242291 -0.242291)">
+  <path d="M284 -94 159 94H247V354Q191 362 147.0 394.0Q103 426 77.0 475.0Q51 524 51 582Q51 647 82.0 699.5Q113 752 165.5 783.0Q218 814 282 814Q347 814 399.5 783.0Q452 752 483.0 699.5Q514 647 514 582Q514 524 488.5 475.5Q463 427 419.0 395.0Q375 363 319 354V94H407ZM282 424Q326 424 362.0 445.0Q398 466 419.5 502.0Q441 538 441 582Q441 626 419.5 662.0Q398 698 362.0 719.5Q326 741 282 741Q238 741 202.0 719.5Q166 698 145.0 662.0Q124 626 124 582Q124 538 145.0 502.0Q166 466 202.0 445.0Q238 424 282 424Z"/>
+  </g>
+  </g>
+</svg>

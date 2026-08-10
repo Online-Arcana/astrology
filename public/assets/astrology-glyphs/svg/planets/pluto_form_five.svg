@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Pluto form five">
+  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;pluto_form_five&quot;, &quot;label&quot;: &quot;Pluto form five&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯖&quot;, &quot;code_points&quot;: [&quot;U+2BD6&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/pluto_form_five.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(6.456790 209.934156) scale(0.226337 -0.226337)">
+  <path d="M123 362Q123 277 155.0 202.0Q187 127 244.0 70.0Q301 13 376.0 -19.5Q451 -52 537 -52Q580 -52 621 -43Q659 3 689.0 69.0Q719 135 736.0 210.5Q753 286 753 361Q753 438 735.0 514.0Q717 590 686.5 656.0Q656 722 617 768Q578 776 537 776Q452 776 377.0 744.0Q302 712 245.0 655.0Q188 598 155.5 523.0Q123 448 123 362ZM825 361Q825 256 800.5 162.5Q776 69 730 -4Q796 31 845.5 86.5Q895 142 923.0 212.5Q951 283 951 362Q951 441 923.5 511.5Q896 582 846.5 637.5Q797 693 731 728Q776 655 800.5 561.5Q825 468 825 361ZM537 -124Q436 -124 348.0 -86.0Q260 -48 193.0 18.5Q126 85 88.5 173.5Q51 262 51 362Q51 463 89.0 551.0Q127 639 193.5 706.0Q260 773 348.5 810.5Q437 848 537 848Q638 848 726.0 810.0Q814 772 881.0 705.5Q948 639 985.5 551.0Q1023 463 1023 362Q1023 261 985.0 173.0Q947 85 880.5 18.0Q814 -49 726.0 -86.5Q638 -124 537 -124Z"/>
+  </g>
+  </g>
+</svg>

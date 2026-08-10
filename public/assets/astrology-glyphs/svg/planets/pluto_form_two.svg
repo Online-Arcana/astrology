@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Pluto form two">
+  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;pluto_form_two&quot;, &quot;label&quot;: &quot;Pluto form two&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯓&quot;, &quot;code_points&quot;: [&quot;U+2BD3&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/pluto_form_two.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(14.754478 202.067439) scale(0.231823 -0.231823)">
+  <path d="M490 331Q426 331 373.5 362.0Q321 393 290.0 445.5Q259 498 259 562Q259 627 290.0 679.5Q321 732 373.5 763.0Q426 794 490 794Q555 794 607.5 763.0Q660 732 691.0 679.5Q722 627 722 562Q722 498 691.0 445.5Q660 393 607.5 362.0Q555 331 490 331ZM490 404Q534 404 570.0 425.0Q606 446 627.5 482.0Q649 518 649 562Q649 606 627.5 642.0Q606 678 570.0 699.5Q534 721 490 721Q446 721 410.0 699.5Q374 678 353.0 642.0Q332 606 332 562Q332 518 353.0 482.0Q374 446 410.0 425.0Q446 404 490 404ZM313 -15V58H453V153Q372 160 300.5 193.5Q229 227 173.5 283.0Q118 339 83.0 412.0Q48 485 41 571H114Q121 495 153.0 431.5Q185 368 236.0 321.5Q287 275 351.5 249.5Q416 224 489 224Q562 224 626.5 249.5Q691 275 741.5 321.5Q792 368 824.0 431.5Q856 495 863 571H936Q929 485 894.5 412.0Q860 339 804.5 283.0Q749 227 677.5 193.5Q606 160 525 153V58H665V-15H525V-155H453V-15Z"/>
+  </g>
+  </g>
+</svg>

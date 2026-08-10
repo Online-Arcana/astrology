@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Opposition">
+  <!-- {&quot;category&quot;: &quot;aspects&quot;, &quot;slug&quot;: &quot;opposition&quot;, &quot;label&quot;: &quot;Opposition&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;☍&quot;, &quot;code_points&quot;: [&quot;U+260D&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/aspects/opposition.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(-2.364188 254.525038) scale(0.333839 -0.333839)">
+  <path d="M227 54Q181 54 143.5 76.5Q106 99 83.5 136.5Q61 174 61 220Q61 266 83.5 303.5Q106 341 143.5 363.5Q181 386 227 386Q278 386 321 356L414 449Q388 487 388 538Q388 583 410.5 621.0Q433 659 470.5 681.5Q508 704 554 704Q600 704 637.5 681.5Q675 659 697.5 621.0Q720 583 720 538Q720 493 697.5 455.0Q675 417 637.5 394.5Q600 372 554 372Q501 372 457 403L365 311Q393 271 393 220Q393 175 370.5 137.0Q348 99 310.5 76.5Q273 54 227 54ZM554 434Q582 434 605.5 448.0Q629 462 643.5 486.0Q658 510 658 538Q658 565 644.0 589.0Q630 613 606.5 627.5Q583 642 554 642Q526 642 502.0 627.5Q478 613 464.0 589.5Q450 566 450 538Q450 510 464.5 486.0Q479 462 502.5 448.0Q526 434 554 434ZM227 116Q255 116 278.5 130.0Q302 144 316.5 168.0Q331 192 331 220Q331 249 316.5 272.5Q302 296 278.5 310.0Q255 324 227 324Q200 324 176.0 310.0Q152 296 137.5 272.5Q123 249 123 220Q123 192 137.0 168.5Q151 145 175.0 130.5Q199 116 227 116Z"/>
+  </g>
+  </g>
+</svg>

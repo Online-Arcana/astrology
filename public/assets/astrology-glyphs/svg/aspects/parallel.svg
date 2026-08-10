@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Parallel">
+  <!-- {&quot;category&quot;: &quot;aspects&quot;, &quot;slug&quot;: &quot;parallel&quot;, &quot;label&quot;: &quot;Parallel&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;∥&quot;, &quot;code_points&quot;: [&quot;U+2225&quot;], &quot;note&quot;: &quot;Conventional mathematical symbol.&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/aspects/parallel.svg&quot;} -->
+  <rect width="100%" height="100%" fill="none"/>
+  <g fill="#000000" stroke="none">
+  <g transform="translate(72.154685 190.226078) scale(0.109073 -0.109073)">
+  <path d="M272 1579H432V-438H272ZM592 1579H752V-438H592Z"/>
+  </g>
+  </g>
+</svg>
