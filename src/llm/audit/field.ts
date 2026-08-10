@@ -17,6 +17,8 @@ export type AuditCode =
   | "cross_field_leakage"
   | "reference_leakage"
   | "impersonal_voice"
+  | "interpreter_first_person"
+  | "semantic_register_leakage"
   | "technical_opening"
   | "technical_density"
   | "worldview_assumption";
@@ -35,6 +37,8 @@ export interface FieldProfile {
   priorFields?: readonly PriorNarrative[];
   fieldLexicons?: Readonly<Record<string, readonly string[]>>;
   semanticField?: string;
+  /** Private corpus propositions used only to detect overly close wording reuse. */
+  semanticPropositions?: readonly string[];
 }
 
 export interface FieldAudit {
@@ -49,7 +53,9 @@ const placeholders = /^(?:n\/a|none|unknown|tbd|todo|placeholder|\.\.\.)$/iu;
 const badFormat = /```|^\s{0,3}#{1,6}\s|^\s*[-*+]\s+/mu;
 const label = /^\s*[\p{L}\p{N} _-]{2,40}:\s*/u;
 const secondPerson = /\b(?:you|your|yours|yourself|tú|tu|tus|te|ti|usted|ustedes|su|sus|contigo)\b/iu;
+const interpreterFirstPerson = /\b(?:I|me|my|mine|myself|we|us|our|ours|ourselves|yo|mí|mío|mía|míos|mías|me|nosotros|nosotras|nuestro|nuestra|nuestros|nuestras)\b/iu;
 const impersonal = /\b(?:the native|this placement (?:indicates|suggests|shows|reveals)|this aspect (?:indicates|suggests|shows|reveals)|the chart (?:indicates|suggests|shows|reveals)|one may find|the individual)\b/iu;
+const semanticRegisterTerms = /\b(?:interpretation map|semantic register|semantic input|corpus atom|corpus atoms|corpus claim|corpus claims|source claim|source claims|claim id|claim ids|atom id|atom ids|calculationvariant|permittedsourcerefs|sourcerefs|compiler proposition|compiler propositions)\b/iu;
 const technicalTerms = [
   "sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune", "pluto",
   "aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces",
@@ -99,7 +105,26 @@ const clean = (value: string): { value: string; repaired: boolean; removed: bool
   return { value: text, repaired, removed };
 };
 
-const styleIssues = (value: string, id: string): AuditIssue[] => {
+const closeSemanticCopy = (
+  value: string,
+  propositions: readonly string[],
+): string | null => {
+  const outputSentences = sentences(value).filter((sentence) => normaliseText(sentence).split(" ").length >= 6);
+  for (const proposition of propositions) {
+    const normalProposition = normaliseText(proposition);
+    if (normalProposition.split(" ").length < 6) continue;
+    for (const sentence of outputSentences) {
+      const normalSentence = normaliseText(sentence);
+      const shorter = normalSentence.length <= normalProposition.length ? normalSentence : normalProposition;
+      const longer = normalSentence.length > normalProposition.length ? normalSentence : normalProposition;
+      if (shorter.length >= 42 && longer.includes(shorter)) return proposition;
+      if (cosine(sentence, proposition) >= 0.93) return proposition;
+    }
+  }
+  return null;
+};
+
+const styleIssues = (value: string, id: string, profile: FieldProfile): AuditIssue[] => {
   if (isTitle(id)) return [];
   const issues: AuditIssue[] = [];
   const leak = leakedReferences(value, id);
@@ -107,6 +132,28 @@ const styleIssues = (value: string, id: string): AuditIssue[] => {
     issues.push({
       code: "reference_leakage",
       message: `${id} contains internal JSON references outside sourceRefs: ${leak.references.join(", ")}`,
+      repairable: false,
+    });
+  }
+  if (semanticRegisterTerms.test(value)) {
+    issues.push({
+      code: "semantic_register_leakage",
+      message: `${id} exposes private corpus/compiler language instead of user-facing interpretation`,
+      repairable: false,
+    });
+  }
+  const copied = closeSemanticCopy(value, profile.semanticPropositions ?? []);
+  if (copied !== null) {
+    issues.push({
+      code: "semantic_register_leakage",
+      message: `${id} reproduces corpus proposition wording too closely instead of rendering the meaning in the interpretive voice`,
+      repairable: false,
+    });
+  }
+  if (interpreterFirstPerson.test(value)) {
+    issues.push({
+      code: "interpreter_first_person",
+      message: `${id} speaks as an astrologer or narrator; Astrology has no first-person character voice`,
       repairable: false,
     });
   }
@@ -176,7 +223,7 @@ export const auditField = (input: string, profile: FieldProfile): FieldAudit => 
     issues.push({ code: "format", message: `${profile.id} is too long`, repairable: false });
   }
 
-  issues.push(...styleIssues(value, profile.id));
+  issues.push(...styleIssues(value, profile.id, profile));
   const worldview = worldviewIssues(value, profile.id);
   issues.push(...worldview.issues);
   issues.push(...semanticIssues(value, {
