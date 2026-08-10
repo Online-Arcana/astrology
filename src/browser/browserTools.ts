@@ -27,9 +27,11 @@ await import("./packageWording.js");
 await import("./packageFlow.js");
 await import("./authorityUi.js");
 
-// This observer is scoped to the formatted chart host and only performs
-// idempotent category moves after a chart has been rendered.
+// Synthesis correction runs before the final hierarchy pass so late category
+// moves are normalised into Overview -> group -> section rather than fighting
+// the customer-facing navigation structure.
 await import("./synthesisCategory.js");
+await import("./viewerHierarchy.js");
 const { initialiseMaintenanceAuditUi } = await import("./maintenanceAuditUi.js");
 initialiseMaintenanceAuditUi();
 
