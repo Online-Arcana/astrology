@@ -9,6 +9,7 @@ if (document.getElementById(stylesheetId) === null) {
 }
 
 const host = document.querySelector<HTMLElement>("#formattedChart");
+const formattedView = document.querySelector<HTMLElement>("#formattedView");
 
 const collapsibleSelector = [
   "details.chart-category",
@@ -47,6 +48,25 @@ const structuralAddition = (record: MutationRecord): boolean => [...record.added
   if (node.matches(collapsibleSelector)) return true;
   return node.querySelector(collapsibleSelector) !== null;
 });
+
+if (formattedView !== null) {
+  formattedView.addEventListener("click", (event) => {
+    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>(
+      "#formattedChartIndex .formatted-index-row > a[href^='#']",
+    );
+    if (link === null || link === undefined) return;
+
+    const row = link.closest<HTMLElement>(".formatted-index-row");
+    const item = row?.parentElement;
+    const children = item?.querySelector<HTMLUListElement>(":scope > ul") ?? null;
+    const toggle = row?.querySelector<HTMLButtonElement>(":scope > .formatted-index-branch-toggle") ?? null;
+    if (children === null || toggle === null) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    toggle.click();
+  }, { capture: true });
+}
 
 if (host !== null) {
   let timer = 0;
