@@ -114,9 +114,6 @@ const houseGroup = (title: string): GroupMeta | null => {
   return groups.find(([titles]) => titles.includes(title))?.[1] ?? null;
 };
 
-const isAngleOrPoint = (title: string): boolean =>
-  /\b(?:Ascendant|Descendant|Midheaven|Imum Coeli|Vertex|Antivertex|Node|Lilith|Part of Fortune|Part of Spirit|East Point)\b/iu.test(title);
-
 const aspectGroup = (title: string): GroupMeta => {
   if (/(?:T-square|Grand trine|Grand cross|Yod|Mystic rectangle|Grand sextile|Thor's hammer|Kite)/iu.test(title)) {
     return { id: "patterns", title: "Aspect patterns" };
@@ -124,12 +121,16 @@ const aspectGroup = (title: string): GroupMeta => {
   if (/\b(?:parallel|contra-?parallel|declination)\b/iu.test(title)) {
     return { id: "declination", title: "Declination aspects" };
   }
-  const minor = /\b(?:quincunx|semi-sextile|semi-square|sesquiquadrate|quintile|biquintile)\b/iu.test(title);
-  const points = isAngleOrPoint(title);
-  if (minor && points) return { id: "minor-points", title: "Minor aspects to angles and calculated points" };
-  if (minor) return { id: "minor-planets", title: "Minor planetary aspects" };
-  if (points) return { id: "major-points", title: "Major aspects to angles and calculated points" };
-  if (/\b(?:conjunct|opposite|trine|square|sextile)\b/iu.test(title)) return { id: "major-planets", title: "Major planetary aspects" };
+  if (/\bquincunx\b/iu.test(title)) return { id: "quincunxes", title: "Quincunxes" };
+  if (/\bsemi-sextile\b/iu.test(title)) return { id: "semi-sextiles", title: "Semi-sextiles" };
+  if (/\bsemi-square\b/iu.test(title)) return { id: "semi-squares", title: "Semi-squares" };
+  if (/\bsesquiquadrate\b/iu.test(title)) return { id: "sesquiquadrates", title: "Sesquiquadrates" };
+  if (/\b(?:quintile|biquintile)\b/iu.test(title)) return { id: "creative-minor", title: "Quintiles and biquintiles" };
+  if (/\bconjunct(?:ion)?\b/iu.test(title)) return { id: "conjunctions", title: "Conjunctions" };
+  if (/\b(?:opposite|opposition)\b/iu.test(title)) return { id: "oppositions", title: "Oppositions" };
+  if (/\btrine\b/iu.test(title)) return { id: "trines", title: "Trines" };
+  if (/\bsquare\b/iu.test(title)) return { id: "squares", title: "Squares" };
+  if (/\bsextile\b/iu.test(title)) return { id: "sextiles", title: "Sextiles" };
   return { id: "other-aspects", title: "Other aspect readings" };
 };
 
@@ -165,6 +166,21 @@ const groupFor = (categoryId: string, title: string): GroupMeta => {
       if (/(?:aspect|pattern)/iu.test(title)) return { id: "aspect-calculations", title: "Aspect calculations" };
       return { id: "other-technical", title: "Other technical data" };
     default: return { id: "readings", title: "Readings" };
+  }
+};
+
+const groupOrder = (categoryId: string): readonly string[] => {
+  switch (categoryId) {
+    case "chart-category-synthesis": return ["at-a-glance"];
+    case "chart-category-general": return ["core-themes"];
+    case "chart-category-relationships": return ["love-partnership", "family-home", "friends-community", "relationships-connection"];
+    case "chart-category-work": return ["career-public", "money-business", "work-contribution"];
+    case "chart-category-growth": return ["development", "challenge-change", "wellbeing", "spirituality"];
+    case "chart-category-points": return ["luminaries-angles", "personal-planets", "social-planets", "outer-planets", "nodes-points"];
+    case "chart-category-houses": return ["identity-resources-everyday", "home-creativity-routines", "partnerships-intimacy-worldview", "career-community-inner-life", "other-houses"];
+    case "chart-category-aspects": return ["patterns", "conjunctions", "oppositions", "trines", "squares", "sextiles", "quincunxes", "semi-sextiles", "semi-squares", "sesquiquadrates", "creative-minor", "declination", "other-aspects"];
+    case "chart-category-technical": return ["foundations", "structure", "aspect-calculations", "other-technical"];
+    default: return ["readings"];
   }
 };
 
@@ -233,7 +249,17 @@ const groupCategories = (): void => {
       selected.readings.push(reading);
       grouped.set(meta.id, selected);
     }
-    const groups = [...grouped.values()].map(({ meta, readings: selected }) => makeGroup(category.id, meta, selected));
+    const order = groupOrder(category.id);
+    const groups = [...grouped.entries()]
+      .sort(([left], [right]) => {
+        const leftIndex = order.indexOf(left);
+        const rightIndex = order.indexOf(right);
+        if (leftIndex < 0 && rightIndex < 0) return left.localeCompare(right, "en-GB");
+        if (leftIndex < 0) return 1;
+        if (rightIndex < 0) return -1;
+        return leftIndex - rightIndex;
+      })
+      .map(([, { meta, readings: selected }]) => makeGroup(category.id, meta, selected));
     body.replaceChildren(...groups);
     const count = category.querySelector<HTMLElement>(":scope > summary .chart-category-count");
     if (count !== null) count.textContent = `${groups.length} group${groups.length === 1 ? "" : "s"}`;
