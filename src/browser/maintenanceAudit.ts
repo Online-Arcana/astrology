@@ -35,11 +35,32 @@ interface ParsedUnit {
 const auditCache = new Map<string, OpenedInterpretationAudit>();
 const maximumCachedAudits = 4;
 
-const auditKey = (file: AstralFile): string => [
-  file.crc.sha256,
-  file["astral-calculation"].provenance.calculationFingerprint,
-  file["astral-chart"].provenance.generatedAt,
-].join(":");
+const auditKey = (file: AstralFile): string => {
+  const calculationProvenance = file["astral-calculation"].provenance;
+  const chartProvenance = file["astral-chart"].provenance;
+  const sha256 = file.crc.sha256;
+  const calculationFingerprint = calculationProvenance?.calculationFingerprint;
+  const generatedAt = chartProvenance?.generatedAt;
+
+  if (typeof sha256 === "string" && sha256.length > 0) {
+    return [
+      sha256,
+      typeof calculationFingerprint === "string" ? calculationFingerprint : "",
+      typeof generatedAt === "string" ? generatedAt : "",
+    ].join(":");
+  }
+
+  // Older or deliberately minimal files may predate provenance metadata and
+  // test fixtures may omit CRC data entirely. The cache is only an optimisation,
+  // so fall back to the actual audited content instead of collapsing all such
+  // files onto one empty key. This also makes edited legacy files re-audit rather
+  // than reusing a stale result from an earlier in-memory version.
+  return `content:${JSON.stringify({
+    calculation: file["astral-calculation"],
+    chart: file["astral-chart"],
+    authority: file.authority,
+  })}`;
+};
 
 const cloneAudit = (value: OpenedInterpretationAudit): OpenedInterpretationAudit => ({
   complete: value.complete,
