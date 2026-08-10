@@ -100,15 +100,31 @@ const specialised = (
   }
 };
 
+const safeMapOwnedFallback = (
+  map: InterpretationMap,
+  key: string,
+): string => {
+  if (key === "title") return map.subject.title;
+  const domain = cleanConcept(map.subject.plainEnglishDomain)
+    ?? cleanConcept(map.subject.title)
+    ?? "this chart pattern";
+  return `You may notice ${domain} becoming relevant here, with context shaping how you choose to respond.`;
+};
+
 /**
  * Deterministic prose belongs to the interpretive voice, not to source text.
  * The map contributes approved concepts; fixed application templates own the
  * sentence structure. Proposition text is intentionally never copied here.
+ *
+ * Once an InterpretationMap has passed validation, deterministic reconstruction
+ * must remain inside that semantic authority. A corpus-backed unit must never
+ * fall through to the legacy XML topic interpolation simply because one prose
+ * template was rejected by the worldview scanner.
  */
 export const semanticFallbackText = (
   map: InterpretationMap,
   key: string,
-): string | null => {
+): string => {
   if (key === "title") return map.subject.title;
 
   const buckets: readonly (keyof InterpretationMap["semantics"])[] = constructive.has(key)
@@ -139,5 +155,14 @@ export const semanticFallbackText = (
   }
 
   const worldview = auditWorldviewText(value);
-  return worldview.safe && !worldview.requiresReview ? value : null;
+  if (worldview.safe && !worldview.requiresReview) return value;
+
+  const fallback = safeMapOwnedFallback(map, key);
+  const fallbackAudit = auditWorldviewText(fallback);
+  if (fallbackAudit.safe && !fallbackAudit.requiresReview) return fallback;
+
+  // validateInterpretationMap() has already required an agnostic subject. This
+  // final sentence is deliberately minimal but still map-owned and never uses
+  // an internal unit label or the legacy XML catalogue.
+  return `You may notice ${map.subject.plainEnglishDomain} in this part of your experience.`;
 };
