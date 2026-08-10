@@ -67,7 +67,7 @@ await test("chart index is on the right and collapsed by default", async () => {
   const source = await readFile("src/browser/viewerEnhancements.ts", "utf8");
   const styles = await readFile("public/viewer-enhancements.css", "utf8");
   assert(/contents\.hidden = true/u.test(source), "index contents must start hidden");
-  assert(/aria-expanded\", \"false/u.test(source), "index toggle must start collapsed for assistive technology");
+  assert(source.includes('toggle.setAttribute("aria-expanded", "false")'), "index toggle must start collapsed for assistive technology");
   assert(/> \.formatted-chart-index[\s\S]*?grid-column:\s*2/u.test(styles), "desktop index must occupy the right column");
   assert(/index-collapsed[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto/u.test(styles), "collapsed index must surrender its wide column");
 });
