@@ -1,6 +1,5 @@
 import { refsValid } from "../../ref/resolve.js";
 import type { JsonRef } from "../../types/base.js";
-import { auditHouseInterpretation } from "../houseInterpretation.js";
 import { auditCompletion } from "./completion.js";
 import {
   auditField,
@@ -127,7 +126,6 @@ export const auditStructured = <T extends object>(
   const errors = [...new Set([
     ...state.errors,
     ...completion.map(({ message }) => message),
-    ...auditHouseInterpretation(profile.id, audited),
   ])];
   const needsRepair = errors.length > 0;
   const repair = state.errors.length === 0 && completion.length > 0
