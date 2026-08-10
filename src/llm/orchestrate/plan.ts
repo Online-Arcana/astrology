@@ -285,6 +285,7 @@ const substantiveCalls = (
       id: unit.id,
       label: human(unit.id),
       ...route(unit),
+      ...(interpretationMap === null ? {} : { semanticMap: interpretationMap }),
       shape: shapeForUnit(unit, [...allowed]),
       allowedSourceRefs: allowed,
       input: ({ correction }) => serialiseInterpretationPrompt({
