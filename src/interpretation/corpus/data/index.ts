@@ -1,6 +1,7 @@
 import { compileInterpretationCorpus, type CompiledInterpretationCorpus } from "../compile.js";
 import { corpusSources } from "../sources.js";
 import type { CorpusAtom, CorpusClaim } from "../types.js";
+import { angleAtoms, angleClaims } from "./angles.js";
 import { aspectAtoms, aspectClaims } from "./aspects.js";
 import { bodyAtoms, bodyClaims } from "./bodies.js";
 import { pointAtoms, pointClaims } from "./points.js";
@@ -16,12 +17,14 @@ import { pointAtoms, pointClaims } from "./points.js";
 export const reviewedCorpusAtoms: readonly CorpusAtom[] = [
   ...bodyAtoms,
   ...pointAtoms,
+  ...angleAtoms,
   ...aspectAtoms,
 ] as const;
 
 export const reviewedCorpusClaims: readonly CorpusClaim[] = [
   ...bodyClaims,
   ...pointClaims,
+  ...angleClaims,
   ...aspectClaims,
 ] as const;
 
