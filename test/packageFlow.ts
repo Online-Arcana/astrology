@@ -52,7 +52,7 @@ const ordinaryPackageImport = entry.indexOf('import("./packageFlow.js")');
 const testDownloadImport = entry.indexOf('import("./testPackageDownload.js")');
 
 const checks: readonly [boolean, string][] = [
-  [/\[submodule "vendor\/astral-packager"\][\s\S]*path = vendor\/astral-packager[\s\S]*kitty-crow\/astral-packager\.git/u.test(modules), "astral-packager must be declared as a submodule"],
+  [/\[submodule "vendor\/astral-packager"\][\s\S]*path = vendor\/astral-packager[\s\S]*Online-Arcana\/astral-packager\.git/u.test(modules), "astral-packager must be declared as an organisation-owned submodule"],
   [/"astral-packager": "file:vendor\/astral-packager"/u.test(pkg), "astral-packager must be a package dependency"],
   [/vendor:packager/u.test(pkg) && /vendor:build[^\n]*vendor:packager/u.test(pkg), "vendor build must compile the packager before installation"],
   [/open as openPackage/u.test(flow) && /\bpack\b/u.test(flow) && /auditPwd/u.test(flow), "browser flow must use the packager's shared core API"],
