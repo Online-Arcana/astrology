@@ -66,7 +66,7 @@ jobs:
               'import type { TimeResolver } from \"../src/time/model.js\";',
           ]:
               s=s.replace(old_import, '')
-          s='import { compatibilityDomains, type AstronomyPort, type BodySample, type LunarOrbitPort, type EclipseKind, type EclipsePort, type TimeResolver } from \"astral-core\";\n'+s
+          s='import { compatibilityDomains, type AstronomyPort, type BodySample, type LunarOrbitPort, type EclipseKind, type EclipsePort, type TimeResolver } from \"astral-core\";' + chr(10) + s
           p.write_text(s)"""
           if needle not in script:
               raise SystemExit('post-rewrite patch anchor not found')
