@@ -23,6 +23,12 @@ jobs:
       - name: Complete browser facade
         run: |
           set -euo pipefail
+          INTERPRETER=1a89981b58236d32c97f845d0d445fe0e5d75977
+          git -C vendor/astral-interpreter fetch origin "$INTERPRETER"
+          git -C vendor/astral-interpreter checkout "$INTERPRETER"
+          git -C vendor/astral-interpreter submodule update --init --recursive
+          git add vendor/astral-interpreter
+
           python3 - <<'PY'
           from pathlib import Path
           import json
@@ -34,6 +40,9 @@ jobs:
           if stars not in s:
               if anchor not in s: raise SystemExit('web facade anchor missing')
               s=s.replace(anchor, stars+anchor)
+          digest='export { digest } from "./file/hash.js";\n'
+          if digest not in s:
+              s=s.replace('export { canonicalise } from "./file/canonical.js";\n', 'export { canonicalise } from "./file/canonical.js";\n'+digest)
           p.write_text(s)
 
           Path('src/packager.ts').write_text('export * from "astral-packager";\n')
@@ -47,6 +56,7 @@ jobs:
 
           npm run vendor:core
           npm --prefix vendor/astral-packager run build
+          npm install --package-lock-only --ignore-scripts
           npm ci
           npm run check
           npm test
@@ -54,8 +64,8 @@ jobs:
           node --input-type=module - <<'NODE'
           const web = await import('./dist/web.js');
           for (const name of [
-            'billingSummary','assembleChart','shapeForUnit','refsValid','auditStructured',
-            'compatibilityDomains','signs','webPlaces','webPorts','renderWheel','wheelData',
+            'billingSummary','assembleChart','shapeForUnit','refsValid','resolveRef','auditStructured',
+            'compatibilityDomains','signs','webPlaces','webPorts','renderWheel','wheelData','digest',
             'decodeReadableAstralFile','encodeAstralFile','isAstralFile','validateAstralFile'
           ]) {
             if (!(name in web)) throw new Error(`${name} missing from astrology/web`);
@@ -69,7 +79,7 @@ jobs:
           git restore --source=HEAD --staged --worktree .github/workflows || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/web.ts src/packager.ts package.json package-lock.json
+          git add vendor/astral-interpreter src/web.ts src/packager.ts package.json package-lock.json
           git add -f dist/web.* dist/packager.*
           git commit -m "Complete astrology browser facade"
           git pull --rebase origin agent/split-modules
