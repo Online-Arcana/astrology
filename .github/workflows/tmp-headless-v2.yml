@@ -92,9 +92,13 @@ jobs:
               raise SystemExit('post-rewrite patch anchor not found')
           script=script.replace(needle,replacement)
 
-          # The dependency SHAs are already independently validated and commit dist.
-          # Avoid rebuilding them twice during iterative extraction; permanent CI still rebuilds them.
-          script=script.replace('npm run vendor:build\nnpm install --package-lock-only --ignore-scripts', 'npm install --package-lock-only --ignore-scripts', 1)
+          # Core and interpreter SHAs are independently validated with committed dist.
+          # The packager still needs its generated package artefacts before file: install.
+          script=script.replace(
+              'npm run vendor:build\nnpm install --package-lock-only --ignore-scripts',
+              'npm --prefix vendor/astral-packager run build\nnpm install --package-lock-only --ignore-scripts',
+              1,
+          )
 
           Path('/tmp/headless-v2.sh').write_text(script)
           PY
