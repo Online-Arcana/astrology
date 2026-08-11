@@ -32,7 +32,7 @@ const rules: readonly FindingRule[] = [
     severity: "reject",
     reason: "assigns events or obligations to religious agency",
     patterns: [
-      /\b(?:god|gods|a deity|the deity|a higher power)\s+(?:has\s+)?(?:wants?|asks?|gives?|gave|sends?|sent|places?|placed|chooses?|chose|decides?|decided|intends?|intended|guides?|guided|punishes?|punished|rewards?|rewarded)\b/giu,
+      /\b(?:god|gods|a deity|the deity|a higher power)\s+(?:(?:has|have|had|is|are|was|were|will|would|can|could|may|might|should)\s+)?(?:wants?|wanted|wanting|asks?|asked|asking|gives?|gave|given|giving|sends?|sent|sending|places?|placed|placing|chooses?|chose|chosen|choosing|decides?|decided|deciding|intends?|intended|intending|guides?|guided|guiding|punishes?|punished|punishing|rewards?|rewarded|rewarding)\b/giu,
       /\b(?:god[- ]given|god's plan|divine punishment|divine reward)\b/giu,
     ],
   },
@@ -84,7 +84,7 @@ const rules: readonly FindingRule[] = [
     reason: "assumes supernatural intervention or causation",
     patterns: [
       /\bsupernatural\s+(?:agency|cause|causation|intervention|force|guidance)\b/giu,
-      /\b(?:spirit guides?|guardian spirits?)\s+(?:want|guide|send|place|tell|ask)\b/giu,
+      /\b(?:spirit guides?|guardian spirits?)\s+(?:(?:has|have|had|is|are|was|were|will|would|can|could|may|might|should)\s+)?(?:wants?|wanted|wanting|guides?|guided|guiding|sends?|sent|sending|places?|placed|placing|tells?|told|telling|asks?|asked|asking)\b/giu,
     ],
   },
   {
@@ -92,7 +92,7 @@ const rules: readonly FindingRule[] = [
     severity: "reject",
     reason: "assigns intention or a plan to the universe, cosmos or life",
     patterns: [
-      /\b(?:the\s+)?(?:universe|cosmos|life)\s+(?:has\s+)?(?:wants?|asks?|tells?|sends?|sent|places?|placed|guides?|guided|chooses?|chose|intends?|intended|plans?|planned|decides?|decided|teaches?|taught)\b/giu,
+      /\b(?:the\s+)?(?:universe|cosmos|life)\s+(?:(?:has|have|had|is|are|was|were|will|would|can|could|may|might|should)\s+)?(?:wants?|wanted|wanting|asks?|asked|asking|tells?|told|telling|sends?|sent|sending|places?|placed|placing|guides?|guided|guiding|chooses?|chose|chosen|choosing|intends?|intended|intending|plans?|planned|planning|decides?|decided|deciding|teaches?|taught|teaching)\b/giu,
       /\b(?:cosmic|universal)\s+(?:plan|purpose|intention|lesson|mission|design)\b/giu,
     ],
   },
