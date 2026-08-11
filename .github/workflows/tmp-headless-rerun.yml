@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-      - name: Reuse the reviewed extraction with current pins
+      - name: Reuse reviewed extraction with validated module boundaries
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -28,10 +28,48 @@ jobs:
           for line in block.splitlines():
               lines.append(line[10:] if line.startswith('          ') else line)
           script='\n'.join(lines)+'\n'
-          script=script.replace('d909d05abce71cf6215a20387fa0de8ae4b37776','b79d3b882dea0db7104f925880f9d201a04d5b16')
-          script=script.replace('39430d25d6fea1203d53e05f8dabe6d3dcd87e57','8bb9e53b8910a15d8a3e59ab88cc30b3b208c7ba')
+
+          # Exact dependency pins.
+          script=script.replace('d909d05abce71cf6215a20387fa0de8ae4b37776','6828983efa62da9d59c19c33f32a632a5587857d')
+          script=script.replace('39430d25d6fea1203d53e05f8dabe6d3dcd87e57','c5c1962a814dee9a56162934f7fd449879eeeaf2')
           script=script.replace('157ddc810c0dc2429b68990c3d35fccf2d653dda','402a167bcd8d74c1d1ac2f8bace6d08ecea3c8b9')
           script=script.replace('npm --prefix vendor/astral-interpreter install --ignore-scripts','npm --prefix vendor/astral-interpreter ci')
+
+          # Preserve the established public config.chart contract while composing interpreter config.
+          script=script.replace(
+            'export interface Config extends InterpreterConfig {\n  core: { zodiac: Zodiac; ayanamsha: Ayanamsha };\n  signing: { enabled: boolean; issuer: string; privateKey: string | null; publicKey: string | null };\n}',
+            'export type Config = Omit<InterpreterConfig, "chart"> & {\n  chart: InterpreterConfig["chart"] & { primaryZodiac: Zodiac; ayanamsha: Ayanamsha; interpretationMode: Zodiac };\n  signing: { enabled: boolean; issuer: string; privateKey: string | null; publicKey: string | null };\n};'
+          )
+          script=script.replace(
+            'if(env["ASTRAL_INTERPRETATION_MODE"]!==undefined && env["ASTRAL_INTERPRETATION_MODE"]!==zodiac) throw new Error("ASTRAL_INTERPRETATION_MODE must match ASTRAL_PRIMARY_ZODIAC");',
+            'if(env["ASTRAL_INTERPRETATION_MODE"]==="both") throw new Error("ASTRAL_INTERPRETATION_MODE=both is no longer supported; create separate tropical and sidereal charts");\n  const interpretationMode=oneOf(env["ASTRAL_INTERPRETATION_MODE"],zodiac,["tropical","sidereal"] as const,"ASTRAL_INTERPRETATION_MODE");\n  if(interpretationMode!==zodiac) throw new Error("ASTRAL_PRIMARY_ZODIAC and ASTRAL_INTERPRETATION_MODE must select the same zodiac");'
+          )
+          script=script.replace(
+            'core: { zodiac, ayanamsha: oneOf(env["ASTRAL_SIDEREAL_AYANAMSHA"],"lahiri",["lahiri","fagan_bradley","krishnamurti","raman"] as const,"ASTRAL_SIDEREAL_AYANAMSHA") },',
+            'chart: { ...interpreter.chart, primaryZodiac: zodiac, ayanamsha: oneOf(env["ASTRAL_SIDEREAL_AYANAMSHA"],"lahiri",["lahiri","fagan_bradley","krishnamurti","raman"] as const,"ASTRAL_SIDEREAL_AYANAMSHA"), interpretationMode },'
+          )
+          script=script.replace('env["ASTRAL_AUTHORITY_ISSUER"]??"Online-Arcana/astrology"','env["ASTRAL_AUTHORITY_ISSUER"]??"kitty-crow/astral-charts"')
+          script=script.replace(
+            'export const calcSettings = (config: Config): CalcSettings => ({ primaryZodiac: config.core.zodiac, ayanamsha: config.core.ayanamsha, interpretationMode: config.core.zodiac });',
+            'export const calcSettings = (config: Config): CalcSettings => ({ primaryZodiac: config.chart.primaryZodiac, ayanamsha: config.chart.ayanamsha, interpretationMode: config.chart.interpretationMode });'
+          )
+          script=script.replace(
+            "s=s.replace('config.chart.primaryZodiac','config.core.zodiac').replace('config.chart.interpretationMode','config.core.zodiac').replace('config.chart.ayanamsha','config.core.ayanamsha')",
+            's=s'
+          )
+
+          # Keep a focused public compatibility regression in the extracted package from the first commit.
+          script=script.replace('cp /tmp/old-test/run.ts test/run.ts','cp /tmp/old-test/publicCompatibility.ts test/publicCompatibility.ts')
+          script=script.replace(
+            '"test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/run.js",',
+            '"test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/publicCompatibility.js",'
+          )
+
+          # The old reviewed extraction predates the final composition runtime shape. Replace that one file explicitly.
+          needle='npm run vendor:build\n'
+          runtime_patch='''cat > src/interface/runtime.ts <<'TS'\nimport { loadCscCatalogue, loadPorts } from "astral-core";\nimport { BillStore, productionSemanticProvider } from "astral-interpreter";\nimport type { Config } from "../config.js";\nimport { calcApi, calcSettings } from "../calc/runtime.js";\nimport { loadChartGenerationService } from "../generate/service.js";\nimport type { ApiRuntime } from "./api.js";\n\nexport interface LoadedApiRuntime extends ApiRuntime {\n  bills: BillStore;\n  openAiAdminKey: string | null;\n}\n\nexport const loadApiRuntime = async (\n  config: Config,\n  version = "0.20.0",\n): Promise<LoadedApiRuntime> => {\n  const [ports, places] = await Promise.all([loadPorts(version), loadCscCatalogue()]);\n  const service = calcApi(ports);\n  const options = calcSettings(config);\n  const generator = config.openai.apiKey.trim().length === 0\n    ? null\n    : await loadChartGenerationService(config, version, {}, productionSemanticProvider);\n  return {\n    service, generator, options, places, version,\n    bills: new BillStore(config.billing.directory),\n    openAiAdminKey: config.openai.adminKey,\n  };\n};\nTS\n\n'''
+          script=script.replace(needle, runtime_patch+needle, 1)
+          script=script.replace('npm run check\nrm -rf /tmp/old-src /tmp/old-test','npm run check\nnpm test\nnpm run build\nrm -rf /tmp/old-src /tmp/old-test')
           Path('/tmp/headless-build.sh').write_text(script)
           PY
           bash /tmp/headless-build.sh
