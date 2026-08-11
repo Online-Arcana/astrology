@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="derived">
+  <atoms>
+    <atom id="derived.rulership-dignity" kind="derived-construct" review-status="approved">
+      <display-name>Rulership and dignity</display-name>
+      <plain-english>relative expression, rulership, dignity and constraint</plain-english>
+      <aliases>
+        <alias>Rulership and dignity</alias>
+        <alias>Essential dignity</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>rulershipAndDignity</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.rulership-dignity.core.relative-expression</claim-id>
+        <claim-id>derived.rulership-dignity.detail.categories</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a morally good or bad planet</concept>
+        <concept>guaranteed success</concept>
+        <concept>guaranteed failure</concept>
+        <concept>fate</concept>
+        <concept>personal worth</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.derived.dignities</source-id>
+        <source-id>semantic.astrodienst.derived.essential-dignities</source-id>
+        <source-id>semantic.project.derived-chart-calculations</source-id>
+      </source-ids>
+    </atom>
+    <atom id="derived.chart-balance" kind="derived-construct" review-status="approved">
+      <display-name>Chart balance</display-name>
+      <plain-english>weighted distribution and relative emphasis across chart categories</plain-english>
+      <aliases>
+        <alias>Chart balance</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>chartBalance</internal-id>
+        <internal-id>balances</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.chart-balance.core.weighted-distribution</claim-id>
+        <claim-id>derived.chart-balance.interaction.relative-emphasis</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>personality diagnosis</concept>
+        <concept>a good or bad chart</concept>
+        <concept>value judgement</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.derived-chart-calculations</source-id>
+      </source-ids>
+    </atom>
+    <atom id="derived.dominant-themes" kind="derived-construct" review-status="approved">
+      <display-name>Dominant themes</display-name>
+      <plain-english>relative structural emphasis under the project&apos;s weighting rules</plain-english>
+      <aliases>
+        <alias>Dominant themes</alias>
+        <alias>Dominant planets</alias>
+        <alias>Dominant signs</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>dominantThemes</internal-id>
+        <internal-id>dominantPlanets</internal-id>
+        <internal-id>dominantSigns</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.dominant-themes.core.prominence</claim-id>
+        <claim-id>derived.dominant-themes.detail.project-score</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>objective importance</concept>
+        <concept>causal power</concept>
+        <concept>destiny</concept>
+        <concept>one factor explaining the whole person</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.derived.dominance</source-id>
+        <source-id>semantic.project.derived-chart-calculations</source-id>
+      </source-ids>
+    </atom>
+    <atom id="derived.lunar-phase" kind="derived-construct" review-status="approved">
+      <display-name>Lunar phase</display-name>
+      <plain-english>Sun-Moon cycle position and waxing or waning illumination</plain-english>
+      <aliases>
+        <alias>Lunar phase</alias>
+        <alias>Moon phase</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>lunar.phase</internal-id>
+        <internal-id>lunarPhase</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.lunar-phase.core.cycle-position</claim-id>
+        <claim-id>derived.lunar-phase.detail.waxing-waning</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality type</concept>
+        <concept>destiny</concept>
+        <concept>spiritual development</concept>
+        <concept>auspicious timing</concept>
+        <concept>guaranteed beginnings or endings</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>body.sun</atom-id>
+        <atom-id>body.moon</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.derived.lunar-phase</source-id>
+        <source-id>semantic.astrodienst.derived.waxing-waning</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="derived.rulership-dignity.core.relative-expression" atom-id="derived.rulership-dignity" category="core" confidence="well-supported">
+      <proposition>Rulership and essential dignity describe how closely a planet&apos;s zodiac position aligns with, supports or constrains the symbolic qualities assigned to that planet within the selected dignity rules.</proposition>
+      <tags>
+        <tag>relative expression</tag>
+        <tag>rulership</tag>
+        <tag>dignity</tag>
+        <tag>strength</tag>
+        <tag>constraint</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.derived.dignities#expression-alignment</source-ref>
+        <source-ref>semantic.astrodienst.derived.essential-dignities#relative-strength</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.rulership-dignity.detail.categories" atom-id="derived.rulership-dignity" category="interaction" confidence="core">
+      <proposition>The project records domicile, exaltation, triplicity, bounds and face alongside detriment, fall and peregrine status, and combines the selected rules into an inspectable score rather than treating any single label as a complete interpretation.</proposition>
+      <tags>
+        <tag>domicile</tag>
+        <tag>exaltation</tag>
+        <tag>triplicity</tag>
+        <tag>bounds</tag>
+        <tag>face</tag>
+        <tag>detriment</tag>
+        <tag>fall</tag>
+        <tag>peregrine</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.derived.essential-dignities#five-dignities</source-ref>
+        <source-ref>semantic.project.derived-chart-calculations#dignity-record</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.chart-balance.core.weighted-distribution" atom-id="derived.chart-balance" category="core" confidence="core">
+      <proposition>Chart balance is the project&apos;s weighted distribution of selected chart points across elements, modalities, polarities, hemispheres and angular, succedent or cadent house modes.</proposition>
+      <tags>
+        <tag>weighted distribution</tag>
+        <tag>elements</tag>
+        <tag>modalities</tag>
+        <tag>polarities</tag>
+        <tag>hemispheres</tag>
+        <tag>house modes</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.derived-chart-calculations#chart-balance</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.chart-balance.interaction.relative-emphasis" atom-id="derived.chart-balance" category="interaction" confidence="core">
+      <proposition>Its values support comparisons of relative emphasis within the same chart; they are not moral scores, diagnoses or predictions about outcomes.</proposition>
+      <tags>
+        <tag>relative emphasis</tag>
+        <tag>comparison</tag>
+        <tag>distribution</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.derived-chart-calculations#chart-balance</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.dominant-themes.core.prominence" atom-id="derived.dominant-themes" category="core" confidence="well-supported">
+      <proposition>Dominance is used to identify chart factors that receive relatively greater structural emphasis under an explicit weighting method.</proposition>
+      <tags>
+        <tag>relative prominence</tag>
+        <tag>structural emphasis</tag>
+        <tag>weighted ranking</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.derived.dominance#relative-prominence</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.dominant-themes.detail.project-score" atom-id="derived.dominant-themes" category="interaction" confidence="core">
+      <proposition>This project&apos;s dominance score combines inspectable factors such as dignity, chart-ruler status, house mode, aspect strength and sect rather than claiming that one universal dominance method exists.</proposition>
+      <tags>
+        <tag>dignity</tag>
+        <tag>chart ruler</tag>
+        <tag>house mode</tag>
+        <tag>aspects</tag>
+        <tag>sect</tag>
+        <tag>inspectable score</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.derived.dominance#multiple-methods</source-ref>
+        <source-ref>semantic.project.derived-chart-calculations#dominant-score</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.lunar-phase.core.cycle-position" atom-id="derived.lunar-phase" category="core" confidence="core">
+      <proposition>Lunar phase locates the Moon within its changing angular and illumination relationship to the Sun, providing a cyclic context for the chart rather than a separate celestial body or point.</proposition>
+      <tags>
+        <tag>Sun-Moon relationship</tag>
+        <tag>cycle position</tag>
+        <tag>illumination</tag>
+        <tag>lunar phase</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.derived.lunar-phase#sun-moon-relationship</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.lunar-phase.detail.waxing-waning" atom-id="derived.lunar-phase" category="interaction" confidence="core">
+      <proposition>Waxing identifies the increasing-light half from New Moon toward Full Moon, while waning identifies the decreasing-light half from Full Moon toward the next New Moon.</proposition>
+      <tags>
+        <tag>waxing</tag>
+        <tag>waning</tag>
+        <tag>increasing light</tag>
+        <tag>decreasing light</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.derived.waxing-waning#illumination-direction</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>

@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sources format="astral-corpus-xml/1.0.0">
+  <source id="technical.swisseph.programming-interface" role="calculation" review-status="approved">
+    <title>Swiss Ephemeris Programming Interface</title>
+    <author>Astrodienst</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>planetary-lunar-calculations</section>
+      <section>lunar-nodes</section>
+      <section>houses</section>
+      <section>vertex-antivertex-geometry</section>
+      <section>coordinate-systems</section>
+    </allowed-sections>
+    <notes>
+      <note>Calculation reference only. Approval does not extend to interpretation prose on other Astrodienst documents or AstroWiki pages.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-sun-intro" role="semantic" review-status="approved">
+    <title>The transits of the planets: The Sun - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>central-function</section>
+      <section>qualities-integration</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_sun_intro_e.htm</note>
+      <note>Cosmic-mind and soul language elsewhere on the page is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-moon-effects" role="semantic" review-status="approved">
+    <title>The transits of the planets - Effects of the transiting Moon</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>inward-opening</section>
+      <section>personal-private</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_moon_effects_z.htm?lang=e</note>
+      <note>Spiritual, incarnational and paranormal material elsewhere on the page is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-mercury-intro" role="semantic" review-status="approved">
+    <title>The Transits of the Planets - Mercury - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>communication-information</section>
+      <section>clear-communication</section>
+      <section>confused-communication</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_mercury_intro_e.htm</note>
+      <note>Philosophical logos language outside the reviewed passages is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-venus-intro" role="semantic" review-status="approved">
+    <title>The transits of the planets - Venus - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>qualities-connection</section>
+      <section>qualities-aesthetics</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_venus_intro_p.htm?lang=e</note>
+      <note>Mythological material is not used as interpretation provenance.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-mars-intro" role="semantic" review-status="approved">
+    <title>The transits of the planets - Mars - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>natal-protection-separateness</section>
+      <section>natal-anger-vitality</section>
+      <section>qualities-energy-separation</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_mars_intro_e.htm</note>
+      <note>Gender-essentialist, mythological and philosophical passages are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-jupiter-effects" role="semantic" review-status="approved">
+    <title>The transits of the planets - Effects of transiting Jupiter</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>inward-visibility</section>
+      <section>inward-growth</section>
+      <section>inward-risk</section>
+      <section>outward-learning</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_jupiter_effects_e.htm</note>
+      <note>Religious and transcendent passages later in the article are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-saturn-intro" role="semantic" review-status="approved">
+    <title>The transits of the planets - Saturn - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>reality-system</section>
+      <section>rules-limits-discipline</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_saturn_intro_e.htm</note>
+      <note>The article&apos;s discussion of fate and enlightenment is outside the approved passages.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-uranus-intro" role="semantic" review-status="approved">
+    <title>The transits of the planets - Uranus - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>opening-change-boundaries</section>
+      <section>innovation-technology</section>
+      <section>adaptation-new-ideas</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_uranus_intro_e.htm</note>
+      <note>Spiritual-awakening wording elsewhere on the page is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-neptune-intro" role="semantic" review-status="approved">
+    <title>The transits of the planets - Neptune - Introduction</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>opening-loss-of-clarity</section>
+      <section>qualities-blurred-distinctions</section>
+      <section>outward-confusion</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_neptune_intro_e.htm</note>
+      <note>Spiritual, psychic, divinatory and religious material is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-pluto-effects" role="semantic" review-status="approved">
+    <title>The Transits of the Planets - Effects of Transiting Pluto</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>inward-change-pressure</section>
+      <section>inward-power-warning</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_pluto_effects_e.htm</note>
+      <note>Fate, transcendence, spiritual-teacher and religious material elsewhere on the page is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-moon-nodes" role="semantic" review-status="approved">
+    <title>The transits of the planets - Transits of the Moon</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>node-network-cycle</section>
+      <section>north-node-initiation</section>
+      <section>south-node-consequences</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_moon_transits_e.htm</note>
+      <note>Only the Lunar Nodes section describing network interaction and the North/South phases is approved. Other Moon transit sections may contain religious, paranormal or gender-essentialist wording and are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.lot-fortune-spirit" role="semantic" review-status="approved">
+    <title>The Lot or Part of Fortune</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>fortune-physical-social-world</section>
+      <section>fortune-material-support</section>
+      <section>spirit-will-intention</section>
+      <section>spirit-chosen-career-direction</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_fortune_e.htm</note>
+      <note>Only the named neutral passages are approved. Karmic, soul, spiritual-basis-of-illness, death, sex-role and other worldview-dependent material elsewhere in the article is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.transits-jupiter-angles" role="semantic" review-status="approved">
+    <title>The transits of the planets - Transits of Jupiter</title>
+    <author>Robert Hand</author>
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>ascendant-presentation</section>
+      <section>descendant-world-facing</section>
+      <section>midheaven-life-direction</section>
+      <section>ic-home-history</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_hand2_jupiter_transits_e.htm</note>
+      <note>Only the descriptive angle passages are approved. Religious, transcendent, fate, universal-purpose and predictive claims elsewhere on the page are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.brief-intro-aspects" role="semantic" review-status="approved">
+    <title>A Brief Introduction to Astrology: Aspects</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>conjunction</section>
+      <section>opposition</section>
+      <section>square</section>
+      <section>trine</section>
+      <section>sextile</section>
+      <section>semisquare</section>
+      <section>sesquiquadrate</section>
+      <section>semisextile</section>
+      <section>quincunx</section>
+      <section>quintile</section>
+      <section>biquintile</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_aspect_e.htm</note>
+      <note>Approved only for the relationship behaviour assigned to the named aspects. Orb tables and unrelated material are not semantic claims.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.brief-intro-houses" role="semantic" review-status="approved">
+    <title>A Brief Introduction to Astrology: Houses</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>house-1-self-presentation</section>
+      <section>house-2-values-resources</section>
+      <section>house-3-communication-local-relations</section>
+      <section>house-4-home-origins</section>
+      <section>house-5-creativity-pleasure-children</section>
+      <section>house-6-work-routine-care</section>
+      <section>house-7-partnerships</section>
+      <section>house-8-shared-resources-loss</section>
+      <section>house-9-worldview-learning-travel</section>
+      <section>house-10-career-public-development</section>
+      <section>house-11-friends-groups-society</section>
+      <section>house-12-retreat-withdrawal-institutions</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_house2_e.htm</note>
+      <note>Only the practical life-domain descriptions are approved.</note>
+      <note>House 8 metaphysical/death framing, House 9 religious or spiritual assumptions, and House 12 religious-institution framing are excluded.</note>
+      <note>Gendered parent assignments are not carried into corpus claims.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.brief-intro-signs" role="semantic" review-status="approved">
+    <title>A Brief Introduction to Astrology: The Signs</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>sign-aries-summary</section>
+      <section>sign-taurus-summary</section>
+      <section>sign-gemini-summary</section>
+      <section>sign-cancer-summary</section>
+      <section>sign-leo-summary</section>
+      <section>sign-virgo-summary</section>
+      <section>sign-libra-summary</section>
+      <section>sign-scorpio-summary</section>
+      <section>sign-sagittarius-summary</section>
+      <section>sign-capricorn-summary</section>
+      <section>sign-aquarius-summary</section>
+      <section>sign-pisces-summary</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_signs_e.htm</note>
+      <note>Approved only for the short sign summaries and their element/mode descriptions.</note>
+      <note>Longer personality essays, gendered generalisations, religious/spiritual language and deterministic claims are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.brief-intro-elements" role="semantic" review-status="approved">
+    <title>A Brief Introduction to Astrology: The four Elements and the Signs</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>fire-style</section>
+      <section>earth-style</section>
+      <section>air-style</section>
+      <section>water-style</section>
+      <section>cardinal-mode</section>
+      <section>fixed-mode</section>
+      <section>mutable-mode</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_elements_e.htm</note>
+      <note>Approved for element and modality expression styles only. Claims that these classifications establish objective personality facts are not imported.</note>
+    </notes>
+  </source>
+  <source id="semantic.tompkins.contemporary-handbook" role="semantic" review-status="pending">
+    <title>The Contemporary Astrologer&apos;s Handbook</title>
+    <author>Sue Tompkins</author>
+    <publisher null="true" />
+    <edition-or-date null="true" />
+    <allowed-sections>
+    </allowed-sections>
+    <notes>
+      <note>Candidate for planets, signs, houses, elements, modes, aspects, nodes and synthesis.</note>
+      <note>Exact edition and passages still require review.</note>
+    </notes>
+  </source>
+  <source id="semantic.tompkins.aspects" role="semantic" review-status="pending">
+    <title>Aspects in Astrology</title>
+    <author>Sue Tompkins</author>
+    <publisher null="true" />
+    <edition-or-date null="true" />
+    <allowed-sections>
+    </allowed-sections>
+    <notes>
+      <note>Candidate for planetary principles and aspect composition.</note>
+      <note>Combination essays are not used as canned readings.</note>
+    </notes>
+  </source>
+  <source id="semantic.hand.horoscope-symbols" role="semantic" review-status="pending">
+    <title>Horoscope Symbols</title>
+    <author>Robert Hand</author>
+    <publisher null="true" />
+    <edition-or-date null="true" />
+    <allowed-sections>
+    </allowed-sections>
+    <notes>
+      <note>Candidate for fundamental symbolic principles, points, aspects, signs, angles and houses.</note>
+      <note>Exact passages still require review.</note>
+    </notes>
+  </source>
+  <source id="semantic.martin.mapping-psyche-2" role="semantic" review-status="pending">
+    <title>Mapping the Psyche, Volume 2</title>
+    <author>Clare Martin</author>
+    <publisher>Centre for Psychological Astrology</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+    </allowed-sections>
+    <notes>
+      <note>Candidate for aspects, houses, angles and lunar nodes.</note>
+      <note>Any worldview-dependent passage is rejected rather than rewritten into the corpus.</note>
+    </notes>
+  </source>
+  <source id="architecture.hall-shaw.valens-combination" role="architecture" review-status="approved">
+    <title>The logic of planetary combination in Vettius Valens</title>
+    <author>Hall and Shaw</author>
+    <publisher>arXiv</publisher>
+    <edition-or-date>2022</edition-or-date>
+    <allowed-sections>
+      <section>combinatorial-structure</section>
+    </allowed-sections>
+    <notes>
+      <note>Architecture reference only; it cannot provide interpretation claims.</note>
+    </notes>
+  </source>
+  <source id="semantic.project.interpretation-domain-taxonomy" role="semantic" review-status="approved">
+    <title>Interpretation domain taxonomy</title>
+    <author>Online Arcana</author>
+    <publisher>Online Arcana</publisher>
+    <edition-or-date>2026-08-10</edition-or-date>
+    <allowed-sections>
+      <section>life-identity-and-purpose</section>
+      <section>life-emotional-nature</section>
+      <section>life-mind-and-communication</section>
+      <section>life-romance</section>
+      <section>life-sexuality</section>
+      <section>life-committed-partnerships</section>
+      <section>life-home-and-family</section>
+      <section>life-childhood-patterns</section>
+      <section>life-creativity-and-self-expression</section>
+      <section>life-children-and-nurturing</section>
+      <section>life-friendship</section>
+      <section>life-community-and-groups</section>
+      <section>life-work-style</section>
+      <section>life-career-and-vocation</section>
+      <section>life-business-and-leadership</section>
+      <section>life-money-and-material-security</section>
+      <section>life-public-life-and-ambition</section>
+      <section>life-conflict-and-assertion</section>
+      <section>life-growth-and-opportunity</section>
+      <section>life-restrictions-and-responsibility</section>
+      <section>life-transformation-and-crisis</section>
+      <section>life-spirituality-and-meaning</section>
+      <section>life-unconscious-patterns</section>
+      <section>life-wellbeing-and-daily-rhythm</section>
+      <section>life-developmental-direction</section>
+      <section>compatibility-overall</section>
+      <section>compatibility-romantic</section>
+      <section>compatibility-sexual</section>
+      <section>compatibility-emotional</section>
+      <section>compatibility-communication</section>
+      <section>compatibility-intellectual</section>
+      <section>compatibility-friendship</section>
+      <section>compatibility-business</section>
+      <section>compatibility-domestic</section>
+      <section>compatibility-long-term</section>
+      <section>compatibility-conflict-resolution</section>
+      <section>compatibility-spiritual</section>
+      <section>synthesis-overview</section>
+      <section>synthesis-system-synthesis</section>
+      <section>synthesis-final-synthesis</section>
+    </allowed-sections>
+    <notes>
+      <note>Project-owned output taxonomy. It defines what a section is responsible for; it does not supply astrological meanings for chart factors.</note>
+      <note>Astrological claims used inside these domains must still come from independently approved corpus atoms and chart evidence.</note>
+    </notes>
+  </source>
+  <source id="semantic.project.chart-balance-categories" role="semantic" review-status="approved">
+    <title>Chart balance category definitions</title>
+    <author>Online Arcana</author>
+    <publisher>Online Arcana</publisher>
+    <edition-or-date>2026-08-10</edition-or-date>
+    <allowed-sections>
+      <section>polarity-active</section>
+      <section>polarity-receptive</section>
+      <section>hemisphere-eastern</section>
+      <section>hemisphere-western</section>
+      <section>hemisphere-northern</section>
+      <section>hemisphere-southern</section>
+      <section>house-mode-angular</section>
+      <section>house-mode-succedent</section>
+      <section>house-mode-cadent</section>
+    </allowed-sections>
+    <notes>
+      <note>Project-owned definitions of categories used by src/derived/calculate.ts.</note>
+      <note>Polarity, hemisphere and house-mode scores are descriptive weighted groupings. They do not independently authorise personality traits, diagnoses or predictions.</note>
+    </notes>
+  </source>
+  <source id="semantic.mirti.black-moon-lilith" role="semantic" review-status="approved">
+    <title>Lilith - Black Moon: A Golden Ally in the Astrological Interpretation</title>
+    <author>Grazia Mirti</author>
+    <publisher>Constellation News / Astrodienst</publisher>
+    <edition-or-date>2020-03-24</edition-or-date>
+    <allowed-sections>
+      <section>unfulfilled-wishes-lacks</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/ivccn_article200506_e.htm</note>
+      <note>Approval is limited to the sentence treating Black Moon Lilith as an indicator of unfulfilled wishes, lacks and areas needing closer attention.</note>
+      <note>Mythology, religion, spirituality, gender archetypes, medical associations, sexual-orientation claims and other material elsewhere in the article are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.local-space-vertex-axis" role="semantic" review-status="approved">
+    <title>Local Space Astrology</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>vertex-antivertex-event-oriented</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrology/in_localspace_e.htm</note>
+      <note>Approved only for the comparison that Vertex/Anti-Vertex contacts are treated as more objective or event-oriented than Ascendant/Descendant contacts, and that both ends of the axis should be considered.</note>
+      <note>No claim of fate, destiny, inevitable manifestation or supernatural causation is approved.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.equatorial-ascendant-minor" role="semantic" review-status="approved">
+    <title>The Overconfidence of Jupiter</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>equatorial-ascendant-minor-ascendant</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrologia/in_mdbjupiter_e.htm</note>
+      <note>Approval is limited to the statement that the equatorial Ascendant acts as a minor Ascendant.</note>
+      <note>Predictive, eclipse and fate-related material elsewhere in the article is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.stellium" role="semantic" review-status="approved">
+    <title>Stellium - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Stellium</note>
+      <note>Approved only for the opening interpretation on emphasis and reciprocal planetary effects.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.t-square" role="semantic" review-status="approved">
+    <title>T-square - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/T-Square</note>
+      <note>Approved only for the structural/focal interpretation. Compulsion or inevitability wording is not imported.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.grand-trine" role="semantic" review-status="approved">
+    <title>Grand Trine - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Grand_Trine</note>
+      <note>Approved only for the neutral interpretation of support, comfort and possible underuse. Esoteric, divine-number, grace and cosmic-gift wording is excluded.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.grand-cross" role="semantic" review-status="approved">
+    <title>Grand Cross - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Grand_Cross</note>
+      <note>Approved for the description of stability, inflexibility, effort and commitment. Inevitability wording is excluded.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.yod" role="semantic" review-status="approved">
+    <title>Yod - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Yod</note>
+      <note>Approved only for the neutral quincunx/sextile/focal-point description. The Finger of God name and divine-task quotation are excluded.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.kite" role="semantic" review-status="approved">
+    <title>Kite - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Kite</note>
+      <note>Approved for the neutral interaction of trines, sextiles, opposition and focal planet.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.mystic-rectangle" role="semantic" review-status="approved">
+    <title>Mystic Rectangle - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Rectangle</note>
+      <note>Approved only for the trine/sextile relief of opposition tension. The historical &apos;practical mysticism&apos; label is not imported as a claim.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.grand-sextile" role="semantic" review-status="approved">
+    <title>Grand Sextile - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Grand_Sextile</note>
+      <note>Approved for the neutral interpretation of strengthened sextile support and coordinated activity.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.pattern.thor-hammer" role="semantic" review-status="approved">
+    <title>Thor&apos;s Hammer - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>interpretation-core</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Thor%27s_Hammer</note>
+      <note>Approved only for the geometric pattern and the neutral idea of concentrated tension with a focal outlet. Mythology and behavioural determinism are excluded.</note>
+      <note>Approval is limited to the project-distilled neutral proposition; other text on the page is not approved automatically.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.derived.dignities" role="semantic" review-status="approved">
+    <title>Dignities - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>expression-alignment</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Dignities</note>
+      <note>Approved only for the statement that dignity describes expression which closely resembles a planet&apos;s inherent astrological character.</note>
+      <note>Historical, horary and value-laden material elsewhere on the page is not imported.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.derived.essential-dignities" role="semantic" review-status="approved">
+    <title>Essential Dignities - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>relative-strength</section>
+      <section>five-dignities</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Essential_Dignities</note>
+      <note>Approved for the relative-strength definition and the traditional dignity categories only.</note>
+      <note>Malefic, benevolent and predictive judgement language is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.derived.dominance" role="semantic" review-status="approved">
+    <title>Dominance - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>relative-prominence</section>
+      <section>multiple-methods</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Dominance</note>
+      <note>Approved for relative prominence and the fact that astrologers use multiple methods to calculate dominance.</note>
+      <note>The application&apos;s own score remains authoritative for charts produced by this project.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.derived.lunar-phase" role="semantic" review-status="approved">
+    <title>Lunar Phase - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>sun-moon-relationship</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Lunar_Phase</note>
+      <note>Approved only for the definition of lunar phase as the changing astronomical relationship between Moon and Sun.</note>
+      <note>Nakshatra, religious and unrelated lunar-mansion material is excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.derived.waxing-waning" role="semantic" review-status="approved">
+    <title>Waxing and Waning - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>illumination-direction</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Waxing_and_Waning</note>
+      <note>Approved only for the descriptive distinction that waxing illumination increases from New to Full Moon and waning illumination decreases from Full to New Moon.</note>
+      <note>Electional, farming and auspiciousness claims are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.project.derived-chart-calculations" role="semantic" review-status="approved">
+    <title>Derived chart calculation contract</title>
+    <author>Online Arcana</author>
+    <publisher>Online Arcana</publisher>
+    <edition-or-date>2026-08-10</edition-or-date>
+    <allowed-sections>
+      <section>dignity-record</section>
+      <section>chart-balance</section>
+      <section>dominant-score</section>
+    </allowed-sections>
+    <notes>
+      <note>Project-owned semantics for deterministic fields calculated by src/derived/calculate.ts and the dignity subsystem.</note>
+      <note>These sections describe what the project&apos;s scores and aggregates represent; they do not add external astrological doctrine.</note>
+    </notes>
+  </source>
+  <source id="semantic.astrodienst.eclipse-context" role="semantic" review-status="approved">
+    <title>Eclipse - Astrodienst Astrowiki</title>
+    <author null="true" />
+    <publisher>Astrodienst</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>modern-trigger-context</section>
+      <section>solar-new-moon-node</section>
+      <section>lunar-full-moon-node</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.astro.com/astrowiki/en/Eclipses</note>
+      <note>Approved for the modern-astrology statement that eclipses are used as contextual activators of contacted chart factors and for the Sun-Moon-node geometry distinguishing solar and lunar eclipses.</note>
+      <note>Traditional omens, malefic judgement, event prediction, breakthrough/conclusion claims and claims about eclipse power are excluded.</note>
+    </notes>
+  </source>
+  <source id="semantic.zodisphere.prenatal-eclipse-definition" role="semantic" review-status="approved">
+    <title>Prenatal Eclipse - Astrology Definition</title>
+    <author null="true" />
+    <publisher>Zodisphere</publisher>
+    <edition-or-date null="true" />
+    <allowed-sections>
+      <section>sensitive-degree-definition</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://zodisphere.com/glossary/prenatal-eclipse</note>
+      <note>Approved only for the modern-practice definition of a prenatal eclipse as a sensitised chart degree associated with an eclipse before birth.</note>
+      <note>No predictive activation claim is imported into the production corpus.</note>
+    </notes>
+  </source>
+  <source id="semantic.augurine.prenatal-eclipse-context" role="semantic" review-status="approved">
+    <title>Prenatal Eclipse Calculator: The Eclipse Before Birth</title>
+    <author null="true" />
+    <publisher>Augurine</publisher>
+    <edition-or-date>2026-06-19</edition-or-date>
+    <allowed-sections>
+      <section>read-in-context-not-verdict</section>
+    </allowed-sections>
+    <notes>
+      <note>Reviewed public source: https://www.augurine.com/tools/prenatal-eclipse-calculator</note>
+      <note>Approval is limited to the guidance that a prenatal eclipse is read in context with sign, house, node and the rest of the chart and is not a verdict or prediction.</note>
+      <note>Universal-destiny, forward/backward-pull, spiritual, karmic and other source material discussed elsewhere on the page is excluded.</note>
+    </notes>
+  </source>
+</sources>

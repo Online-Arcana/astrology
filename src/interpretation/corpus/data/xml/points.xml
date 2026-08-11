@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="points">
+  <atoms>
+    <atom id="point.north-node" kind="entity" review-status="approved">
+      <display-name>North Node</display-name>
+      <plain-english>outward participation, initiation and engagement through social networks</plain-english>
+      <aliases>
+        <alias>North Node</alias>
+        <alias>Ascending Node</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>north_node_mean</internal-id>
+        <internal-id>north_node_true</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>point.north-node.core.network-initiation</claim-id>
+        <claim-id>point.north-node.interaction.network-cycle</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>destiny</concept>
+        <concept>future destiny</concept>
+        <concept>soul purpose</concept>
+        <concept>karmic development</concept>
+        <concept>what a person is meant to become</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>point.south-node</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-moon-nodes</source-id>
+      </source-ids>
+    </atom>
+    <atom id="point.south-node" kind="entity" review-status="approved">
+      <display-name>South Node</display-name>
+      <plain-english>receiving, consequence and integration within social networks</plain-english>
+      <aliases>
+        <alias>South Node</alias>
+        <alias>Descending Node</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>south_node_mean</internal-id>
+        <internal-id>south_node_true</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>point.south-node.core.network-consequences</claim-id>
+        <claim-id>point.south-node.interaction.network-cycle</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>past lives</concept>
+        <concept>karmic debt</concept>
+        <concept>past-life talents</concept>
+        <concept>a predetermined past</concept>
+        <concept>what must be left behind</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>point.north-node</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-moon-nodes</source-id>
+      </source-ids>
+    </atom>
+    <atom id="point.black-moon-lilith" kind="entity" review-status="approved">
+      <display-name>Black Moon Lilith</display-name>
+      <plain-english>unfulfilled wishes, perceived lacks and areas needing closer attention</plain-english>
+      <aliases>
+        <alias>Black Moon Lilith</alias>
+        <alias>Black Moon</alias>
+        <alias>Lilith</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>lilith_mean</internal-id>
+        <internal-id>lilith_true</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>point.black-moon-lilith.core.lacks</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a feminine essence</concept>
+        <concept>a goddess archetype</concept>
+        <concept>demonic meaning</concept>
+        <concept>spiritual femininity</concept>
+        <concept>karma</concept>
+        <concept>past lives</concept>
+        <concept>medical conditions</concept>
+        <concept>fertility or menstruation</concept>
+        <concept>sexual orientation</concept>
+        <concept>trauma</concept>
+        <concept>unconscious material as clinical fact</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.mirti.black-moon-lilith</source-id>
+      </source-ids>
+    </atom>
+    <atom id="point.part-of-fortune" kind="entity" review-status="approved">
+      <display-name>Part of Fortune</display-name>
+      <plain-english>material circumstances and practical connection with the surrounding world</plain-english>
+      <aliases>
+        <alias>Part of Fortune</alias>
+        <alias>Lot of Fortune</alias>
+        <alias>Pars Fortunae</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>part_of_fortune</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>point.part-of-fortune.core.world-connection</claim-id>
+        <claim-id>point.part-of-fortune.core.material-support</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>luck guaranteed by fate</concept>
+        <concept>divine favour</concept>
+        <concept>karmic reward</concept>
+        <concept>inevitable wealth or health outcomes</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>point.part-of-spirit</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.lot-fortune-spirit</source-id>
+      </source-ids>
+    </atom>
+    <atom id="point.part-of-spirit" kind="entity" review-status="approved">
+      <display-name>Part of Spirit</display-name>
+      <plain-english>intention, deliberate action and chosen direction</plain-english>
+      <aliases>
+        <alias>Part of Spirit</alias>
+        <alias>Lot of Spirit</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>part_of_spirit</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>point.part-of-spirit.core.intention</claim-id>
+        <claim-id>point.part-of-spirit.core.chosen-direction</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a soul</concept>
+        <concept>soul purpose</concept>
+        <concept>spiritual mission</concept>
+        <concept>divine purpose</concept>
+        <concept>incarnation</concept>
+        <concept>spiritual causes of illness</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>point.part-of-fortune</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.lot-fortune-spirit</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="point.north-node.core.network-initiation" atom-id="point.north-node" category="core" confidence="school-specific">
+      <proposition>The North Node is associated with initiating or putting activity outward into the networks and relationships through which a person engages the wider world.</proposition>
+      <tags>
+        <tag>initiation</tag>
+        <tag>externalisation</tag>
+        <tag>social networks</tag>
+        <tag>engagement</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-moon-nodes#north-node-initiation</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.north-node.interaction.network-cycle" atom-id="point.north-node" category="interaction" confidence="school-specific">
+      <proposition>Within the nodal cycle, the North Node can be read as an outward-facing phase of participation, initiation and connection.</proposition>
+      <tags>
+        <tag>outward participation</tag>
+        <tag>connection</tag>
+        <tag>network cycle</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-moon-nodes#node-network-cycle</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.south-node.core.network-consequences" atom-id="point.south-node" category="core" confidence="school-specific">
+      <proposition>The South Node is associated with encountering and taking in the consequences or results of activity already circulating through a person&apos;s networks and relationships.</proposition>
+      <tags>
+        <tag>consequences</tag>
+        <tag>assimilation</tag>
+        <tag>results</tag>
+        <tag>social networks</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-moon-nodes#south-node-consequences</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.south-node.interaction.network-cycle" atom-id="point.south-node" category="interaction" confidence="school-specific">
+      <proposition>Within the nodal cycle, the South Node can be read as a receiving phase concerned with consequences, results and integration.</proposition>
+      <tags>
+        <tag>integration</tag>
+        <tag>receiving</tag>
+        <tag>network cycle</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-moon-nodes#node-network-cycle</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.black-moon-lilith.core.lacks" atom-id="point.black-moon-lilith" category="core" confidence="school-specific">
+      <proposition>In this reviewed modern interpretation, Black Moon Lilith is used as an indicator of unfulfilled wishes, perceived lacks and areas of life that may call for closer attention.</proposition>
+      <tags>
+        <tag>unfulfilled wishes</tag>
+        <tag>perceived lacks</tag>
+        <tag>closer attention</tag>
+        <tag>unmet concerns</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.mirti.black-moon-lilith#unfulfilled-wishes-lacks</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.part-of-fortune.core.world-connection" atom-id="point.part-of-fortune" category="core" confidence="well-supported">
+      <proposition>The Part of Fortune is associated with the way a person is materially and practically connected with the surrounding physical and social world.</proposition>
+      <tags>
+        <tag>material circumstances</tag>
+        <tag>physical world</tag>
+        <tag>social world</tag>
+        <tag>practical connection</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.lot-fortune-spirit#fortune-physical-social-world</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.part-of-fortune.core.material-support" atom-id="point.part-of-fortune" category="core" confidence="school-specific">
+      <proposition>It is also associated with material support, prosperity and the practical conditions that can make it easier or harder to sustain oneself in the world.</proposition>
+      <tags>
+        <tag>material support</tag>
+        <tag>prosperity</tag>
+        <tag>practical conditions</tag>
+        <tag>resources</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.lot-fortune-spirit#fortune-material-support</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.part-of-spirit.core.intention" atom-id="point.part-of-spirit" category="core" confidence="well-supported">
+      <proposition>The Part of Spirit is associated with will, intention and what a person deliberately chooses to pursue rather than what simply happens around them.</proposition>
+      <tags>
+        <tag>intention</tag>
+        <tag>will</tag>
+        <tag>deliberate action</tag>
+        <tag>chosen direction</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.lot-fortune-spirit#spirit-will-intention</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="point.part-of-spirit.core.chosen-direction" atom-id="point.part-of-spirit" category="core" confidence="school-specific">
+      <proposition>It can also be used to describe chosen vocational direction when work functions as an active statement of what a person intends to do in the world.</proposition>
+      <tags>
+        <tag>chosen direction</tag>
+        <tag>vocation</tag>
+        <tag>deliberate priorities</tag>
+        <tag>active expression</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.lot-fortune-spirit#spirit-chosen-career-direction</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>

@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="bodies">
+  <atoms>
+    <atom id="body.sun" kind="entity" review-status="approved">
+      <display-name>Sun</display-name>
+      <plain-english>central identity, conscious direction and organising focus</plain-english>
+      <aliases>
+        <alias>Sun</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>sun</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.sun.core.central-direction</claim-id>
+        <claim-id>body.sun.constructive.integration</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>divine purpose</concept>
+        <concept>cosmic purpose</concept>
+        <concept>a fixed life mission</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-sun-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.moon" kind="entity" review-status="approved">
+      <display-name>Moon</display-name>
+      <plain-english>feelings, moods, privacy and personally immediate experience</plain-english>
+      <aliases>
+        <alias>Moon</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>moon</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.moon.core.emotional-tone</claim-id>
+        <claim-id>body.moon.core.private-experience</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a soul</concept>
+        <concept>past-life memory</concept>
+        <concept>spiritual receptivity as fact</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-moon-effects</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.mercury" kind="entity" review-status="approved">
+      <display-name>Mercury</display-name>
+      <plain-english>thinking, communication and information exchange</plain-english>
+      <aliases>
+        <alias>Mercury</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>mercury</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.mercury.core.communication</claim-id>
+        <claim-id>body.mercury.constructive.clarity</claim-id>
+        <claim-id>body.mercury.difficult.confusion</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>divine messages</concept>
+        <concept>supernatural communication</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-mercury-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.venus" kind="entity" review-status="approved">
+      <display-name>Venus</display-name>
+      <plain-english>connection, affection, harmony and aesthetic preference</plain-english>
+      <aliases>
+        <alias>Venus</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>venus</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.venus.core.connection</claim-id>
+        <claim-id>body.venus.constructive.aesthetics</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a destined partner</concept>
+        <concept>soulmate status</concept>
+        <concept>divinely ordained love</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-venus-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.mars" kind="entity" review-status="approved">
+      <display-name>Mars</display-name>
+      <plain-english>assertion, action, physical drive and boundary defence</plain-english>
+      <aliases>
+        <alias>Mars</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>mars</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.mars.core.assertion</claim-id>
+        <claim-id>body.mars.constructive.action</claim-id>
+        <claim-id>body.mars.difficult.anger</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>gender identity</concept>
+        <concept>biological sex</concept>
+        <concept>violence as inevitable</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-mars-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.jupiter" kind="entity" review-status="approved">
+      <display-name>Jupiter</display-name>
+      <plain-english>growth, expansion, learning and broader experience</plain-english>
+      <aliases>
+        <alias>Jupiter</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>jupiter</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.jupiter.core.expansion</claim-id>
+        <claim-id>body.jupiter.constructive.learning</claim-id>
+        <claim-id>body.jupiter.difficult.overreach</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>divine favour</concept>
+        <concept>providential luck</concept>
+        <concept>religious belief</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-jupiter-effects</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.saturn" kind="entity" review-status="approved">
+      <display-name>Saturn</display-name>
+      <plain-english>limits, structure, discipline and practical constraints</plain-english>
+      <aliases>
+        <alias>Saturn</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>saturn</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.saturn.core.structure</claim-id>
+        <claim-id>body.saturn.constructive.discipline</claim-id>
+        <claim-id>body.saturn.difficult.rigidity</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fate</concept>
+        <concept>karmic punishment</concept>
+        <concept>a cosmic lesson</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-saturn-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.uranus" kind="entity" review-status="approved">
+      <display-name>Uranus</display-name>
+      <plain-english>change, disruption, innovation and independence from stale constraints</plain-english>
+      <aliases>
+        <alias>Uranus</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>uranus</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.uranus.core.change</claim-id>
+        <claim-id>body.uranus.constructive.adaptation</claim-id>
+        <claim-id>body.uranus.difficult.instability</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>spiritual awakening</concept>
+        <concept>cosmic intervention</concept>
+        <concept>change being destined</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-uranus-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.neptune" kind="entity" review-status="approved">
+      <display-name>Neptune</display-name>
+      <plain-english>permeability, ambiguity and softened distinctions</plain-english>
+      <aliases>
+        <alias>Neptune</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>neptune</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.neptune.core.permeability</claim-id>
+        <claim-id>body.neptune.difficult.confusion</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>psychic ability</concept>
+        <concept>divine influence</concept>
+        <concept>spiritual sensitivity as fact</concept>
+        <concept>prophecy</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-neptune-intro</source-id>
+      </source-ids>
+    </atom>
+    <atom id="body.pluto" kind="entity" review-status="approved">
+      <display-name>Pluto</display-name>
+      <plain-english>intense pressure, transformation and restructuring</plain-english>
+      <aliases>
+        <alias>Pluto</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>pluto</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>body.pluto.core.transformation</claim-id>
+        <claim-id>body.pluto.constructive.channel-power</claim-id>
+        <claim-id>body.pluto.difficult.compulsion</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fated events</concept>
+        <concept>karma</concept>
+        <concept>spiritual regeneration</concept>
+        <concept>inevitable destruction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-pluto-effects</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="body.sun.core.central-direction" atom-id="body.sun" category="core" confidence="well-supported">
+      <proposition>The Sun is associated with a central organising focus, conscious direction and the parts of experience that take a leading role.</proposition>
+      <tags>
+        <tag>central focus</tag>
+        <tag>conscious direction</tag>
+        <tag>leadership</tag>
+        <tag>self-direction</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-sun-intro#central-function</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.sun.constructive.integration" atom-id="body.sun" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression can bring different parts together without requiring them to lose their individual character.</proposition>
+      <tags>
+        <tag>integration</tag>
+        <tag>coherence</tag>
+        <tag>distinct identity</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-sun-intro#qualities-integration</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.moon.core.emotional-tone" atom-id="body.moon" category="core" confidence="core">
+      <proposition>The Moon is associated with feelings, moods, emotional tone and the more personal side of experience.</proposition>
+      <tags>
+        <tag>feelings</tag>
+        <tag>moods</tag>
+        <tag>emotional tone</tag>
+        <tag>personal experience</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-moon-effects#inward-opening</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.moon.core.private-experience" atom-id="body.moon" category="core" confidence="well-supported">
+      <proposition>It is also associated with what is experienced as private, close to home or personally immediate.</proposition>
+      <tags>
+        <tag>privacy</tag>
+        <tag>personal life</tag>
+        <tag>immediacy</tag>
+        <tag>inner experience</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-moon-effects#personal-private</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.mercury.core.communication" atom-id="body.mercury" category="core" confidence="core">
+      <proposition>Mercury is associated with communication and with receiving, organising and transmitting information.</proposition>
+      <tags>
+        <tag>communication</tag>
+        <tag>information</tag>
+        <tag>thinking</tag>
+        <tag>exchange</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-mercury-intro#communication-information</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.mercury.constructive.clarity" atom-id="body.mercury" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression supports clearer thought, comparison, explanation and revision of information.</proposition>
+      <tags>
+        <tag>clarity</tag>
+        <tag>analysis</tag>
+        <tag>comparison</tag>
+        <tag>revision</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-mercury-intro#clear-communication</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.mercury.difficult.confusion" atom-id="body.mercury" category="difficult" confidence="well-supported">
+      <proposition>When its communicative function is strained, information can become confused, rushed or misunderstood.</proposition>
+      <tags>
+        <tag>confusion</tag>
+        <tag>misunderstanding</tag>
+        <tag>rushed decisions</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-mercury-intro#confused-communication</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.venus.core.connection" atom-id="body.venus" category="core" confidence="core">
+      <proposition>Venus is associated with connection, relationship, affection and the impulse to bring separate things into a more harmonious whole.</proposition>
+      <tags>
+        <tag>connection</tag>
+        <tag>relationship</tag>
+        <tag>affection</tag>
+        <tag>harmony</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-venus-intro#qualities-connection</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.venus.constructive.aesthetics" atom-id="body.venus" category="constructive" confidence="well-supported">
+      <proposition>It is also associated with artistic creativity, aesthetic judgement and appreciation of beauty or pleasing form.</proposition>
+      <tags>
+        <tag>aesthetics</tag>
+        <tag>artistic creativity</tag>
+        <tag>beauty</tag>
+        <tag>appreciation</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-venus-intro#qualities-aesthetics</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.mars.core.assertion" atom-id="body.mars" category="core" confidence="core">
+      <proposition>Mars is associated with assertion, separateness, physical drive and the capacity to protect or defend a position.</proposition>
+      <tags>
+        <tag>assertion</tag>
+        <tag>drive</tag>
+        <tag>boundaries</tag>
+        <tag>protection</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-mars-intro#natal-protection-separateness</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.mars.constructive.action" atom-id="body.mars" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression supports deliberate action, physical effort and the ability to stand up for what needs attention or defence.</proposition>
+      <tags>
+        <tag>action</tag>
+        <tag>effort</tag>
+        <tag>defence</tag>
+        <tag>initiative</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-mars-intro#natal-protection-separateness</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.mars.difficult.anger" atom-id="body.mars" category="difficult" confidence="well-supported">
+      <proposition>When blocked or poorly directed, the same drive can appear as anger, irritation, excessive force or conflict.</proposition>
+      <tags>
+        <tag>anger</tag>
+        <tag>irritation</tag>
+        <tag>force</tag>
+        <tag>conflict</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-mars-intro#natal-anger-vitality</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.jupiter.core.expansion" atom-id="body.jupiter" category="core" confidence="core">
+      <proposition>Jupiter is associated with growth, expansion and making the qualities of another chart factor more visible or developed.</proposition>
+      <tags>
+        <tag>growth</tag>
+        <tag>expansion</tag>
+        <tag>visibility</tag>
+        <tag>development</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-effects#inward-growth</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.jupiter.constructive.learning" atom-id="body.jupiter" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression supports learning, broader experience, confidence and preparation for further progress.</proposition>
+      <tags>
+        <tag>learning</tag>
+        <tag>broader experience</tag>
+        <tag>confidence</tag>
+        <tag>progress</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-effects#outward-learning</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.jupiter.difficult.overreach" atom-id="body.jupiter" category="difficult" confidence="well-supported">
+      <proposition>Expansion can become overreach when confidence turns into poorly prepared risk-taking or assumptions that limits will not apply.</proposition>
+      <tags>
+        <tag>overreach</tag>
+        <tag>risk-taking</tag>
+        <tag>overconfidence</tag>
+        <tag>poor preparation</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-effects#inward-risk</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.saturn.core.structure" atom-id="body.saturn" category="core" confidence="core">
+      <proposition>Saturn is associated with limits, rules, structure, discipline and the assumptions used to decide what is realistic or workable.</proposition>
+      <tags>
+        <tag>limits</tag>
+        <tag>rules</tag>
+        <tag>structure</tag>
+        <tag>discipline</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-saturn-intro#rules-limits-discipline</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.saturn.constructive.discipline" atom-id="body.saturn" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression supports self-discipline, durable structure and adjustment to practical constraints.</proposition>
+      <tags>
+        <tag>self-discipline</tag>
+        <tag>durability</tag>
+        <tag>practical limits</tag>
+        <tag>adjustment</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-saturn-intro#rules-limits-discipline</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.saturn.difficult.rigidity" atom-id="body.saturn" category="difficult" confidence="well-supported">
+      <proposition>The same function can become restrictive when assumptions harden into inhibitions or rules that are no longer examined.</proposition>
+      <tags>
+        <tag>restriction</tag>
+        <tag>inhibition</tag>
+        <tag>rigidity</tag>
+        <tag>unexamined assumptions</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-saturn-intro#reality-system</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.uranus.core.change" atom-id="body.uranus" category="core" confidence="core">
+      <proposition>Uranus is associated with disruption, rapid change, innovation and pressure against boundaries that have become arbitrary or unnecessary.</proposition>
+      <tags>
+        <tag>change</tag>
+        <tag>disruption</tag>
+        <tag>innovation</tag>
+        <tag>independence</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-uranus-intro#opening-change-boundaries</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.uranus.constructive.adaptation" atom-id="body.uranus" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression supports experimentation, adaptation, new ideas and willingness to update established patterns.</proposition>
+      <tags>
+        <tag>experimentation</tag>
+        <tag>adaptation</tag>
+        <tag>new ideas</tag>
+        <tag>flexibility</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-uranus-intro#adaptation-new-ideas</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.uranus.difficult.instability" atom-id="body.uranus" category="difficult" confidence="well-supported">
+      <proposition>When change is resisted or pursued without enough stability, it can be experienced as tension, unpredictability or disruptive breaks.</proposition>
+      <tags>
+        <tag>tension</tag>
+        <tag>unpredictability</tag>
+        <tag>instability</tag>
+        <tag>disruption</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-uranus-intro#opening-change-boundaries</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.neptune.core.permeability" atom-id="body.neptune" category="core" confidence="well-supported">
+      <proposition>Neptune is associated with permeability, blurred distinctions and connections that are difficult to define in clear-cut terms.</proposition>
+      <tags>
+        <tag>permeability</tag>
+        <tag>blurred distinctions</tag>
+        <tag>diffuse boundaries</tag>
+        <tag>ambiguity</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-neptune-intro#qualities-blurred-distinctions</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.neptune.difficult.confusion" atom-id="body.neptune" category="difficult" confidence="well-supported">
+      <proposition>Its difficult expression can involve confusion, uncertainty, reduced clarity or difficulty deciding what is well defined.</proposition>
+      <tags>
+        <tag>confusion</tag>
+        <tag>uncertainty</tag>
+        <tag>reduced clarity</tag>
+        <tag>indefinition</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-neptune-intro#opening-loss-of-clarity</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.pluto.core.transformation" atom-id="body.pluto" category="core" confidence="core">
+      <proposition>Pluto is associated with sustained pressure, profound change and transformation of an existing condition or structure.</proposition>
+      <tags>
+        <tag>transformation</tag>
+        <tag>pressure</tag>
+        <tag>profound change</tag>
+        <tag>restructuring</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-pluto-effects#inward-change-pressure</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.pluto.constructive.channel-power" atom-id="body.pluto" category="constructive" confidence="well-supported">
+      <proposition>Its constructive expression involves directing intense pressure deliberately rather than pursuing control or power for its own sake.</proposition>
+      <tags>
+        <tag>deliberate change</tag>
+        <tag>directed pressure</tag>
+        <tag>responsible power</tag>
+        <tag>renewal</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-pluto-effects#inward-power-warning</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="body.pluto.difficult.compulsion" atom-id="body.pluto" category="difficult" confidence="well-supported">
+      <proposition>When pressure has no workable outlet, it can become compulsive, controlling or destructive rather than transformative.</proposition>
+      <tags>
+        <tag>compulsion</tag>
+        <tag>control</tag>
+        <tag>destructive pressure</tag>
+        <tag>blocked change</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-pluto-effects#inward-change-pressure</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>

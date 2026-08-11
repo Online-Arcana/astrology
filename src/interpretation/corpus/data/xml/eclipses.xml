@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="eclipses">
+  <atoms>
+    <atom id="derived.eclipses-at-birth" kind="derived-construct" review-status="approved">
+      <display-name>Eclipse at birth</display-name>
+      <plain-english>eclipse context within the natal Sun-Moon-node configuration</plain-english>
+      <aliases>
+        <alias>Eclipse at birth</alias>
+        <alias>Natal eclipse</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>eclipsesAtBirth</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.eclipses-at-birth.core.context</claim-id>
+        <claim-id>derived.eclipses-at-birth.detail.types</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fate</concept>
+        <concept>destiny</concept>
+        <concept>predestination</concept>
+        <concept>karmic path</concept>
+        <concept>karmic debt</concept>
+        <concept>past lives</concept>
+        <concept>reincarnation</concept>
+        <concept>a soul agreement</concept>
+        <concept>soul purpose</concept>
+        <concept>dharma</concept>
+        <concept>spiritual journey</concept>
+        <concept>cosmic plan</concept>
+        <concept>divine intervention</concept>
+        <concept>events that must happen</concept>
+        <concept>a guaranteed crisis</concept>
+        <concept>a guaranteed beginning or ending</concept>
+        <concept>medical outcomes</concept>
+        <concept>an omen</concept>
+        <concept>a malefic influence</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>body.sun</atom-id>
+        <atom-id>body.moon</atom-id>
+        <atom-id>point.north-node</atom-id>
+        <atom-id>point.south-node</atom-id>
+        <atom-id>derived.lunar-phase</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.eclipse-context</source-id>
+      </source-ids>
+    </atom>
+    <atom id="derived.eclipses-prenatal-solar" kind="derived-construct" review-status="approved">
+      <display-name>Prenatal solar eclipse</display-name>
+      <plain-english>a pre-birth solar-eclipse degree used as contextual chart evidence</plain-english>
+      <aliases>
+        <alias>Prenatal solar eclipse</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>prenatalSolar</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.eclipses-prenatal-solar.core.context</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fate</concept>
+        <concept>destiny</concept>
+        <concept>predestination</concept>
+        <concept>karmic path</concept>
+        <concept>karmic debt</concept>
+        <concept>past lives</concept>
+        <concept>reincarnation</concept>
+        <concept>a soul agreement</concept>
+        <concept>soul purpose</concept>
+        <concept>dharma</concept>
+        <concept>spiritual journey</concept>
+        <concept>cosmic plan</concept>
+        <concept>divine intervention</concept>
+        <concept>events that must happen</concept>
+        <concept>a guaranteed crisis</concept>
+        <concept>a guaranteed beginning or ending</concept>
+        <concept>medical outcomes</concept>
+        <concept>universal destiny</concept>
+        <concept>a quality the soul came to develop</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>derived.eclipses-at-birth</atom-id>
+        <atom-id>body.sun</atom-id>
+        <atom-id>body.moon</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.zodisphere.prenatal-eclipse-definition</source-id>
+        <source-id>semantic.augurine.prenatal-eclipse-context</source-id>
+      </source-ids>
+    </atom>
+    <atom id="derived.eclipses-prenatal-lunar" kind="derived-construct" review-status="approved">
+      <display-name>Prenatal lunar eclipse</display-name>
+      <plain-english>a pre-birth lunar-eclipse degree used as contextual chart evidence</plain-english>
+      <aliases>
+        <alias>Prenatal lunar eclipse</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>prenatalLunar</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>derived.eclipses-prenatal-lunar.core.context</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fate</concept>
+        <concept>destiny</concept>
+        <concept>predestination</concept>
+        <concept>karmic path</concept>
+        <concept>karmic debt</concept>
+        <concept>past lives</concept>
+        <concept>reincarnation</concept>
+        <concept>a soul agreement</concept>
+        <concept>soul purpose</concept>
+        <concept>dharma</concept>
+        <concept>spiritual journey</concept>
+        <concept>cosmic plan</concept>
+        <concept>divine intervention</concept>
+        <concept>events that must happen</concept>
+        <concept>a guaranteed crisis</concept>
+        <concept>a guaranteed beginning or ending</concept>
+        <concept>medical outcomes</concept>
+        <concept>a lesson the soul needs to learn</concept>
+        <concept>dual destiny</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>derived.eclipses-at-birth</atom-id>
+        <atom-id>body.sun</atom-id>
+        <atom-id>body.moon</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.zodisphere.prenatal-eclipse-definition</source-id>
+        <source-id>semantic.augurine.prenatal-eclipse-context</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="derived.eclipses-at-birth.core.context" atom-id="derived.eclipses-at-birth" category="core" confidence="school-specific">
+      <proposition>An eclipse coinciding with birth can be treated as additional context around the natal Sun-Moon-node configuration and any chart factors closely connected with the eclipse degree.</proposition>
+      <tags>
+        <tag>eclipse at birth</tag>
+        <tag>natal context</tag>
+        <tag>Sun-Moon-node configuration</tag>
+        <tag>contacted chart factors</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.eclipse-context#modern-trigger-context</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.eclipses-at-birth.detail.types" atom-id="derived.eclipses-at-birth" category="interaction" confidence="core">
+      <proposition>A solar eclipse is a New-Moon conjunction near the lunar nodal axis, while a lunar eclipse is a Full-Moon opposition near that axis; the type is calculation evidence rather than a prediction of what must happen to the person.</proposition>
+      <tags>
+        <tag>solar eclipse</tag>
+        <tag>lunar eclipse</tag>
+        <tag>New Moon</tag>
+        <tag>Full Moon</tag>
+        <tag>nodal axis</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.eclipse-context#solar-new-moon-node</source-ref>
+        <source-ref>semantic.astrodienst.eclipse-context#lunar-full-moon-node</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.eclipses-prenatal-solar.core.context" atom-id="derived.eclipses-prenatal-solar" category="core" confidence="school-specific">
+      <proposition>The prenatal solar eclipse is retained as a sensitised solar-eclipse degree from before birth and is read only in context with its sign, house, node, aspects and the rest of the natal chart.</proposition>
+      <tags>
+        <tag>prenatal solar eclipse</tag>
+        <tag>sensitive degree</tag>
+        <tag>chart context</tag>
+        <tag>sign</tag>
+        <tag>house</tag>
+        <tag>node</tag>
+        <tag>aspects</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.zodisphere.prenatal-eclipse-definition#sensitive-degree-definition</source-ref>
+        <source-ref>semantic.augurine.prenatal-eclipse-context#read-in-context-not-verdict</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="derived.eclipses-prenatal-lunar.core.context" atom-id="derived.eclipses-prenatal-lunar" category="core" confidence="school-specific">
+      <proposition>The prenatal lunar eclipse is retained as a sensitised lunar-eclipse degree from before birth and is read only in context with its sign, house, node, aspects and the rest of the natal chart.</proposition>
+      <tags>
+        <tag>prenatal lunar eclipse</tag>
+        <tag>sensitive degree</tag>
+        <tag>chart context</tag>
+        <tag>sign</tag>
+        <tag>house</tag>
+        <tag>node</tag>
+        <tag>aspects</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.zodisphere.prenatal-eclipse-definition#sensitive-degree-definition</source-ref>
+        <source-ref>semantic.augurine.prenatal-eclipse-context#read-in-context-not-verdict</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>

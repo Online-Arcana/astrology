@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="angles">
+  <atoms>
+    <atom id="angle.ascendant" kind="entity" review-status="approved">
+      <display-name>Ascendant</display-name>
+      <plain-english>self-presentation and direct outward interaction</plain-english>
+      <aliases>
+        <alias>Ascendant</alias>
+        <alias>Rising Sign</alias>
+        <alias>ASC</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>ascendant</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.ascendant.core.presentation</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>physical appearance as certainty</concept>
+        <concept>the whole identity</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.descendant</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-jupiter-angles</source-id>
+      </source-ids>
+    </atom>
+    <atom id="angle.descendant" kind="entity" review-status="approved">
+      <display-name>Descendant</display-name>
+      <plain-english>the other-facing side of interaction and relational response</plain-english>
+      <aliases>
+        <alias>Descendant</alias>
+        <alias>DSC</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>descendant</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.descendant.core.other-facing</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a destined partner</concept>
+        <concept>soulmate</concept>
+        <concept>the exact traits of a future spouse</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.ascendant</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-jupiter-angles</source-id>
+      </source-ids>
+    </atom>
+    <atom id="angle.midheaven" kind="entity" review-status="approved">
+      <display-name>Midheaven</display-name>
+      <plain-english>public direction, career and social role</plain-english>
+      <aliases>
+        <alias>Midheaven</alias>
+        <alias>Medium Coeli</alias>
+        <alias>MC</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>midheaven</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.midheaven.core.direction</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>divine calling</concept>
+        <concept>destined career</concept>
+        <concept>one fixed life purpose</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.imum-coeli</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-jupiter-angles</source-id>
+      </source-ids>
+    </atom>
+    <atom id="angle.imum-coeli" kind="entity" review-status="approved">
+      <display-name>Imum Coeli</display-name>
+      <plain-english>home, origins, private foundation and personal history</plain-english>
+      <aliases>
+        <alias>Imum Coeli</alias>
+        <alias>IC</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>imum_coeli</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.imum-coeli.core.home-history</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>ancestral karma</concept>
+        <concept>past lives</concept>
+        <concept>a predetermined family fate</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.midheaven</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.hand.transits-jupiter-angles</source-id>
+      </source-ids>
+    </atom>
+    <atom id="angle.vertex" kind="entity" review-status="approved">
+      <display-name>Vertex</display-name>
+      <plain-english>a supplementary relationship angle for comparatively external or event-oriented context</plain-english>
+      <aliases>
+        <alias>Vertex</alias>
+        <alias>Vx</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>vertex</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.vertex.core.event-oriented</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fated events</concept>
+        <concept>destined encounters</concept>
+        <concept>inevitable relationships</concept>
+        <concept>alternate realities</concept>
+        <concept>supernatural causation</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.antivertex</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.local-space-vertex-axis</source-id>
+      </source-ids>
+    </atom>
+    <atom id="angle.antivertex" kind="entity" review-status="approved">
+      <display-name>Antivertex</display-name>
+      <plain-english>the opposite end of the Vertex axis and a supplementary event-oriented context angle</plain-english>
+      <aliases>
+        <alias>Antivertex</alias>
+        <alias>Anti-Vertex</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>antivertex</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.antivertex.core.event-axis</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>fate</concept>
+        <concept>destiny</concept>
+        <concept>inevitable events</concept>
+        <concept>supernatural intervention</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.vertex</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.local-space-vertex-axis</source-id>
+      </source-ids>
+    </atom>
+    <atom id="angle.east-point" kind="entity" review-status="approved">
+      <display-name>East Point</display-name>
+      <plain-english>a minor Ascendant providing supplementary context for outward self-presentation</plain-english>
+      <aliases>
+        <alias>East Point</alias>
+        <alias>Equatorial Ascendant</alias>
+        <alias>EqAsc</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>east_point</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>angle.east-point.core.minor-ascendant</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a soul-level identity</concept>
+        <concept>karma</concept>
+        <concept>past incarnations</concept>
+        <concept>a universal true self</concept>
+        <concept>public destiny</concept>
+      </do-not-infer>
+      <related-atom-ids>
+        <atom-id>angle.ascendant</atom-id>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.equatorial-ascendant-minor</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="angle.ascendant.core.presentation" atom-id="angle.ascendant" category="core" confidence="core">
+      <proposition>The Ascendant is associated with the part of personality that is presented outward and used in direct interaction with other people.</proposition>
+      <tags>
+        <tag>self-presentation</tag>
+        <tag>outward expression</tag>
+        <tag>interaction</tag>
+        <tag>visible personality</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-angles#ascendant-presentation</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="angle.descendant.core.other-facing" atom-id="angle.descendant" category="core" confidence="well-supported">
+      <proposition>The Descendant is associated with the other-facing side of interaction: how other people and the surrounding world seem to present themselves in relation to the chart owner.</proposition>
+      <tags>
+        <tag>other people</tag>
+        <tag>relational response</tag>
+        <tag>interaction</tag>
+        <tag>world-facing</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-angles#descendant-world-facing</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="angle.midheaven.core.direction" atom-id="angle.midheaven" category="core" confidence="core">
+      <proposition>The Midheaven is associated with public direction, career or profession, social role and the direction in which a person&apos;s visible activity develops.</proposition>
+      <tags>
+        <tag>life direction</tag>
+        <tag>career</tag>
+        <tag>social role</tag>
+        <tag>public activity</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-angles#midheaven-life-direction</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="angle.imum-coeli.core.home-history" atom-id="angle.imum-coeli" category="core" confidence="well-supported">
+      <proposition>The Imum Coeli is associated with the home-and-origin side of the MC-IC axis, including early and current home life and the background from which later public direction develops.</proposition>
+      <tags>
+        <tag>home</tag>
+        <tag>origins</tag>
+        <tag>private foundation</tag>
+        <tag>personal history</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.hand.transits-jupiter-angles#ic-home-history</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="angle.vertex.core.event-oriented" atom-id="angle.vertex" category="core" confidence="school-specific">
+      <proposition>The Vertex is used as a supplementary relationship angle whose contacts are treated as comparatively external or event-oriented rather than primarily as descriptions of attitude or personality.</proposition>
+      <tags>
+        <tag>external circumstances</tag>
+        <tag>event-oriented</tag>
+        <tag>supplementary relationship angle</tag>
+        <tag>interaction</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.local-space-vertex-axis#vertex-antivertex-event-oriented</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="angle.antivertex.core.event-axis" atom-id="angle.antivertex" category="core" confidence="school-specific">
+      <proposition>The Antivertex is the opposite end of the Vertex axis and is interpreted together with the Vertex as a supplementary angle for comparatively external or event-oriented context.</proposition>
+      <tags>
+        <tag>Vertex axis</tag>
+        <tag>external circumstances</tag>
+        <tag>event-oriented</tag>
+        <tag>supplementary angle</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.local-space-vertex-axis#vertex-antivertex-event-oriented</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="angle.east-point.core.minor-ascendant" atom-id="angle.east-point" category="core" confidence="school-specific">
+      <proposition>The East Point, or Equatorial Ascendant, is used by some astrologers as a secondary or minor Ascendant and can therefore add supplementary context to outward self-presentation.</proposition>
+      <tags>
+        <tag>minor Ascendant</tag>
+        <tag>self-presentation</tag>
+        <tag>supplementary angle</tag>
+        <tag>outward expression</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.equatorial-ascendant-minor#equatorial-ascendant-minor-ascendant</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>

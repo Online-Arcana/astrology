@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="conditions">
+  <atoms>
+    <atom id="condition.element-fire" kind="condition" review-status="approved">
+      <display-name>Fire</display-name>
+      <plain-english>energetic, initiating and outwardly expressive style</plain-english>
+      <aliases>
+        <alias>Fire</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>element-fire</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.element-fire.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.element-earth" kind="condition" review-status="approved">
+      <display-name>Earth</display-name>
+      <plain-english>practical, concrete and materially grounded style</plain-english>
+      <aliases>
+        <alias>Earth</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>element-earth</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.element-earth.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.element-air" kind="condition" review-status="approved">
+      <display-name>Air</display-name>
+      <plain-english>thought, communication and exchange-oriented style</plain-english>
+      <aliases>
+        <alias>Air</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>element-air</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.element-air.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.element-water" kind="condition" review-status="approved">
+      <display-name>Water</display-name>
+      <plain-english>feeling, sensitivity and emotionally responsive style</plain-english>
+      <aliases>
+        <alias>Water</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>element-water</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.element-water.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.modality-cardinal" kind="condition" review-status="approved">
+      <display-name>Cardinal</display-name>
+      <plain-english>initiation and starting activity</plain-english>
+      <aliases>
+        <alias>Cardinal</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>modality-cardinal</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.modality-cardinal.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.modality-fixed" kind="condition" review-status="approved">
+      <display-name>Fixed</display-name>
+      <plain-english>sustaining and stabilising activity</plain-english>
+      <aliases>
+        <alias>Fixed</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>modality-fixed</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.modality-fixed.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.modality-mutable" kind="condition" review-status="approved">
+      <display-name>Mutable</display-name>
+      <plain-english>adaptation and adjustment to change</plain-english>
+      <aliases>
+        <alias>Mutable</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>modality-mutable</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.modality-mutable.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-elements</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.polarity-active" kind="condition" review-status="approved">
+      <display-name>Active polarity</display-name>
+      <plain-english>weighted active-sign grouping</plain-english>
+      <aliases>
+        <alias>Active polarity</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>polarity-active</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.polarity-active.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.polarity-receptive" kind="condition" review-status="approved">
+      <display-name>Receptive polarity</display-name>
+      <plain-english>weighted receptive-sign grouping</plain-english>
+      <aliases>
+        <alias>Receptive polarity</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>polarity-receptive</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.polarity-receptive.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.hemisphere-eastern" kind="condition" review-status="approved">
+      <display-name>Eastern hemisphere</display-name>
+      <plain-english>weighted houses 10 through 3 grouping</plain-english>
+      <aliases>
+        <alias>Eastern hemisphere</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>hemisphere-eastern</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.hemisphere-eastern.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.hemisphere-western" kind="condition" review-status="approved">
+      <display-name>Western hemisphere</display-name>
+      <plain-english>weighted houses 4 through 9 grouping</plain-english>
+      <aliases>
+        <alias>Western hemisphere</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>hemisphere-western</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.hemisphere-western.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.hemisphere-northern" kind="condition" review-status="approved">
+      <display-name>Northern hemisphere</display-name>
+      <plain-english>weighted houses 1 through 6 grouping</plain-english>
+      <aliases>
+        <alias>Northern hemisphere</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>hemisphere-northern</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.hemisphere-northern.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.hemisphere-southern" kind="condition" review-status="approved">
+      <display-name>Southern hemisphere</display-name>
+      <plain-english>weighted houses 7 through 12 grouping</plain-english>
+      <aliases>
+        <alias>Southern hemisphere</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>hemisphere-southern</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.hemisphere-southern.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.house-mode-angular" kind="condition" review-status="approved">
+      <display-name>Angular houses</display-name>
+      <plain-english>weighted angular-house grouping</plain-english>
+      <aliases>
+        <alias>Angular houses</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>house-mode-angular</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.house-mode-angular.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.house-mode-succedent" kind="condition" review-status="approved">
+      <display-name>Succedent houses</display-name>
+      <plain-english>weighted succedent-house grouping</plain-english>
+      <aliases>
+        <alias>Succedent houses</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>house-mode-succedent</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.house-mode-succedent.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+    <atom id="condition.house-mode-cadent" kind="condition" review-status="approved">
+      <display-name>Cadent houses</display-name>
+      <plain-english>weighted cadent-house grouping</plain-english>
+      <aliases>
+        <alias>Cadent houses</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>house-mode-cadent</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>condition.house-mode-cadent.core.grouping</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a fixed personality</concept>
+        <concept>a good or bad score</concept>
+        <concept>causal effects</concept>
+        <concept>prediction</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.project.chart-balance-categories</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="condition.element-fire.core.style" atom-id="condition.element-fire" category="core" confidence="well-supported">
+      <proposition>Fire is used as an expression-style category associated with energetic, initiating and outwardly expressive qualities.</proposition>
+      <tags>
+        <tag>energy</tag>
+        <tag>initiative</tag>
+        <tag>expression</tag>
+        <tag>fire</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#fire-style</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.element-earth.core.style" atom-id="condition.element-earth" category="core" confidence="well-supported">
+      <proposition>Earth is used as an expression-style category associated with practical, concrete and materially grounded qualities.</proposition>
+      <tags>
+        <tag>practicality</tag>
+        <tag>concreteness</tag>
+        <tag>material focus</tag>
+        <tag>earth</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#earth-style</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.element-air.core.style" atom-id="condition.element-air" category="core" confidence="well-supported">
+      <proposition>Air is used as an expression-style category associated with thought, communication and exchange of ideas or information.</proposition>
+      <tags>
+        <tag>thought</tag>
+        <tag>communication</tag>
+        <tag>ideas</tag>
+        <tag>exchange</tag>
+        <tag>air</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#air-style</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.element-water.core.style" atom-id="condition.element-water" category="core" confidence="well-supported">
+      <proposition>Water is used as an expression-style category associated with feeling, sensitivity and responsiveness to emotional context.</proposition>
+      <tags>
+        <tag>feeling</tag>
+        <tag>sensitivity</tag>
+        <tag>emotional context</tag>
+        <tag>water</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#water-style</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.modality-cardinal.core.style" atom-id="condition.modality-cardinal" category="core" confidence="well-supported">
+      <proposition>Cardinal is used as a modality category associated with initiating, starting or setting activity in motion.</proposition>
+      <tags>
+        <tag>initiation</tag>
+        <tag>starting</tag>
+        <tag>movement</tag>
+        <tag>cardinal</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#cardinal-mode</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.modality-fixed.core.style" atom-id="condition.modality-fixed" category="core" confidence="well-supported">
+      <proposition>Fixed is used as a modality category associated with sustaining, maintaining or stabilising an existing direction.</proposition>
+      <tags>
+        <tag>sustaining</tag>
+        <tag>maintaining</tag>
+        <tag>stability</tag>
+        <tag>fixed</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#fixed-mode</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.modality-mutable.core.style" atom-id="condition.modality-mutable" category="core" confidence="well-supported">
+      <proposition>Mutable is used as a modality category associated with adaptation, transition and adjustment to changing conditions.</proposition>
+      <tags>
+        <tag>adaptation</tag>
+        <tag>transition</tag>
+        <tag>adjustment</tag>
+        <tag>mutable</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-elements#mutable-mode</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.polarity-active.core.grouping" atom-id="condition.polarity-active" category="core" confidence="core">
+      <proposition>Active polarity is the weighted share of chart points falling in signs classified as active in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>active polarity</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#polarity-active</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.polarity-receptive.core.grouping" atom-id="condition.polarity-receptive" category="core" confidence="core">
+      <proposition>Receptive polarity is the weighted share of chart points falling in signs classified as receptive in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>receptive polarity</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#polarity-receptive</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.hemisphere-eastern.core.grouping" atom-id="condition.hemisphere-eastern" category="core" confidence="core">
+      <proposition>Eastern hemisphere is the weighted share of planets placed in houses 10, 11, 12, 1, 2 or 3 in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>eastern hemisphere</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#hemisphere-eastern</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.hemisphere-western.core.grouping" atom-id="condition.hemisphere-western" category="core" confidence="core">
+      <proposition>Western hemisphere is the weighted share of planets placed in houses 4, 5, 6, 7, 8 or 9 in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>western hemisphere</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#hemisphere-western</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.hemisphere-northern.core.grouping" atom-id="condition.hemisphere-northern" category="core" confidence="core">
+      <proposition>Northern hemisphere is the weighted share of planets placed in houses 1 through 6 in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>northern hemisphere</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#hemisphere-northern</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.hemisphere-southern.core.grouping" atom-id="condition.hemisphere-southern" category="core" confidence="core">
+      <proposition>Southern hemisphere is the weighted share of planets placed in houses 7 through 12 in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>southern hemisphere</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#hemisphere-southern</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.house-mode-angular.core.grouping" atom-id="condition.house-mode-angular" category="core" confidence="core">
+      <proposition>Angular houses is the weighted share of planets placed in angular houses in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>angular houses</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#house-mode-angular</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.house-mode-succedent.core.grouping" atom-id="condition.house-mode-succedent" category="core" confidence="core">
+      <proposition>Succedent houses is the weighted share of planets placed in succedent houses in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>succedent houses</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#house-mode-succedent</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="condition.house-mode-cadent.core.grouping" atom-id="condition.house-mode-cadent" category="core" confidence="core">
+      <proposition>Cadent houses is the weighted share of planets placed in cadent houses in the project&apos;s chart-balance calculation.</proposition>
+      <tags>
+        <tag>cadent houses</tag>
+        <tag>weighted grouping</tag>
+        <tag>chart balance</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.project.chart-balance-categories#house-mode-cadent</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>

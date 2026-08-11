@@ -1,0 +1,470 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<corpus format="astral-corpus-xml/1.0.0" category="signs">
+  <atoms>
+    <atom id="sign.aries" kind="style" review-status="approved">
+      <display-name>Aries</display-name>
+      <plain-english>initiative, energy, directness, courage</plain-english>
+      <aliases>
+        <alias>Aries</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>aries</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.aries.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>aggression is inevitable</concept>
+        <concept>natural superiority</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.taurus" kind="style" review-status="approved">
+      <display-name>Taurus</display-name>
+      <plain-english>steadiness, security, stability, deliberation</plain-english>
+      <aliases>
+        <alias>Taurus</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>taurus</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.taurus.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>materialism as a moral flaw</concept>
+        <concept>wealth</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.gemini" kind="style" review-status="approved">
+      <display-name>Gemini</display-name>
+      <plain-english>communication, mobility, learning, wit</plain-english>
+      <aliases>
+        <alias>Gemini</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>gemini</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.gemini.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>dishonesty</concept>
+        <concept>two personalities</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.cancer" kind="style" review-status="approved">
+      <display-name>Cancer</display-name>
+      <plain-english>emotional response, security, closeness, family orientation</plain-english>
+      <aliases>
+        <alias>Cancer</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>cancer</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.cancer.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a required family role</concept>
+        <concept>maternal identity</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.leo" kind="style" review-status="approved">
+      <display-name>Leo</display-name>
+      <plain-english>expression, generosity, organisation, visibility</plain-english>
+      <aliases>
+        <alias>Leo</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>leo</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.leo.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>narcissism</concept>
+        <concept>fame</concept>
+        <concept>natural superiority</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.virgo" kind="style" review-status="approved">
+      <display-name>Virgo</display-name>
+      <plain-english>precision, differentiation, practicality, usefulness</plain-english>
+      <aliases>
+        <alias>Virgo</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>virgo</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.virgo.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>perfectionism as inevitable</concept>
+        <concept>servitude</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.libra" kind="style" review-status="approved">
+      <display-name>Libra</display-name>
+      <plain-english>balance, harmony, tact, proportion</plain-english>
+      <aliases>
+        <alias>Libra</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>libra</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.libra.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>indecision is inevitable</concept>
+        <concept>a required romantic orientation</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.scorpio" kind="style" review-status="approved">
+      <display-name>Scorpio</display-name>
+      <plain-english>intensity, passion, depth, penetrating focus</plain-english>
+      <aliases>
+        <alias>Scorpio</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>scorpio</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.scorpio.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>occult ability</concept>
+        <concept>dangerousness</concept>
+        <concept>vengefulness</concept>
+        <concept>supernatural sensitivity</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.sagittarius" kind="style" review-status="approved">
+      <display-name>Sagittarius</display-name>
+      <plain-english>freedom, movement, exploration, cheerfulness</plain-english>
+      <aliases>
+        <alias>Sagittarius</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>sagittarius</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.sagittarius.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>religious faith</concept>
+        <concept>good luck</concept>
+        <concept>a destined journey</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.capricorn" kind="style" review-status="approved">
+      <display-name>Capricorn</display-name>
+      <plain-english>endurance, ambition, goals, persistence</plain-english>
+      <aliases>
+        <alias>Capricorn</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>capricorn</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.capricorn.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>status seeking as inevitable</concept>
+        <concept>destined success</concept>
+        <concept>a fixed life purpose</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.aquarius" kind="style" review-status="approved">
+      <display-name>Aquarius</display-name>
+      <plain-english>communication, progressive ideas, groups, collective concerns</plain-english>
+      <aliases>
+        <alias>Aquarius</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>aquarius</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.aquarius.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>a universal spirit</concept>
+        <concept>spiritual mission</concept>
+        <concept>political ideology</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+    <atom id="sign.pisces" kind="style" review-status="approved">
+      <display-name>Pisces</display-name>
+      <plain-english>sensitivity, compassion, adaptability, helpfulness</plain-english>
+      <aliases>
+        <alias>Pisces</alias>
+      </aliases>
+      <internal-ids>
+        <internal-id>pisces</internal-id>
+      </internal-ids>
+      <claim-ids>
+        <claim-id>sign.pisces.core.style</claim-id>
+      </claim-ids>
+      <do-not-infer>
+        <concept>religious faith</concept>
+        <concept>psychic ability</concept>
+        <concept>spiritual sensitivity as fact</concept>
+        <concept>a fixed personality</concept>
+        <concept>literal causal effects from sign placement</concept>
+      </do-not-infer>
+      <related-atom-ids>
+      </related-atom-ids>
+      <source-ids>
+        <source-id>semantic.astrodienst.brief-intro-signs</source-id>
+      </source-ids>
+    </atom>
+  </atoms>
+  <claims>
+    <claim id="sign.aries.core.style" atom-id="sign.aries" category="core" confidence="well-supported">
+      <proposition>Aries describes an energetic, initiating and direct style that tends to act quickly and can become impulsive when speed outruns reflection.</proposition>
+      <tags>
+        <tag>initiative</tag>
+        <tag>energy</tag>
+        <tag>directness</tag>
+        <tag>courage</tag>
+        <tag>impulsiveness</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-aries-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.taurus.core.style" atom-id="sign.taurus" category="core" confidence="well-supported">
+      <proposition>Taurus describes a steadfast, deliberate and security-oriented style that values stability, continuity and tangible comfort.</proposition>
+      <tags>
+        <tag>steadiness</tag>
+        <tag>security</tag>
+        <tag>stability</tag>
+        <tag>deliberation</tag>
+        <tag>comfort</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-taurus-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.gemini.core.style" atom-id="sign.gemini" category="core" confidence="well-supported">
+      <proposition>Gemini describes a communicative, mobile and learning-oriented style that tends to move readily among ideas, information and changing interests.</proposition>
+      <tags>
+        <tag>communication</tag>
+        <tag>mobility</tag>
+        <tag>learning</tag>
+        <tag>wit</tag>
+        <tag>variety</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-gemini-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.cancer.core.style" atom-id="sign.cancer" category="core" confidence="well-supported">
+      <proposition>Cancer describes an emotionally responsive, closeness-seeking and security-oriented style that gives weight to familiarity and personal connection.</proposition>
+      <tags>
+        <tag>emotional response</tag>
+        <tag>security</tag>
+        <tag>closeness</tag>
+        <tag>family orientation</tag>
+        <tag>persistence</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-cancer-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.leo.core.style" atom-id="sign.leo" category="core" confidence="well-supported">
+      <proposition>Leo describes an expressive, generous and organising style that is comfortable with visibility, leadership and taking a central role.</proposition>
+      <tags>
+        <tag>expression</tag>
+        <tag>generosity</tag>
+        <tag>organisation</tag>
+        <tag>visibility</tag>
+        <tag>leadership</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-leo-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.virgo.core.style" atom-id="sign.virgo" category="core" confidence="well-supported">
+      <proposition>Virgo describes a precise, differentiating and practical style that pays close attention to what is useful, necessary or in need of refinement.</proposition>
+      <tags>
+        <tag>precision</tag>
+        <tag>differentiation</tag>
+        <tag>practicality</tag>
+        <tag>usefulness</tag>
+        <tag>critical evaluation</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-virgo-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.libra.core.style" atom-id="sign.libra" category="core" confidence="well-supported">
+      <proposition>Libra describes a tactful, proportion-seeking and relational style that gives weight to balance, harmony and consideration of more than one side.</proposition>
+      <tags>
+        <tag>balance</tag>
+        <tag>harmony</tag>
+        <tag>tact</tag>
+        <tag>proportion</tag>
+        <tag>comparison</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-libra-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.scorpio.core.style" atom-id="sign.scorpio" category="core" confidence="well-supported">
+      <proposition>Scorpio describes an intense, passionate and penetrating style that tends to engage deeply rather than superficially with demanding material.</proposition>
+      <tags>
+        <tag>intensity</tag>
+        <tag>passion</tag>
+        <tag>depth</tag>
+        <tag>penetrating focus</tag>
+        <tag>extremity</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-scorpio-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.sagittarius.core.style" atom-id="sign.sagittarius" category="core" confidence="well-supported">
+      <proposition>Sagittarius describes a freedom-seeking, mobile and exploratory style that tends to welcome movement, variety and a broader field of experience.</proposition>
+      <tags>
+        <tag>freedom</tag>
+        <tag>movement</tag>
+        <tag>exploration</tag>
+        <tag>cheerfulness</tag>
+        <tag>variety</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-sagittarius-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.capricorn.core.style" atom-id="sign.capricorn" category="core" confidence="well-supported">
+      <proposition>Capricorn describes an enduring, ambitious and goal-directed style that tends to apply effort steadily toward defined aims.</proposition>
+      <tags>
+        <tag>endurance</tag>
+        <tag>ambition</tag>
+        <tag>goals</tag>
+        <tag>persistence</tag>
+        <tag>purposeful effort</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-capricorn-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.aquarius.core.style" atom-id="sign.aquarius" category="core" confidence="well-supported">
+      <proposition>Aquarius describes a communicative, progressive and group-oriented style that gives weight to ideas, collective concerns and change beyond established convention.</proposition>
+      <tags>
+        <tag>communication</tag>
+        <tag>progressive ideas</tag>
+        <tag>groups</tag>
+        <tag>collective concerns</tag>
+        <tag>innovation</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-aquarius-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+    <claim id="sign.pisces.core.style" atom-id="sign.pisces" category="core" confidence="well-supported">
+      <proposition>Pisces describes a sensitive, compassionate and adaptable style that tends to respond readily to emotional context and the needs of other people.</proposition>
+      <tags>
+        <tag>sensitivity</tag>
+        <tag>compassion</tag>
+        <tag>adaptability</tag>
+        <tag>helpfulness</tag>
+        <tag>sociability</tag>
+      </tags>
+      <source-refs>
+        <source-ref>semantic.astrodienst.brief-intro-signs#sign-pisces-summary</source-ref>
+      </source-refs>
+      <neutrality religious="false" spiritual="false" karmic="false" fatalistic="false" supernatural="false" />
+    </claim>
+  </claims>
+</corpus>
