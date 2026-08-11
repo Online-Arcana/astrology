@@ -79,13 +79,13 @@ jobs:
               'import { deterministicInterpretationPlan } from \"../src/llm/orchestrate/plan.js\";',
               'import type { InterpretationRun, UnitResult } from \"../src/llm/orchestrate/types.js\";',
               'import type { JsonRef } from \"../src/types/base.js\";',
-              'import type { CompatibilityDomain, CompatibilityMatrix, PointId, Sign, SignMap, ZodiacCalculation } from \"../src/types/astro.js\";',
               'import type { Section } from \"../src/types/chart.js\";',
               'import { signs } from \"../src/zodiac/position.js\";',
           ]:
               s=s.replace(old_import, '')
+          s=s.replace('from \"../src/types/astro.js\";', 'from \"astral-core\";')
           s=s.replace('buildInterpretationPlan(system)', 'buildPlan(system)')
-          imports='''import { compatibilityDomains, signs, type CompatibilityDomain, type CompatibilityMatrix, type JsonRef, type PointId, type Sign, type SignMap, type ZodiacCalculation } from "astral-core";\nimport { assembleChart, buildPlan, deterministicInterpretationPlan, type ChartAssemblyOptions, type InterpretationRun, type Section, type UnitResult } from "astral-interpreter/web";\n'''
+          imports='''import { compatibilityDomains, signs, type JsonRef } from "astral-core";\nimport { assembleChart, buildPlan, deterministicInterpretationPlan, type ChartAssemblyOptions, type InterpretationRun, type Section, type UnitResult } from "astral-interpreter/web";\n'''
           s=imports+s
           p.write_text(s)"""
           if needle not in script:
