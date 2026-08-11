@@ -23,3 +23,21 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+      - name: Guard modular browser boundaries
+        run: |
+          CORE=$(git -C vendor/astral-core rev-parse HEAD)
+          INTERPRETER_CORE=$(git -C vendor/astral-interpreter/vendor/astral-core rev-parse HEAD)
+          test "$CORE" = "$INTERPRETER_CORE"
+          ! grep -F 'from "astral-core"' vendor/astral-interpreter/dist/web.js
+          ! grep -E 'node:(fs|path|url)' vendor/astral-interpreter/dist/web.js
+          grep -F 'from "astral-core/web"' vendor/astral-interpreter/dist/web.js
+          node --input-type=module - <<'NODE'
+          const web = await import('./dist/web.js');
+          for (const name of ['loadWebChartGenerationService','astralWheelData','webPlaces','webPorts']) {
+            if (typeof web[name] !== 'function') throw new Error(`${name} missing from astrology/web`);
+          }
+          const packager = await import('./dist/packager.js');
+          for (const name of ['auditPwd','open','pack']) {
+            if (typeof packager[name] !== 'function') throw new Error(`${name} missing from astrology/packager`);
+          }
+          NODE
