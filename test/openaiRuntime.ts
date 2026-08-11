@@ -235,12 +235,16 @@ await test("fixed plan audits both paid tiers and routes short and long fields b
   equal(
     result.run.units["tropical.point.ascendant"]?.model,
     "deterministic",
-    "unavailable unit model",
+    "source-unavailable unit model",
   );
   equal(
     (result.run.units["tropical.point.ascendant"]?.value as { status: string }).status,
-    "unavailable",
-    "unavailable unit status",
+    "written",
+    "source-unavailable unit still receives generic written interpretation",
+  );
+  assert(
+    ((result.run.units["tropical.point.ascendant"]?.value as { summary?: string }).summary ?? "").trim().length > 0,
+    "source-unavailable unit must contain generic interpretation prose",
   );
   equal(
     client.models.join(","),
