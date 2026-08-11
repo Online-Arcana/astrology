@@ -57,6 +57,7 @@ jobs:
           replacement=needle+"""
           p=Path('src/interface/api.ts')
           p.write_text(p.read_text().replace('import type { BillStore } from \"astral-interpreter/web\";', 'import type { BillStore } from \"astral-interpreter\";'))
+
           p=Path('test/service.ts')
           s=p.read_text()
           for old_import in [
@@ -67,10 +68,33 @@ jobs:
           ]:
               s=s.replace(old_import, '')
           s='import { compatibilityDomains, type AstronomyPort, type BodySample, type LunarOrbitPort, type EclipseKind, type EclipsePort, type TimeResolver } from \"astral-core\";' + chr(10) + s
+          p.write_text(s)
+
+          p=Path('test/chartFile.ts')
+          s=p.read_text()
+          for old_import in [
+              'import { assembleChart, type ChartAssemblyOptions } from \"../src/chart/assemble.js\";',
+              'import { buildInterpretationPlan } from \"../src/calculate/plan.js\";',
+              'import { compatibilityDomains } from \"../src/compat/catalogue.js\";',
+              'import { deterministicInterpretationPlan } from \"../src/llm/orchestrate/plan.js\";',
+              'import type { InterpretationRun, UnitResult } from \"../src/llm/orchestrate/types.js\";',
+              'import type { JsonRef } from \"../src/types/base.js\";',
+              'import type { CompatibilityDomain, CompatibilityMatrix, PointId, Sign, SignMap, ZodiacCalculation } from \"../src/types/astro.js\";',
+              'import type { Section } from \"../src/types/chart.js\";',
+              'import { signs } from \"../src/zodiac/position.js\";',
+          ]:
+              s=s.replace(old_import, '')
+          s=s.replace('buildInterpretationPlan(system)', 'buildPlan(system)')
+          imports='''import { compatibilityDomains, signs, type CompatibilityDomain, type CompatibilityMatrix, type JsonRef, type PointId, type Sign, type SignMap, type ZodiacCalculation } from "astral-core";\nimport { assembleChart, buildPlan, deterministicInterpretationPlan, type ChartAssemblyOptions, type InterpretationRun, type Section, type UnitResult } from "astral-interpreter/web";\n'''
+          s=imports+s
           p.write_text(s)"""
           if needle not in script:
               raise SystemExit('post-rewrite patch anchor not found')
           script=script.replace(needle,replacement)
+
+          # The dependency SHAs are already independently validated and commit dist.
+          # Avoid rebuilding them twice during iterative extraction; permanent CI still rebuilds them.
+          script=script.replace('npm run vendor:build\nnpm install --package-lock-only --ignore-scripts', 'npm install --package-lock-only --ignore-scripts', 1)
 
           Path('/tmp/headless-v2.sh').write_text(script)
           PY
