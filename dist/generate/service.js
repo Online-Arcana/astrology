@@ -1,5 +1,5 @@
 import { BillCollector } from "astral-interpreter/web";
-import { CalculationService, loadCalculationPorts, } from "../calculate/service.js";
+import { CalculationService, } from "../calculate/service.js";
 import { assembleChart } from "astral-interpreter/web";
 import { assembleAstralFile } from "../file/document.js";
 import { legacyBirthInput, legacyGenerationRecoverySchema, migrateLegacyInterpretation, } from "./migration.js";
@@ -271,9 +271,5 @@ export const createChartGenerationService = (calculation, config, version = "0.2
         ...(semanticProvider === null ? {} : { semanticProvider }),
         now: () => new Date().toISOString(),
     });
-};
-export const loadChartGenerationService = async (config, version = "0.20.0", openai = {}, semanticProvider = null) => {
-    const ports = await loadCalculationPorts(version);
-    return createChartGenerationService(new CalculationService(ports), config, version, openai, semanticProvider);
 };
 //# sourceMappingURL=service.js.map

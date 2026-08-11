@@ -1,8 +1,8 @@
 import { loadCscCatalogue } from "astral-core";
 import { BillStore, productionSemanticProvider } from "astral-interpreter";
 import type { Config } from "../config.js";
-import { loadCalculationService } from "../calculate/service.js";
-import { loadChartGenerationService } from "../generate/service.js";
+import { loadCalculationService } from "../calculate/node.js";
+import { loadChartGenerationService } from "../generate/node.js";
 import type { ApiRuntime } from "./api.js";
 export interface LoadedApiRuntime extends ApiRuntime {
   bills: BillStore;

@@ -8,6 +8,7 @@ export type { LegacyAstralCalculation, LegacyAstralChart, LegacyAstralFile, Read
 export type { ProgressEvent, ProgressStage } from "./types/progress.js";
 export * from "./assets.js";
 export * from "./calculate/service.js";
+export * from "./calculate/node.js";
 export { canonicalise } from "./file/canonical.js";
 export * from "./file/codec.js";
 export * from "./file/crc32c.js";
@@ -17,6 +18,7 @@ export * from "./file/invariants.js";
 export * from "./file/document.js";
 export * from "./file/validate.js";
 export * from "./generate/service.js";
+export * from "./generate/node.js";
 export * from "./interface/request.js";
 export * from "./interface/api.js";
 export * from "./interface/runtime.js";

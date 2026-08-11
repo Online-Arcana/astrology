@@ -2,7 +2,6 @@ import { BillCollector } from "astral-interpreter/web";
 import type { ChartBill, PricedUsage, ResponseUsage } from "astral-interpreter/web";
 import {
   CalculationService,
-  loadCalculationPorts,
   type CalculationOptions,
 } from "../calculate/service.js";
 import { assembleChart } from "astral-interpreter/web";
@@ -435,20 +434,4 @@ export const createChartGenerationService = (
     ...(semanticProvider === null ? {} : { semanticProvider }),
     now: () => new Date().toISOString(),
   });
-};
-
-export const loadChartGenerationService = async (
-  config: Config,
-  version = "0.20.0",
-  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
-  semanticProvider: InterpretationSemanticProvider | null = null,
-): Promise<ChartGenerationService> => {
-  const ports = await loadCalculationPorts(version);
-  return createChartGenerationService(
-    new CalculationService(ports),
-    config,
-    version,
-    openai,
-    semanticProvider,
-  );
 };

@@ -1,6 +1,5 @@
 import { CalcError, calc, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core/web";
 import { prepare, type AstralCalculation, type Subject } from "astral-interpreter/web";
-import type { Config } from "../config.js";
 import { preferredGenderOf, type BirthInput } from "../types/base.js";
 
 export interface CalculationOptions {
@@ -10,11 +9,6 @@ export interface CalculationOptions {
 }
 export type CalculationPorts = CalcPorts;
 export class CalculationUnavailableError extends CalcError {}
-const optionsFromConfig = (config: Config): CalculationOptions => ({
-  primaryZodiac: config.chart.primaryZodiac,
-  ayanamsha: config.chart.ayanamsha,
-  interpretationMode: config.chart.interpretationMode,
-});
 const coreInput = (input: BirthInput) => ({
   date: input.date,
   time: input.time ?? null,
@@ -41,11 +35,3 @@ export class CalculationService {
     }
   }
 }
-export const loadCalculationPorts = async (version = "0.20.0"): Promise<CalculationPorts> => {
-  const { loadPorts } = await import("astral-core");
-  return loadPorts(version);
-};
-export const loadCalculationService = async (config: Config, version = "0.20.0"): Promise<{ service: CalculationService; options: CalculationOptions }> => ({
-  service: new CalculationService(await loadCalculationPorts(version)),
-  options: optionsFromConfig(config),
-});

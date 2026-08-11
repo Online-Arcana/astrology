@@ -54,5 +54,4 @@ export declare class ChartGenerationService {
     resume(checkpoint: ResumableChartGenerationCheckpoint, hooks?: GenerationHooks): Promise<GeneratedChart>;
 }
 export declare const createChartGenerationService: (calculation: Pick<CalculationService, "calculate">, config: Config, version?: string, openai?: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">>, semanticProvider?: InterpretationSemanticProvider | null) => ChartGenerationService;
-export declare const loadChartGenerationService: (config: Config, version?: string, openai?: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">>, semanticProvider?: InterpretationSemanticProvider | null) => Promise<ChartGenerationService>;
 //# sourceMappingURL=service.d.ts.map

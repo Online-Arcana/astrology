@@ -1,7 +1,7 @@
 import { loadCscCatalogue } from "astral-core";
 import { BillStore, productionSemanticProvider } from "astral-interpreter";
-import { loadCalculationService } from "../calculate/service.js";
-import { loadChartGenerationService } from "../generate/service.js";
+import { loadCalculationService } from "../calculate/node.js";
+import { loadChartGenerationService } from "../generate/node.js";
 export const loadApiRuntime = async (config, version = "0.20.0") => {
     const [{ service, options }, places] = await Promise.all([loadCalculationService(config, version), loadCscCatalogue()]);
     const generator = config.openai.apiKey.trim().length === 0

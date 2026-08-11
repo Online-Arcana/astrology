@@ -3,11 +3,6 @@ import { prepare } from "astral-interpreter/web";
 import { preferredGenderOf } from "../types/base.js";
 export class CalculationUnavailableError extends CalcError {
 }
-const optionsFromConfig = (config) => ({
-    primaryZodiac: config.chart.primaryZodiac,
-    ayanamsha: config.chart.ayanamsha,
-    interpretationMode: config.chart.interpretationMode,
-});
 const coreInput = (input) => ({
     date: input.date,
     time: input.time ?? null,
@@ -36,12 +31,4 @@ export class CalculationService {
         }
     }
 }
-export const loadCalculationPorts = async (version = "0.20.0") => {
-    const { loadPorts } = await import("astral-core");
-    return loadPorts(version);
-};
-export const loadCalculationService = async (config, version = "0.20.0") => ({
-    service: new CalculationService(await loadCalculationPorts(version)),
-    options: optionsFromConfig(config),
-});
 //# sourceMappingURL=service.js.map
