@@ -5,13 +5,10 @@ on:
     branches:
       - main
       - agent/**
-      - feature/interpretation-corpus-consolidated
   pull_request:
 
-# TEMPORARY migration permission. Removed as soon as the XML export is
-# committed back to the feature branch; main is never targeted by the write step.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -30,25 +27,5 @@ jobs:
       - run: corepack enable
       - run: npm run vendor:build
       - run: npm install --ignore-scripts
-
-      - name: Export canonical XML corpus
-        run: npx tsx scripts/export-corpus-xml.ts src/interpretation/corpus/data/xml
-
-      - name: Commit XML migration output
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/interpretation-corpus-consolidated'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/interpretation/corpus/data/xml/*.xml
-          if ! git diff --cached --quiet; then
-            git commit -m "Store interpretation corpus as canonical XML"
-            git push origin HEAD:feature/interpretation-corpus-consolidated
-          fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: corpus-xml-export
-          path: src/interpretation/corpus/data/xml
-
       - run: npm run ci
       - run: npm run test:vendor
