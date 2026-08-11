@@ -1,1 +1,4 @@
-export { renderChartWheel } from "astral-chart-wheel";
+export {
+  renderChartWheel,
+  setChartWheelPointVisibility,
+} from "astral-chart-wheel";
