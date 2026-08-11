@@ -56,6 +56,18 @@ jobs:
 
           Path('src/generate/node.ts').write_text('''import type { InterpretationSemanticProvider, OpenAISchemaRuntimeOptions } from "astral-interpreter/web";\nimport { CalculationService } from "../calculate/service.js";\nimport { loadCalculationPorts } from "../calculate/node.js";\nimport type { Config } from "../config.js";\nimport {\n  createChartGenerationService,\n  type ChartGenerationService,\n} from "./service.js";\n\nexport const loadChartGenerationService = async (\n  config: Config,\n  version = "0.20.0",\n  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},\n  semanticProvider: InterpretationSemanticProvider | null = null,\n): Promise<ChartGenerationService> => {\n  const ports = await loadCalculationPorts(version);\n  return createChartGenerationService(\n    new CalculationService(ports),\n    config,\n    version,\n    openai,\n    semanticProvider,\n  );\n};\n''')
 
+          p=Path('src/interface/runtime.ts')
+          s=p.read_text()
+          s=s.replace(
+              'import { loadCalculationService } from "../calculate/service.js";',
+              'import { loadCalculationService } from "../calculate/node.js";'
+          )
+          s=s.replace(
+              'import { loadChartGenerationService } from "../generate/service.js";',
+              'import { loadChartGenerationService } from "../generate/node.js";'
+          )
+          p.write_text(s)
+
           p=Path('src/index.ts')
           s=p.read_text()
           s=s.replace(
@@ -90,11 +102,13 @@ jobs:
           ! grep -q 'astral-core"' dist/generate/service.js
           grep -q 'from "astral-core"' dist/calculate/node.js
           grep -q 'loadCalculationPorts' dist/generate/node.js
+          grep -q '../calculate/node.js' dist/interface/runtime.js
+          grep -q '../generate/node.js' dist/interface/runtime.js
 
           git restore --source=HEAD --staged --worktree .github/workflows || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/calculate src/generate src/index.ts
+          git add src/calculate src/generate src/interface/runtime.ts src/index.ts
           git add -f dist
           git commit -m "Separate Node loaders from browser composition"
           git pull --rebase origin agent/split-modules
