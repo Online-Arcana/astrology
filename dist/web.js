@@ -3,6 +3,7 @@ import { productionSemanticProvider, } from "astral-interpreter/web";
 import { CalculationService } from "./calculate/service.js";
 import { createChartGenerationService, } from "./generate/service.js";
 export { webPlaces, webPorts } from "astral-core/web";
+export { renderWheel, wheelData, renderPublicWheel, fromPublic } from "astral-core/wheel";
 export { productionSemanticProvider, } from "astral-interpreter/web";
 export { readConfig } from "./config.js";
 export { preferredGenderOf } from "./types/base.js";

@@ -3,6 +3,8 @@ import { type InterpretationSemanticProvider, type OpenAISchemaRuntimeOptions } 
 import type { Config } from "./config.js";
 import { type ChartGenerationService } from "./generate/service.js";
 export { webPlaces, webPorts } from "astral-core/web";
+export { renderWheel, wheelData, renderPublicWheel, fromPublic } from "astral-core/wheel";
+export type { WheelData, PublicWheelMeta } from "astral-core/wheel";
 export type { PlaceCatalogue } from "astral-core/web";
 export { productionSemanticProvider, type InterpretationSemanticProvider, type OpenAISchemaRuntimeOptions, } from "astral-interpreter/web";
 export { readConfig, type Config, type Env } from "./config.js";

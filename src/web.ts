@@ -16,6 +16,8 @@ import {
 } from "./generate/service.js";
 
 export { webPlaces, webPorts } from "astral-core/web";
+export { renderWheel, wheelData, renderPublicWheel, fromPublic } from "astral-core/wheel";
+export type { WheelData, PublicWheelMeta } from "astral-core/wheel";
 export type { PlaceCatalogue } from "astral-core/web";
 export {
   productionSemanticProvider,
