@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Ceres">
-  <!-- {&quot;category&quot;: &quot;points&quot;, &quot;slug&quot;: &quot;ceres&quot;, &quot;label&quot;: &quot;Ceres&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⚳&quot;, &quot;code_points&quot;: [&quot;U+26B3&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/points/ceres.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(35.245053 238.000000) scale(0.334855 -0.334855)">
-  <path d="M232 0V108H114V155H232V295Q219 297 206 302L232 314V295Q245 293 259 293Q303 293 338.0 314.0Q373 335 394.0 370.5Q415 406 415 449Q415 493 394.0 528.0Q373 563 338.0 584.0Q303 605 259 605Q226 605 197.0 592.5Q168 580 147 558L159 546L131 539Q138 549 147 558L109 594Q137 624 176.0 640.5Q215 657 259 657Q317 657 364.0 629.0Q411 601 439.0 554.0Q467 507 467 449Q467 396 443.0 351.5Q419 307 378.0 278.0Q337 249 286 243V155H397V108H286V0ZM99 604 109 594Q97 582 87 567Z"/>
-  </g>
-  </g>
-</svg>

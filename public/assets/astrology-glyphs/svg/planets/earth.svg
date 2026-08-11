@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Earth">
-  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;earth&quot;, &quot;label&quot;: &quot;Earth&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;♁&quot;, &quot;code_points&quot;: [&quot;U+2641&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/earth.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(41.007634 238.000000) scale(0.335878 -0.335878)">
-  <path d="M259 0Q203 0 155.5 27.5Q108 55 79.5 102.0Q51 149 51 205Q51 258 75.0 302.5Q99 347 140.0 376.5Q181 406 232 412V500H114V547H232V655H286V547H397V500H286V412Q338 406 378.5 376.5Q419 347 443.0 302.5Q467 258 467 205Q467 149 438.5 102.0Q410 55 363.0 27.5Q316 0 259 0ZM259 50Q302 50 338.0 71.5Q374 93 395.5 128.0Q417 163 417 205Q417 248 395.5 284.0Q374 320 338.0 341.5Q302 363 259 363Q217 363 181.0 341.5Q145 320 123.0 284.0Q101 248 101 205Q101 164 122.5 128.5Q144 93 180.0 71.5Q216 50 259 50Z"/>
-  </g>
-  </g>
-</svg>

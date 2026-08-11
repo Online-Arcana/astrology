@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Gemini">
-  <!-- {&quot;category&quot;: &quot;zodiac&quot;, &quot;slug&quot;: &quot;gemini&quot;, &quot;label&quot;: &quot;Gemini&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;♊︎&quot;, &quot;code_points&quot;: [&quot;U+264A&quot;], &quot;note&quot;: &quot;Uses Unicode zodiac symbol with text-presentation variation selector FE0E.&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/zodiac/gemini.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(15.484958 220.527076) scale(0.264741 -0.264741)">
-  <path d="M51 -66V-4Q84 9 118.0 19.0Q152 29 187 36V663Q145 672 111.0 682.0Q77 692 51 703V765Q213 699 425 699Q637 699 799 765V703Q741 678 663 662V36Q698 29 731.5 19.0Q765 9 799 -4V-66Q708 -31 618.5 -15.5Q529 0 425 0Q324 0 233.5 -15.5Q143 -31 51 -66ZM257 49Q297 56 339.0 59.0Q381 62 425 62Q469 62 511.0 59.0Q553 56 593 49V649Q511 637 425 637Q340 637 257 649Z"/>
-  </g>
-  </g>
-</svg>

@@ -13,3 +13,5 @@ coverage/
 /public/chunks/
 /public/.nojekyll
 /public/places/
+/public/assets/astrology-glyphs/
+/public/chart-wheel.css
