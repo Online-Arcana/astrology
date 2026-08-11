@@ -1,0 +1,37 @@
+name: tmp-headless-rerun
+on:
+  push:
+    branches: [agent/split-modules]
+    paths: [.github/workflows/tmp-headless-rerun.yml]
+permissions:
+  contents: write
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/split-modules
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Reuse the reviewed extraction with current pins
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source=Path('.github/workflows/tmp-headless-split.yml').read_text()
+          marker='      - name: Build headless tree\n        run: |\n'
+          _, block=source.split(marker,1)
+          lines=[]
+          for line in block.splitlines():
+              lines.append(line[10:] if line.startswith('          ') else line)
+          script='\n'.join(lines)+'\n'
+          script=script.replace('d909d05abce71cf6215a20387fa0de8ae4b37776','b79d3b882dea0db7104f925880f9d201a04d5b16')
+          script=script.replace('39430d25d6fea1203d53e05f8dabe6d3dcd87e57','8bb9e53b8910a15d8a3e59ab88cc30b3b208c7ba')
+          script=script.replace('157ddc810c0dc2429b68990c3d35fccf2d653dda','402a167bcd8d74c1d1ac2f8bace6d08ecea3c8b9')
+          script=script.replace('npm --prefix vendor/astral-interpreter install --ignore-scripts','npm --prefix vendor/astral-interpreter ci')
+          Path('/tmp/headless-build.sh').write_text(script)
+          PY
+          bash /tmp/headless-build.sh
