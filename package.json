@@ -30,6 +30,7 @@
     "@countrystatecity/countries": "file:vendor/places/packages/countries",
     "@js-joda/core": "file:vendor/time/packages/core",
     "@js-joda/timezone": "file:vendor/time/packages/timezone",
+    "astral-chart-wheel": "file:vendor/astral-chart-wheel",
     "astral-packager": "file:vendor/astral-packager",
     "astronomia": "file:vendor/astronomy",
     "openai-schema": "file:vendor/openai-schema"
