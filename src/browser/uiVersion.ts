@@ -4,7 +4,7 @@ declare const __ASTRAL_UI_BUILD_SHA__: string | undefined;
  * Browser presentation release. This is intentionally independent from the
  * calculation/recovery compatibility version in browser/runtime.ts.
  */
-export const browserUiVersion = "0.21.0";
+export const browserUiVersion = "0.22.0";
 
 const injectedBuild = typeof __ASTRAL_UI_BUILD_SHA__ === "string"
   ? __ASTRAL_UI_BUILD_SHA__.trim()
