@@ -327,7 +327,7 @@ await test("final worldview failure has a complete deterministic interpretation 
     ...(recovered.generatedName === null ? {} : { generatedName: recovered.generatedName }),
   });
   equal(chart.system.points.sun.status, "written", "recovered Sun interpretation status");
-  assert(chart.system.points.sun.summary.trim().length > 0, "recovered interpretation must contain prose");
+  assert((chart.system.points.sun.summary ?? "").trim().length > 0, "recovered interpretation must contain prose");
 });
 
 await test("chart assembler rejects missing and unexpected interpretation units", () => {
