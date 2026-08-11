@@ -7,6 +7,9 @@ coverage/
 *.log
 .DS_Store
 
+# Generated interpretation-corpus transport. The authored corpus is XML.
+/src/interpretation/corpus/data/xml.generated.ts
+
 # Generated static frontend assets
 /public/app.js
 /public/browser-tools.js
