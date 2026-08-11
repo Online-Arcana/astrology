@@ -1,0 +1,60 @@
+name: tmp-repin-interpreter
+
+on:
+  push:
+    branches: [agent/split-modules]
+    paths: [.github/workflows/tmp-repin-interpreter.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  repin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/split-modules
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Repin and validate composition package
+        run: |
+          set -euo pipefail
+          INTERPRETER=a11f585767e04e3e4080b0ce5a9e0962081d3644
+          git -C vendor/astral-interpreter fetch origin "$INTERPRETER"
+          git -C vendor/astral-interpreter checkout "$INTERPRETER"
+          git add vendor/astral-interpreter
+
+          npm run vendor:build
+          npm ci
+          npm run check
+          npm test
+          npm run build
+
+          ! grep -F 'from "astral-core"' vendor/astral-interpreter/dist/web.js
+          ! grep -E 'node:(fs|path|url)' vendor/astral-interpreter/dist/web.js
+          grep -F 'from "astral-core/web"' vendor/astral-interpreter/dist/web.js
+
+          node --input-type=module - <<'NODE'
+          const web = await import('./dist/web.js');
+          for (const name of ['loadWebChartGenerationService','astralWheelData','webPlaces','webPorts']) {
+            if (typeof web[name] !== 'function') throw new Error(`${name} missing from astrology/web`);
+          }
+          const packager = await import('./dist/packager.js');
+          for (const name of ['auditPwd','open','pack']) {
+            if (typeof packager[name] !== 'function') throw new Error(`${name} missing from astrology/packager`);
+          }
+          NODE
+
+          git restore --source=HEAD --staged --worktree .github/workflows || true
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add vendor/astral-interpreter
+          git add -f dist
+          git commit -m "Repin browser-safe astral interpreter"
+          git pull --rebase origin agent/split-modules
+          git push origin HEAD:agent/split-modules
