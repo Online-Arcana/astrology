@@ -59,6 +59,37 @@ jobs:
           Path('package.json').write_text(json.dumps(package,indent=2)+'\n')
           PY
 
+          cat > scripts/sync-data.mjs <<'JS'
+          import { access, cp, mkdir, rm } from "node:fs/promises";
+          import { spawn } from "node:child_process";
+          import { resolve } from "node:path";
+
+          const core = resolve("vendor/astral-core");
+          const source = resolve(core, "data/places");
+          const output = resolve("data/places");
+          const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+
+          const run = (command, args, cwd) => new Promise((resolveRun, reject) => {
+            const child = spawn(command, args, { cwd, stdio: "inherit" });
+            child.once("error", reject);
+            child.once("exit", (code, signal) => {
+              if (code === 0) resolveRun();
+              else reject(new Error(`${command} ${args.join(" ")} failed (${signal ?? code})`));
+            });
+          });
+
+          try {
+            await access(source);
+          } catch {
+            await run(npm, ["run", "vendor:places"], core);
+            await run(process.execPath, ["scripts/data.mjs"], core);
+          }
+
+          await rm(output, { recursive: true, force: true });
+          await mkdir(resolve("data"), { recursive: true });
+          await cp(source, output, { recursive: true });
+          JS
+
           npm --prefix vendor/astral-packager run build
           npm install --package-lock-only --ignore-scripts
           npm ci
@@ -83,7 +114,7 @@ jobs:
           git restore --source=HEAD --staged --worktree .github/workflows || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add vendor/astral-core vendor/astral-interpreter src/web.ts src/packager.ts package.json package-lock.json
+          git add vendor/astral-core vendor/astral-interpreter src/web.ts src/packager.ts scripts/sync-data.mjs package.json package-lock.json
           git add -f dist/web.* dist/packager.*
           git commit -m "Complete astrology browser facade"
           git pull --rebase origin agent/split-modules
