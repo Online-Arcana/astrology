@@ -1,0 +1,42 @@
+name: tmp-headless-v2
+on:
+  push:
+    branches: [agent/split-modules]
+    paths: [.github/workflows/tmp-headless-v2.yml]
+permissions:
+  contents: write
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/split-modules
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Run corrected headless extraction
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source=Path('.github/workflows/tmp-headless-rerun.yml').read_text()
+          marker='      - name: Build compatibility-preserving headless composition\n        run: |\n'
+          _, block=source.split(marker,1)
+          lines=[]
+          for line in block.splitlines():
+              lines.append(line[10:] if line.startswith('          ') else line)
+          script='\n'.join(lines)+'\n'
+          old='''git -C vendor/astral-packager checkout "$PACKAGER"\ngit submodule update --init --recursive'''
+          new='''git -C vendor/astral-packager checkout "$PACKAGER"\ngit add .gitmodules vendor/astral-core vendor/astral-interpreter vendor/astral-packager\ngit -C vendor/astral-core submodule update --init --recursive\ngit -C vendor/astral-interpreter submodule update --init --recursive\ngit -C vendor/astral-packager submodule update --init --recursive'''
+          if old not in script:
+              raise SystemExit('dependency initialisation block not found')
+          script=script.replace(old,new)
+          script=script.replace(
+              'git rm -f .github/workflows/pages.yml .github/workflows/tmp-headless-split.yml .github/workflows/tmp-headless-rerun.yml 2>/dev/null || true',
+              'git rm -f .github/workflows/pages.yml .github/workflows/tmp-headless-split.yml .github/workflows/tmp-headless-rerun.yml .github/workflows/tmp-headless-v2.yml 2>/dev/null || true'
+          )
+          Path('/tmp/headless-v2.sh').write_text(script)
+          PY
+          bash /tmp/headless-v2.sh
