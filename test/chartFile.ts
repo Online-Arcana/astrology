@@ -4,6 +4,7 @@ import { compatibilityDomains } from "../src/compat/catalogue.js";
 import { base64url } from "../src/file/codec.js";
 import { assembleAstralFile } from "../src/file/document.js";
 import { decodeAstralFile, encodeAstralFile, isAstralFile, validateAstralFile } from "../src/file/validate.js";
+import { deterministicInterpretationPlan } from "../src/llm/orchestrate/plan.js";
 import type { InterpretationRun, UnitResult } from "../src/llm/orchestrate/types.js";
 import type { JsonRef } from "../src/types/base.js";
 import type {
@@ -298,6 +299,35 @@ await test("chart assembler consumes every selected-system unit", () => {
   equal(chart.system.life.sexuality.desireStyle, "You experience desire directly and privately.", "sexuality mapping");
   equal(chart.compatibility.domains.romantic.signs.aries.sign, "aries", "compatibility mapping");
   equal(chart.provenance.phases.length, calculation.interpretationPlan.units.length, "phase provenance count");
+});
+
+await test("final worldview failure has a complete deterministic interpretation floor", () => {
+  const calculation = calculationFixture();
+  const unsafe = runFixture(calculation);
+  const sun = unsafe.units["tropical.point.sun"]?.value as Section;
+  sun.summary = "God is asking you to accept this purpose.";
+
+  let finalAuditRejected = false;
+  try {
+    assembleChart(calculation, unsafe, assemblyOptions);
+  } catch (cause: unknown) {
+    finalAuditRejected = cause instanceof Error
+      && cause.message.includes("Final chart failed worldview-neutrality audit");
+  }
+  equal(finalAuditRejected, true, "unsafe final chart must still be rejected");
+
+  const recovered = deterministicInterpretationPlan(
+    calculation,
+    {},
+    new Error("final worldview audit rejected generated prose"),
+    null,
+  );
+  const chart = assembleChart(calculation, recovered.run, {
+    ...assemblyOptions,
+    ...(recovered.generatedName === null ? {} : { generatedName: recovered.generatedName }),
+  });
+  equal(chart.system.points.sun.status, "written", "recovered Sun interpretation status");
+  assert(chart.system.points.sun.summary.trim().length > 0, "recovered interpretation must contain prose");
 });
 
 await test("chart assembler rejects missing and unexpected interpretation units", () => {

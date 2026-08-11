@@ -407,11 +407,11 @@ const localRun = (
   };
 };
 
-const deterministicPlan = (
+export const deterministicInterpretationPlan = (
   calculation: AstralCalculation,
-  hooks: RunHooks,
-  cause: unknown,
-  semanticProvider: InterpretationSemanticProvider | null,
+  hooks: RunHooks = {},
+  cause: unknown = "Deterministic interpretation requested",
+  semanticProvider: InterpretationSemanticProvider | null = null,
 ): PlanInterpretationResult => {
   const warning = `Deterministic plan fallback: ${cause instanceof Error ? cause.message : String(cause)}`;
   const units: Record<string, UnitResult<object>> = {};
@@ -474,6 +474,6 @@ export const runInterpretationPlan = async (
     return await runPlan(calculation, config, createClient, hooks, recovery, semanticProvider);
   } catch (cause: unknown) {
     if (config.chart.throwOnInterpretationFailure) throw cause;
-    return deterministicPlan(calculation, hooks, cause, semanticProvider);
+    return deterministicInterpretationPlan(calculation, hooks, cause, semanticProvider);
   }
 };
