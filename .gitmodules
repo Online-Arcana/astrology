@@ -12,7 +12,7 @@
 	url = https://github.com/kitty-crow/ts-joda.git
 [submodule "vendor/astral-packager"]
 	path = vendor/astral-packager
-	url = https://github.com/kitty-crow/astral-packager.git
+	url = https://github.com/Online-Arcana/astral-packager.git
 [submodule "vendor/astral-chart-wheel"]
 	path = vendor/astral-chart-wheel
 	url = https://github.com/Online-Arcana/astral-chart-wheel.git
