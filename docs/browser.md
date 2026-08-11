@@ -44,11 +44,11 @@ All three fields remain masked and locked until the eye button is used. Revealin
 
 ## Packaging dependency
 
-`vendor/astral-packager` is a pinned git submodule and root package dependency. Its build exposes the same `pack()` and `open()` core used by the `astral-pack` CLI and the packager's own GitHub Pages application.
+`vendor/astral-packager` is a pinned git submodule from `Online-Arcana/astral-packager` and a root package dependency. Its build exposes the same `pack()`, `open()`, `readMeta()` and `readWheel()` core used by the `astral-pack` CLI and the packager's own GitHub Pages application.
 
 A browser cannot spawn a Node CLI process. The Pages frontend therefore calls that exact shared core directly rather than reimplementing the format.
 
-New containers use ASTRPKG4:
+New containers use ASTRPKG5:
 
 ```text
 strict JSON
@@ -56,10 +56,14 @@ strict JSON
   → typed protobuf
   → balanced lossless compression
   → AES-256-GCM
-  → authenticated public header + ciphertext
+  → authenticated public identity header + ciphertext
 ```
 
-The complete raw chart, including its CRC and optional authority signature, remains inside the encrypted payload.
+The complete raw chart, including its CRC, authority signature, subject/birth metadata and interpretations, remains inside the encrypted payload.
+
+ASTRPKG5 keeps the existing raw public identity key and six public identity signs, and adds only the deterministic data required to reproduce the natal wheel: the calculation fingerprint, selected house system, recognised point longitudes, the selected twelve-house cusp/end geometry and the aspect fields consumed by the renderer. Subject name, birth record, interpretations, compatibility and dignity are not copied into the public header.
+
+The browser can therefore call `readWheel(bytes)` and pass the result to `astral-chart-wheel` without asking for a password or decrypting, decompressing or decoding the private payload. This is the intended identity/preview path for the shared-wheel refactor. Opening the full chart still requires the ordinary package password.
 
 ## Generation and signing
 
@@ -71,9 +75,9 @@ A verified authority fingerprint matching the loaded key is labelled **Made by t
 
 ## Opening a packaged chart
 
-Selecting an ASTRPKG1, ASTRPKG2, ASTRPKG3 or ASTRPKG4 file intercepts the ordinary JSON open path before it runs.
+Selecting an ASTRPKG1, ASTRPKG2, ASTRPKG3, ASTRPKG4 or ASTRPKG5 file intercepts the ordinary JSON open path before it runs.
 
-For every encrypted package, the browser first computes SHA-256 directly from the selected encrypted bytes. This is only a file fingerprint and does not require or expose decrypted content.
+For every encrypted package, the browser first computes SHA-256 directly from the selected encrypted bytes. This is only a file fingerprint and does not require or expose decrypted content. ASTRPKG5 also permits a wheel-only consumer to read the public identity/wheel block before any password operation.
 
 For an unrecognised file, the page asks for one password and calls the packager's `open()` procedure locally. The password dialog includes an unchecked, optional control to remember that password behind biometrics. Leaving it unchecked preserves the ordinary password-only workflow.
 
@@ -86,7 +90,7 @@ For a recognised file whose password was previously protected:
 
 When the vault is already unlocked during the current page session, a recognised file can open directly with the in-memory password. Cancelling or failing biometric verification falls back to the ordinary password dialog, so opting in never removes password access.
 
-The packager procedure authenticates and decrypts the container, decompresses its payload, decodes the typed protobuf, reconstructs canonical JSON, regenerates the private identity and verifies the public identity metadata. The temporary identity object is explicitly dropped immediately after reconstruction.
+The packager procedure authenticates and decrypts the container, decompresses its payload, decodes the typed protobuf, reconstructs canonical JSON, regenerates the private identity and verifies the public identity metadata. For ASTRPKG5 it also re-extracts the complete public wheel contract from the decrypted chart and requires an exact match with the authenticated clear header. The temporary identity object is explicitly dropped immediately after reconstruction.
 
 A wrong stored password removes the stale remembered association and falls back to manual entry. A wrong manually entered password or damaged package leaves the file unopened and keeps the password dialog available for another attempt. The reconstructed JSON exists only in page memory and is then passed to the existing validator, formatted viewer and maintenance tools.
 
@@ -153,7 +157,7 @@ npm install
 npm run build:pages
 ```
 
-The vendor build compiles `astral-packager` before the root package installs the local file dependency. The output is written to `public/`.
+The vendor build compiles `astral-packager` before the root package installs the local file dependency. `astral-chart-wheel` ships its verified generated `dist/` from the pinned submodule. The output is written to `public/`.
 
 The main application and browser tools are built as one split ESM graph so they share in-memory credential, file and packaging state. The guarded `node:zlib` import used only by the packager CLI is left external in the browser bundle; the browser executes its CompressionStream-based branch.
 
