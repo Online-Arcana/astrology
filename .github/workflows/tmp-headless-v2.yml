@@ -37,6 +37,33 @@ jobs:
               'git rm -f .github/workflows/pages.yml .github/workflows/tmp-headless-split.yml .github/workflows/tmp-headless-rerun.yml 2>/dev/null || true',
               'git rm -f .github/workflows/pages.yml .github/workflows/tmp-headless-split.yml .github/workflows/tmp-headless-rerun.yml .github/workflows/tmp-headless-v2.yml 2>/dev/null || true'
           )
+
+          # Four compatibility fixes surfaced by the first exact-pin compile.
+          script=script.replace(
+              'timeAccuracy?: "exact" | "approximate" | "unknown";',
+              'timeAccuracy?: "exact" | "approximate" | "unknown" | undefined;'
+          )
+          script=script.replace(
+              'export * from "./astro.js";\n',
+              ''
+          )
+          script=script.replace(
+              'export * from "./file/canonical.js";',
+              'export { canonicalise } from "./file/canonical.js";'
+          )
+          script=script.replace(
+              'export * from "./file/hash.js";\n',
+              ''
+          )
+          needle="""p=Path('src/cli.ts')
+          p.write_text(p.read_text().replace('from \"./billing/types.js\"', 'from \"astral-interpreter\"'))"""
+          replacement=needle+"""
+          p=Path('src/interface/api.ts')
+          p.write_text(p.read_text().replace('import type { BillStore } from \"astral-interpreter/web\";', 'import type { BillStore } from \"astral-interpreter\";'))"""
+          if needle not in script:
+              raise SystemExit('post-rewrite patch anchor not found')
+          script=script.replace(needle,replacement)
+
           Path('/tmp/headless-v2.sh').write_text(script)
           PY
           bash /tmp/headless-v2.sh
