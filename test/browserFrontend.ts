@@ -100,8 +100,8 @@ await test("generated signing keys can be backed up and restored", async () => {
 await test("browser tools initialise the interactive chart wheel", async () => {
   const tools = await readFile("src/browser/browserTools.ts", "utf8");
   const bootstrap = await readFile("src/browser/chartWheelBootstrap.ts", "utf8");
-  const wheel = await readFile("src/browser/chartWheel.ts", "utf8");
-  const wheelGlyphs = await readFile("src/browser/chartWheelGlyphs.ts", "utf8");
+  const wheel = await readFile("vendor/astral-chart-wheel/src/chartWheel.ts", "utf8");
+  const wheelGlyphs = await readFile("vendor/astral-chart-wheel/src/chartWheelGlyphs.ts", "utf8");
   const wheelStyles = await readFile("public/chart-wheel.css", "utf8");
   assert(/chartWheelBootstrap\.js/u.test(tools), "browser-tools entry must import the chart wheel bootstrap so esbuild includes it");
   assert(/astral:calculation/u.test(bootstrap), "chart wheel bootstrap must listen for new deterministic calculations");
