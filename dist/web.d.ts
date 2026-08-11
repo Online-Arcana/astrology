@@ -2,6 +2,9 @@ import { type PlaceCatalogue } from "astral-core/web";
 import { type InterpretationSemanticProvider, type OpenAISchemaRuntimeOptions } from "astral-interpreter/web";
 import type { Config } from "./config.js";
 import { type ChartGenerationService } from "./generate/service.js";
+export * from "astral-core/web";
+export * from "astral-interpreter/web";
+export * from "astral-core/wheel";
 export { webPlaces, webPorts } from "astral-core/web";
 export { renderWheel, wheelData, renderPublicWheel, fromPublic } from "astral-core/wheel";
 export type { WheelData, PublicWheelMeta } from "astral-core/wheel";
@@ -14,6 +17,7 @@ export type { LegacyAstralCalculation, LegacyAstralChart, LegacyAstralFile, Read
 export type { ProgressEvent, ProgressStage } from "./types/progress.js";
 export { CalculationService, CalculationUnavailableError, type CalculationOptions, type CalculationPorts, } from "./calculate/service.js";
 export { canonicalise } from "./file/canonical.js";
+export { digest } from "./file/hash.js";
 export * from "./file/codec.js";
 export * from "./file/crc32c.js";
 export * from "./file/integrity.js";

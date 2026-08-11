@@ -39,6 +39,10 @@
     "./web": {
       "types": "./dist/web.d.ts",
       "default": "./dist/web.js"
+    },
+    "./packager": {
+      "types": "./dist/packager.d.ts",
+      "default": "./dist/packager.js"
     }
   }
 }
