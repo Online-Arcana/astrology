@@ -22,19 +22,21 @@ const replaceRange = (text, startMarker, endMarker, replacement, file) => {
   const file = "src/llm/orchestrate/plan.ts";
   let text = await readFile(file, "utf8");
 
-  text = replaceRange(
-    text,
-    "const genericUnavailable =",
-    "const fallbackCall =",
-    "",
-    file,
-  );
+  text = replaceRange(text, "const genericUnavailable =", "const fallbackCall =", "", file);
 
   text = replaceRange(
     text,
     "const noSourceFallback =",
     "const semanticMapFor =",
-    `const noSourceFallback = (unit: InterpretationUnit): UnitResult<object> =>\n  genericFallback(\n    unit,\n    [],\n    "No unambiguous deterministic source was available for this unit; generic interpretation supplied",\n  );\n\n`,
+    [
+      "const noSourceFallback = (unit: InterpretationUnit): UnitResult<object> =>",
+      "  genericFallback(",
+      "    unit,",
+      "    [],",
+      "    \"No unambiguous deterministic source was available for this unit; generic interpretation supplied\",",
+      "  );",
+      "",
+    ].join("\n"),
     file,
   );
 
@@ -42,7 +44,29 @@ const replaceRange = (text, startMarker, endMarker, replacement, file) => {
     text,
     "const sourceAwareFallback =",
     "const substantiveCalls =",
-    `const sourceAwareFallback = (\n  calculation: AstralCalculation,\n  unit: InterpretationUnit,\n  warning: string,\n  semanticProvider: InterpretationSemanticProvider | null = null,\n): UnitResult<object> => {\n  const refs = sourceRefsFor(calculation, unit);\n  if (refs.length === 0) return noSourceFallback(unit);\n  try {\n    const semanticMap = semanticMapFor(calculation, unit, semanticProvider);\n    return genericFallback(unit, refs, warning, semanticMap);\n  } catch (cause: unknown) {\n    const reason = cause instanceof Error ? cause.message : String(cause);\n    return genericFallback(\n      unit,\n      refs,\n      \`${warning}; semantic authority unavailable, generic interpretation supplied: \${reason}\`,\n    );\n  }\n};\n\n`,
+    [
+      "const sourceAwareFallback = (",
+      "  calculation: AstralCalculation,",
+      "  unit: InterpretationUnit,",
+      "  warning: string,",
+      "  semanticProvider: InterpretationSemanticProvider | null = null,",
+      "): UnitResult<object> => {",
+      "  const refs = sourceRefsFor(calculation, unit);",
+      "  if (refs.length === 0) return noSourceFallback(unit);",
+      "  try {",
+      "    const semanticMap = semanticMapFor(calculation, unit, semanticProvider);",
+      "    return genericFallback(unit, refs, warning, semanticMap);",
+      "  } catch (cause: unknown) {",
+      "    const reason = cause instanceof Error ? cause.message : String(cause);",
+      "    return genericFallback(",
+      "      unit,",
+      "      refs,",
+      "      `${warning}; semantic authority unavailable, generic interpretation supplied: ${reason}`,",
+      "    );",
+      "  }",
+      "};",
+      "",
+    ].join("\n"),
     file,
   );
 
@@ -62,8 +86,10 @@ const replaceRange = (text, startMarker, endMarker, replacement, file) => {
 {
   const file = "test/generationSemanticProvider.ts";
   let text = await readFile(file, "utf8");
+  const oldAssertions = `  equal(calls, 1, "semantic provider call count");\n  equal(schemaClients, 0, "semantic preflight must happen before a schema call");\n  equal(message, "semantic provider reached", "provider failure should remain fail-closed without debug mode");`;
+  if (!text.includes(oldAssertions)) throw new Error(`${file}: old semantic provider assertions not found`);
   text = text.replace(
-    `  equal(calls, 1, "semantic provider call count");\n  equal(schemaClients, 0, "semantic preflight must happen before a schema call");\n  equal(message, "semantic provider reached", "provider failure should remain fail-closed without debug mode");`,
+    oldAssertions,
     `  equal(calls >= 2, true, "semantic provider should be attempted before generic reconstruction");\n  equal(schemaClients, 0, "semantic failure must degrade before a paid schema call");\n  equal(message.includes("semantic provider reached"), false, "semantic provider failure must not escape the customer delivery path");`,
   );
   text = text.replace(
