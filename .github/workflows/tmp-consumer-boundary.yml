@@ -29,12 +29,7 @@ jobs:
 
           p=Path('src/web.ts')
           s=p.read_text()
-          if 'type WheelData,' not in s:
-              s=s.replace(
-                  'export { renderWheel, wheelData, renderPublicWheel, fromPublic } from "astral-core/wheel";\nexport type { WheelData, PublicWheelMeta } from "astral-core/wheel";',
-                  'export { renderWheel, wheelData, renderPublicWheel, fromPublic } from "astral-core/wheel";\nexport type { WheelData, PublicWheelMeta } from "astral-core/wheel";'
-              )
-          helper='''\nexport const astralWheelData = (calculation: AstralFile["astral-calculation"]): import("astral-core/wheel").WheelData => ({\n  fingerprint: calculation.provenance.calculationFingerprint,\n  primaryHouseSystem: calculation.settings.primaryHouseSystem,\n  points: calculation.system.points,\n  houses: calculation.system.houses,\n  aspects: calculation.system.aspects,\n});\n'''
+          helper='''\nexport const astralWheelData = (calculation: import("./types/file.js").AstralFile["astral-calculation"]): import("astral-core/wheel").WheelData => ({\n  fingerprint: calculation.provenance.calculationFingerprint,\n  primaryHouseSystem: calculation.settings.primaryHouseSystem,\n  points: calculation.system.points,\n  houses: calculation.system.houses,\n  aspects: calculation.system.aspects,\n});\n'''
           if 'export const astralWheelData' not in s:
               marker='export const webPlaceCatalogue'
               if marker not in s: raise SystemExit('web place catalogue anchor missing')
