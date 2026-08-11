@@ -6,17 +6,26 @@ The semantic side is built from a reviewed corpus. The writing side receives a p
 
 ## Corpus data
 
-Corpus code lives under `src/interpretation/corpus/`. Checked-in semantic data is under `src/interpretation/corpus/data/`.
+The corpus is authored as XML under `src/interpretation/corpus/data/xml/`. These XML files are the source of truth for interpretation knowledge.
 
-A corpus contains three main kinds of records:
+The files are grouped by the kind of material they contain:
 
-- sources: documents that were reviewed for a specific use;
-- atoms: reusable concepts such as a planet, sign, house or aspect;
-- claims: small semantic statements attached to an atom and backed by one or more approved source references.
+- `sources.xml` contains the reviewed source manifest and the exact section IDs approved for use;
+- `bodies.xml`, `points.xml`, `angles.xml`, `signs.xml`, `houses.xml` and `aspects.xml` contain the main reusable astrological concepts;
+- `patterns.xml`, `conditions.xml`, `derived.xml` and `eclipses.xml` contain calculated or composed concepts;
+- `domains.xml` contains application-owned output domains such as work, relationships and compatibility.
+
+Each corpus document contains atoms and claims. An atom is a reusable concept such as the Sun, Capricorn, House 4 or a square. A claim is a small semantic statement attached to an atom. Claims carry tags, confidence, worldview-neutrality markers and references to approved source sections. Atoms also record internal calculation IDs, related atoms and things that must not be inferred from the concept.
+
+The XML is deliberately plain. It contains data and metadata, not executable rules. Composition and selection logic stays in TypeScript.
+
+`src/interpretation/corpus/xml.ts` parses and validates the XML into the existing `CorpusSource`, `CorpusAtom` and `CorpusClaim` runtime types. It rejects malformed structure, unsupported enum values, non-neutral claim markers, DTDs and entity declarations. The normal corpus compiler then performs the semantic, provenance, completeness and worldview checks it performed before the XML migration.
+
+Browser code cannot read repository files directly, so `npm run corpus:embed` generates an ignored `xml.generated.ts` module containing only the raw XML strings. Both Node and browser builds pass those strings through the same XML parser. The generated module is transport only; it is not another editable corpus.
 
 Sources are approved per document and per section, not per website. A technical astronomy document can be approved for calculation work without making interpretation pages from the same publisher valid semantic sources. A claim must name an approved section of an approved semantic source; citing the document alone is not sufficient.
 
-The compiler checks that every production atom is approved, has claims, has source provenance and passes the worldview-neutrality rules. Production compilation uses the complete required atom list in `requirements.ts` and fails if anything is missing.
+Production compilation uses the complete required atom list in `requirements.ts` and fails if anything is missing.
 
 ## Meaning and calculation data
 
@@ -62,10 +71,10 @@ Calculation and architecture references are kept separate from semantic sources.
 
 ## Runtime
 
-The checked-in production corpus is compiled once with completeness checking enabled. Browser generation and the API/server runtime use the resulting semantic provider by default. Low-level service construction still accepts an explicit provider so tests and specialised tooling can supply controlled maps.
+The XML corpus is parsed and compiled once with completeness checking enabled when the built-in semantic provider is loaded. Browser generation and the API/server runtime use that provider by default. Low-level service construction still accepts an explicit provider so tests and specialised tooling can supply controlled maps.
 
 Before paid generation starts, the service prepares and validates the semantic maps required by the chart's interpretation plan. If a required map cannot be produced, generation fails before opening the model conversation.
 
 Each model call receives semantic input, deterministic chart evidence and writing instructions as separate fields. Raw chart evidence can contain fields that a particular recipe did not select; those fields are not permission to invent additional astrological meaning. Output is checked for schema validity, grounding, field duplication, voice problems and worldview neutrality. Rejected output goes through the normal correction/escalation path.
 
-If generation still fails, deterministic reconstruction uses the same interpretation map and application-owned sentence templates. The old XML catalogue is retained only for explicitly unmapped compatibility paths; it is not the semantic authority for normal browser or API generation.
+If generation still fails, deterministic reconstruction uses the same interpretation map and application-owned sentence templates. The older XML fallback catalogue used by legacy/unmapped compatibility code is separate from this corpus and is not the semantic authority for normal browser or API generation.
