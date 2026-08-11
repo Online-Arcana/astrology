@@ -97,7 +97,21 @@ const calculation = {
   subject: { providedName: null, language: "en", adult: true },
   source: { status: "exact", value: { sign: "aries", meaning: "solar purpose" }, reason: "none" },
   unavailable: { status: "unavailable", value: null, reason: "birth_time_unknown" },
-  system: { zodiac: "tropical", derived: { dominantPlanets: [], dominantSigns: [] } },
+  system: {
+    zodiac: "tropical",
+    ayanamsha: null,
+    points: {
+      sun: {
+        id: "sun",
+        position: {
+          status: "exact",
+          value: { longitudeDegrees: 12, sign: "aries" },
+          reason: null,
+        },
+      },
+    },
+    derived: { dominantPlanets: [], dominantSigns: [] },
+  },
   settings: { primaryZodiac: "tropical", siderealAyanamsha: null, interpretationMode: "tropical" },
   interpretationPlan: {
     schema: "astral-interpretation-plan/1.1.0",
