@@ -16,68 +16,23 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: feature/interpretation-corpus-consolidated
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
       - run: |
           python - <<'PY'
           from pathlib import Path
+          from textwrap import dedent, indent
 
-          # Export the already-existing deterministic plan primitive so final
-          # chart assembly can reuse exactly the same fallback semantics.
-          path = Path('src/llm/orchestrate/plan.ts')
-          text = path.read_text()
-          old = '''const deterministicPlan = (
-            calculation: AstralCalculation,
-            hooks: RunHooks,
-            cause: unknown,
-            semanticProvider: InterpretationSemanticProvider | null,
-          ): PlanInterpretationResult => {'''
-          new = '''export const deterministicInterpretationPlan = (
-            calculation: AstralCalculation,
-            hooks: RunHooks = {},
-            cause: unknown = "Deterministic interpretation requested",
-            semanticProvider: InterpretationSemanticProvider | null = null,
-          ): PlanInterpretationResult => {'''
-          if old not in text:
-              raise SystemExit('deterministic plan declaration marker not found')
-          text = text.replace(old, new, 1)
-          old_call = '    return deterministicPlan(calculation, hooks, cause, semanticProvider);'
-          new_call = '    return deterministicInterpretationPlan(calculation, hooks, cause, semanticProvider);'
-          if old_call not in text:
-              raise SystemExit('deterministic plan call marker not found')
-          text = text.replace(old_call, new_call, 1)
-          path.write_text(text)
-
-          # Final assembly is fail-soft for interpretation failures. Keep the
-          # final audit strict, but reconstruct rather than losing the chart.
           path = Path('src/generate/service.ts')
           text = path.read_text()
-          old_import = '''import {
-            nlpAuditProfile,
-            promptCatalogue,
-            runInterpretationPlan,
-            structuredOutputCatalogue,
-          } from "../llm/orchestrate/plan.js";'''
-          new_import = '''import {
-            deterministicInterpretationPlan,
-            nlpAuditProfile,
-            promptCatalogue,
-            runInterpretationPlan,
-            structuredOutputCatalogue,
-          } from "../llm/orchestrate/plan.js";'''
-          if old_import not in text:
-              raise SystemExit('service plan import marker not found')
-          text = text.replace(old_import, new_import, 1)
-
-          start_marker = '      const interpreted = await runInterpretationPlan('
-          end_marker = '      return { calculation, interpretation: interpreted.run, chart, file, bill };'
+          start_marker = '      let interpreted = await runInterpretationPlan('
+          end_marker = 'return { calculation, interpretation: interpreted.run, chart, file, bill };'
           start = text.find(start_marker)
           end = text.find(end_marker, start)
           if start < 0 or end < 0:
-              raise SystemExit('service completion block markers not found')
+              raise SystemExit('service fallback block markers not found')
           end += len(end_marker)
-          replacement = '''      let interpreted = await runInterpretationPlan(
+
+          block = dedent('''\
+          let interpreted = await runInterpretationPlan(
             calculation,
             this.#runtime.config,
             this.#runtime.schemaFactory(calculation, report),
@@ -103,7 +58,7 @@ jobs:
           } catch (assemblyCause: unknown) {
             if (this.#runtime.config.chart.throwOnInterpretationFailure) throw assemblyCause;
 
-            // First preserve as much reviewed chart-specific meaning as possible.
+            // Preserve reviewed chart-specific meaning first.
             interpreted = deterministicInterpretationPlan(
               calculation,
               instrumented,
@@ -113,9 +68,9 @@ jobs:
             try {
               chart = assemble(interpreted);
             } catch (semanticFallbackCause: unknown) {
-              // Absolute customer-delivery floor: if even map-backed deterministic
+              // Absolute customer-delivery floor: if map-backed deterministic
               // prose cannot pass final assembly, use the schema-complete neutral
-              // generic catalogue with no semantic provider dependency.
+              // generic catalogue with no semantic-provider dependency.
               interpreted = deterministicInterpretationPlan(
                 calculation,
                 instrumented,
@@ -129,61 +84,13 @@ jobs:
           const file = await assembleAstralFile(calculation, chart, authority(this.#runtime.config, generatedAt));
           const bill = collector.finish("completed", generatedAt);
           hooks.onBill?.(bill);
-          return { calculation, interpretation: interpreted.run, chart, file, bill };'''
-          text = text[:start] + replacement + text[end:]
-          path.write_text(text)
-
-          # Regression: prove the final whole-chart audit still rejects unsafe
-          # prose, then prove the production deterministic floor can replace it
-          # with a complete chart instead of leaving the user with nothing.
-          path = Path('test/chartFile.ts')
-          text = path.read_text()
-          old_import = 'import type { InterpretationRun, UnitResult } from "../src/llm/orchestrate/types.js";'
-          new_import = '''import { deterministicInterpretationPlan } from "../src/llm/orchestrate/plan.js";
-          import type { InterpretationRun, UnitResult } from "../src/llm/orchestrate/types.js";'''
-          if old_import not in text:
-              raise SystemExit('chartFile import marker not found')
-          text = text.replace(old_import, new_import, 1)
-
-          marker = '''await test("chart assembler rejects missing and unexpected interpretation units", () => {'''
-          if marker not in text:
-              raise SystemExit('chartFile insertion marker not found')
-          test_block = '''await test("final worldview failure has a complete deterministic interpretation floor", () => {
-            const calculation = calculationFixture();
-            const unsafe = runFixture(calculation);
-            const sun = unsafe.units["tropical.point.sun"]?.value as Section;
-            sun.summary = "God is asking you to accept this purpose.";
-
-            let finalAuditRejected = false;
-            try {
-              assembleChart(calculation, unsafe, assemblyOptions);
-            } catch (cause: unknown) {
-              finalAuditRejected = cause instanceof Error
-                && cause.message.includes("Final chart failed worldview-neutrality audit");
-            }
-            equal(finalAuditRejected, true, "unsafe final chart must still be rejected");
-
-            const recovered = deterministicInterpretationPlan(
-              calculation,
-              {},
-              new Error("final worldview audit rejected generated prose"),
-              null,
-            );
-            const chart = assembleChart(calculation, recovered.run, {
-              ...assemblyOptions,
-              ...(recovered.generatedName === null ? {} : { generatedName: recovered.generatedName }),
-            });
-            equal(chart.system.points.sun.status, "written", "recovered Sun interpretation status");
-            assert(chart.system.points.sun.summary.trim().length > 0, "recovered interpretation must contain prose");
-          });
-
-          '''
-          text = text.replace(marker, test_block + marker, 1)
+          return { calculation, interpretation: interpreted.run, chart, file, bill };''')
+          text = text[:start] + indent(block, '      ') + text[end:]
           path.write_text(text)
           PY
 
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add src/llm/orchestrate/plan.ts src/generate/service.ts test/chartFile.ts
-          git commit -m "Guarantee final interpretation delivery after chart audit failure"
+          git add src/generate/service.ts
+          git commit -m "Format final interpretation delivery fallback"
           git push origin HEAD:feature/interpretation-corpus-consolidated
