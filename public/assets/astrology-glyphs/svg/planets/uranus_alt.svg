@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Uranus (astronomical form)">
-  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;uranus_alt&quot;, &quot;label&quot;: &quot;Uranus (astronomical form)&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⛢&quot;, &quot;code_points&quot;: [&quot;U+26E2&quot;], &quot;note&quot;: &quot;Unicode astronomical symbol for Uranus.&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/uranus_alt.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(41.272451 238.000000) scale(0.334855 -0.334855)">
-  <path d="M259 0Q203 0 155.5 28.0Q108 56 79.5 103.5Q51 151 51 208Q51 261 75.0 305.0Q99 349 140.0 378.0Q181 407 232 414V554L148 531L261 657L374 531L286 554V414Q337 408 378.0 378.5Q419 349 443.0 305.0Q467 261 467 208Q467 151 439.0 103.5Q411 56 363.5 28.0Q316 0 259 0ZM259 50Q302 50 338.0 71.5Q374 93 395.5 129.0Q417 165 417 208Q417 252 395.0 287.5Q373 323 337.5 344.5Q302 366 259 366Q216 366 180.0 344.0Q144 322 122.5 286.5Q101 251 101 208Q101 165 122.5 129.0Q144 93 180.0 71.5Q216 50 259 50ZM259 145Q233 145 214.5 163.5Q196 182 196 208Q196 234 214.5 252.5Q233 271 259 271Q285 271 303.5 252.5Q322 234 322 208Q322 182 303.5 163.5Q285 145 259 145Z"/>
-  </g>
-  </g>
-</svg>

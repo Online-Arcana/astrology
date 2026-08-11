@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Astraea">
-  <!-- {&quot;category&quot;: &quot;points&quot;, &quot;slug&quot;: &quot;astraea&quot;, &quot;label&quot;: &quot;Astraea&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯙&quot;, &quot;code_points&quot;: [&quot;U+2BD9&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/points/astraea.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(49.323810 204.057143) scale(0.209524 -0.209524)">
-  <path d="M31 -93V-22H206L395 531Q366 521 335 521Q284 521 242.0 545.5Q200 570 175.5 611.5Q151 653 151 704Q151 755 176.0 796.5Q201 838 242.5 863.0Q284 888 335 888Q384 888 424.5 865.0Q465 842 489 804L494 819H720V748H545L356 195Q385 205 416 205Q468 205 509.5 180.5Q551 156 575.5 114.5Q600 73 600 22Q600 -29 575.5 -70.5Q551 -112 509.0 -137.0Q467 -162 416 -162Q367 -162 326.5 -139.0Q286 -116 262 -78L257 -93ZM335 593Q382 593 414.0 625.5Q446 658 446 704Q446 735 431.0 760.5Q416 786 391.0 801.0Q366 816 335 816Q289 816 256.0 783.5Q223 751 223 704Q223 674 238.0 648.5Q253 623 278.5 608.0Q304 593 335 593ZM416 -90Q463 -90 495.5 -57.0Q528 -24 528 22Q528 53 513.0 78.0Q498 103 472.5 118.0Q447 133 416 133Q370 133 337.5 101.0Q305 69 305 22Q305 -9 320.0 -34.5Q335 -60 360.5 -75.0Q386 -90 416 -90Z"/>
-  </g>
-  </g>
-</svg>
