@@ -152,31 +152,6 @@ const acceptedNarratives = (earlier: Readonly<Record<string, unknown>>): Narrati
     return narrativeEntries(value, id);
   });
 
-const genericUnavailable = (unit: InterpretationUnit): UnitResult<object> => {
-  const value: Section = {
-    status: "unavailable",
-    title: human(unit.section),
-    summary: null,
-    detail: null,
-    themes: [],
-    strengths: [],
-    tensions: [],
-    sourceRefs: [],
-  };
-  return { id: unit.id, value, attempts: 1, model: "deterministic" };
-};
-
-const unavailableSectionAllowed = (unit: InterpretationUnit): boolean => ![
-  "life.romance",
-  "life.sexuality",
-  "life.careerAndVocation",
-  "life.moneyAndMaterialSecurity",
-  "synthesis",
-  "compatibility.overview",
-  "compatibility.sign",
-  "finalSynthesis",
-].includes(unit.section);
-
 const fallbackCall = (
   unit: InterpretationUnit,
   refs: readonly JsonRef[],
@@ -215,10 +190,11 @@ const genericFallback = (
 };
 
 const noSourceFallback = (unit: InterpretationUnit): UnitResult<object> =>
-  unavailableSectionAllowed(unit)
-    ? genericUnavailable(unit)
-    : genericFallback(unit, [], "No unambiguous deterministic source was available for this unit");
-
+  genericFallback(
+    unit,
+    [],
+    "No unambiguous deterministic source was available for this unit; generic interpretation supplied",
+  );
 const semanticMapFor = (
   calculation: AstralCalculation,
   unit: InterpretationUnit,
@@ -246,10 +222,18 @@ const sourceAwareFallback = (
 ): UnitResult<object> => {
   const refs = sourceRefsFor(calculation, unit);
   if (refs.length === 0) return noSourceFallback(unit);
-  const semanticMap = semanticMapFor(calculation, unit, semanticProvider);
-  return genericFallback(unit, refs, warning, semanticMap);
+  try {
+    const semanticMap = semanticMapFor(calculation, unit, semanticProvider);
+    return genericFallback(unit, refs, warning, semanticMap);
+  } catch (cause: unknown) {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    return genericFallback(
+      unit,
+      refs,
+      `${warning}; semantic authority unavailable, generic interpretation supplied: ${reason}`,
+    );
+  }
 };
-
 const substantiveCalls = (
   calculation: AstralCalculation,
   semanticProvider: InterpretationSemanticProvider | null,

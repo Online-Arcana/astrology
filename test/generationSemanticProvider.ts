@@ -79,7 +79,7 @@ const unreachableClient = (): SchemaClient => ({
 });
 const schemaFactory: ChartSchemaFactory = () => () => unreachableClient();
 
-test("ChartGenerationService preflights an explicit semantic provider before paid generation", async () => {
+test("ChartGenerationService does not expose semantic-provider failure to the customer path", async () => {
   let calls = 0;
   const semanticProvider: InterpretationSemanticProvider = {
     mapFor: () => {
@@ -102,9 +102,9 @@ test("ChartGenerationService preflights an explicit semantic provider before pai
   } catch (cause: unknown) {
     message = cause instanceof Error ? cause.message : String(cause);
   }
-  equal(calls, 1, "semantic provider call count");
-  equal(schemaClients, 0, "semantic preflight must happen before a schema call");
-  equal(message, "semantic provider reached", "provider failure should remain fail-closed without debug mode");
+  equal(calls >= 2, true, "semantic provider should be attempted before generic reconstruction");
+  equal(schemaClients, 0, "semantic failure must degrade before a paid schema call");
+  equal(message.includes("semantic provider reached"), false, "semantic provider failure must not escape the customer delivery path");
 });
 
 console.log(`1..${passed}`);

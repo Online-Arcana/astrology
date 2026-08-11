@@ -111,22 +111,52 @@ test("whole-run failure reconstructs from the same semantic map", async () => {
   assert.ok(providerCalls >= 1);
 });
 
-test("missing semantic authority cannot be swallowed by the production fallback catch", async () => {
+test("missing semantic authority degrades to a generic deterministic interpretation", async () => {
   const provider: InterpretationSemanticProvider = {
     mapFor: () => {
       throw new Error("semantic authority missing");
     },
   };
 
-  await assert.rejects(
-    () => runInterpretationPlan(
-      calculation,
-      readConfig({}),
-      unavailableConversation,
-      {},
-      null,
-      provider,
-    ),
-    /semantic authority missing/u,
+  const result = await runInterpretationPlan(
+    calculation,
+    readConfig({}),
+    unavailableConversation,
+    {},
+    null,
+    provider,
   );
+
+  const recovered = result.run.units[unitId];
+  assert.ok(recovered);
+  assert.equal(recovered.provenance?.repairedBy, "deterministic");
+  assert.equal(recovered.provenance?.repairKind, "xml_fallback");
+  const value = recovered.value as { status?: string; summary?: string; detail?: string };
+  assert.equal(value.status, "written");
+  assert.ok((value.summary ?? "").trim().length > 0);
+  assert.ok((value.detail ?? "").trim().length > 0);
+});
+
+test("a unit with no usable deterministic source still receives generic written prose", async () => {
+  const noSourceCalculation = {
+    ...calculation,
+    interpretationPlan: {
+      ...calculation.interpretationPlan,
+      units: calculation.interpretationPlan.units.map((unit) => ({ ...unit, allowedSourceRefs: [] })),
+    },
+  } as AstralCalculation;
+
+  const result = await runInterpretationPlan(
+    noSourceCalculation,
+    readConfig({}),
+    unavailableConversation,
+  );
+
+  const recovered = result.run.units[unitId];
+  assert.ok(recovered);
+  const value = recovered.value as { status?: string; summary?: string; detail?: string; sourceRefs?: JsonRef[] };
+  assert.equal(value.status, "written");
+  assert.ok((value.summary ?? "").trim().length > 0);
+  assert.ok((value.detail ?? "").trim().length > 0);
+  assert.deepEqual(value.sourceRefs, []);
 });

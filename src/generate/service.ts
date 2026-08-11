@@ -19,7 +19,6 @@ import {
 import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
 import { diagnosticHooks } from "../llm/orchestrate/diagnostics.js";
 import {
-  interpretationCalls,
   nlpAuditProfile,
   promptCatalogue,
   runInterpretationPlan,
@@ -340,11 +339,6 @@ export class ChartGenerationService {
       : memoizedSemanticProvider(configuredProvider);
 
     try {
-      // Preflight the complete corpus-backed call plan before opening a paid
-      // conversation. This validates and memoises every map that will later be
-      // shared by the writer and deterministic reconstruction.
-      if (semanticProvider !== null) interpretationCalls(calculation, semanticProvider);
-
       const interpreted = await runInterpretationPlan(
         calculation,
         this.#runtime.config,

@@ -78,3 +78,8 @@ Before paid generation starts, the service prepares and validates the semantic m
 Each model call receives semantic input, deterministic chart evidence and writing instructions as separate fields. Raw chart evidence can contain fields that a particular recipe did not select; those fields are not permission to invent additional astrological meaning. Output is checked for schema validity, grounding, field duplication, voice problems and worldview neutrality. Rejected output goes through the normal correction/escalation path.
 
 If generation still fails, deterministic reconstruction uses the same interpretation map and application-owned sentence templates. The older XML fallback catalogue used by legacy/unmapped compatibility code is separate from this corpus and is not the semantic authority for normal browser or API generation.
+
+
+## Delivery invariant
+
+Interpretation delivery is fail-soft in production. Corpus, semantic-map, model, audit, correction or reconstruction failures must not leave a requested interpretation empty and must not abort customer delivery. A corpus-backed field first falls back through deterministic semantic reconstruction; if semantic authority itself is unavailable, the engine uses the neutral generic fallback catalogue to produce a schema-complete written interpretation. Units with no usable deterministic source also receive generic written prose with no invented source references. Explicit debug mode may still throw so failures remain testable during development.
