@@ -1,31 +1,31 @@
-import { BillCollector } from "../billing/bill.js";
-import type { ChartBill, PricedUsage, ResponseUsage } from "../billing/types.js";
+import { BillCollector } from "astral-interpreter/web";
+import type { ChartBill, PricedUsage, ResponseUsage } from "astral-interpreter/web";
 import {
   CalculationService,
   loadCalculationPorts,
   type CalculationOptions,
 } from "../calculate/service.js";
-import { assembleChart } from "../chart/assemble.js";
+import { assembleChart } from "astral-interpreter/web";
 import type { Config } from "../config.js";
 import { assembleAstralFile } from "../file/document.js";
-import type { InterpretationMap } from "../interpretation/corpus/types.js";
-import type { InterpretationSemanticProvider } from "../interpretation/map/provider.js";
+import type { InterpretationMap } from "astral-interpreter/web";
+import type { InterpretationSemanticProvider } from "astral-interpreter/web";
 import {
   legacyBirthInput,
   legacyGenerationRecoverySchema,
   migrateLegacyInterpretation,
   type LegacyGenerationCheckpoint,
 } from "./migration.js";
-import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "../llm/openaiSchema.js";
-import { diagnosticHooks } from "../llm/orchestrate/diagnostics.js";
+import { createOpenAISchemaClientFactory, type OpenAISchemaRuntimeOptions } from "astral-interpreter/web";
+import { diagnosticHooks } from "astral-interpreter/web";
 import {
   deterministicInterpretationPlan,
   nlpAuditProfile,
   promptCatalogue,
   runInterpretationPlan,
   structuredOutputCatalogue,
-} from "../llm/orchestrate/plan.js";
-import { buildSnapshot, snapshotText } from "../llm/orchestrate/snapshot.js";
+} from "astral-interpreter/web";
+import { buildSnapshot, snapshotText } from "astral-interpreter/web";
 import type {
   InterpretationCheckpoint,
   InterpretationRecovery,
@@ -33,7 +33,7 @@ import type {
   RunHooks,
   SchemaClientFactory,
   WaveCheckpoint,
-} from "../llm/orchestrate/types.js";
+} from "astral-interpreter/web";
 import { preferredGenderOf, type BirthInput, type PreferredGender } from "../types/base.js";
 import type { AstralChart } from "../types/chart.js";
 import type { AstralCalculation, AstralFile, InterpretationUnit } from "../types/file.js";

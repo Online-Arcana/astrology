@@ -2,7 +2,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import process from "node:process";
-import type { ChartBill, UsageGroup } from "./billing/types.js";
+import type { ChartBill, UsageGroup } from "astral-interpreter";
 import { readConfig } from "./config.js";
 import { encodeAstralFile } from "./file/validate.js";
 import { routeApi, type ApiRequest, type ApiResponse } from "./interface/api.js";

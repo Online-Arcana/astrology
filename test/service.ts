@@ -1,10 +1,11 @@
+import { compatibilityDomains, type AstronomyPort, type BodySample, type LunarOrbitPort, type EclipseKind, type EclipsePort, type TimeResolver } from "astral-core";
 import { CalculationService, type CalculationPorts } from "../src/calculate/service.js";
-import { compatibilityDomains } from "../src/compat/catalogue.js";
-import type { AstronomyPort, BodySample, LunarOrbitPort } from "../src/astro/port.js";
-import type { EclipseKind, EclipsePort } from "../src/eclipse/port.js";
+
+
+
 import type { PlaceData } from "../src/types/base.js";
 import type { PlanetId } from "../src/types/astro.js";
-import type { TimeResolver } from "../src/time/model.js";
+
 
 const equal = <T>(actual: T, expected: T, message: string): void => {
   if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);

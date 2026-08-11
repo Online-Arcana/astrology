@@ -1,13 +1,1 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "noEmit": false,
-    "allowImportingTsExtensions": false,
-    "outDir": ".test",
-    "rootDir": ".",
-    "declaration": false,
-    "declarationMap": false,
-    "sourceMap": false
-  },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
-}
+{ "extends":"./tsconfig.json", "compilerOptions": { "noEmit":false, "allowImportingTsExtensions":false, "outDir":".test", "rootDir":".", "declaration":false, "sourceMap":false }, "include":["src/**/*.ts","test/**/*.ts"] }

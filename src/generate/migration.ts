@@ -4,7 +4,7 @@ import type {
   ActiveInterpretationUnit,
   InterpretationRecovery,
   UnitResult,
-} from "../llm/orchestrate/types.js";
+} from "astral-interpreter/web";
 
 export const legacyGenerationRecoverySchema = "astral-generation-recovery/1.0.0" as const;
 

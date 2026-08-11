@@ -1,4 +1,4 @@
-import { compatibilityDomains } from "../compat/catalogue.js";
+import { compatibilityDomains } from "astral-core";
 import type {
   AstralAuthority,
   AstralFile,

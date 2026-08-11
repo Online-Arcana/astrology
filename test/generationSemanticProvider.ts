@@ -3,8 +3,8 @@ import {
   ChartGenerationService,
   type ChartSchemaFactory,
 } from "../src/generate/service.js";
-import type { InterpretationSemanticProvider } from "../src/interpretation/map/provider.js";
-import type { SchemaClient } from "../src/llm/orchestrate/types.js";
+import type { InterpretationSemanticProvider } from "astral-interpreter/web";
+import type { SchemaClient } from "astral-interpreter/web";
 import type { BirthInput, JsonRef } from "../src/types/base.js";
 import type { AstralCalculation } from "../src/types/file.js";
 

@@ -1,48 +1,18 @@
 # astrology
 
-Library for astrology calculations, chart geometry, and interpretation.
+Headless composition package for Online Arcana astrology.
 
-Calculations are deterministic. LLMs fill fixed interpretation schemas and cannot alter placements, availability, rankings, scores or file structure.
+This repository owns the public API and CLI, chart generation orchestration, `.astral` document integrity/signing, and composition of the deterministic core, interpretation engine and packager.
 
-## Current capabilities
+Deterministic calculation and browser-safe place data live in `astral-core`. Interpretation, auditing and OpenAI orchestration live in `astral-interpreter`. Browser UI lives in `astral-charts`. Identicon rendering lives in `astral-identicons`.
 
-- immutable tropical or sidereal chart systems
-- planets, angles, houses, aspects, dignities, derived points, eclipses and patterns
-- exact, approximate and unknown-time handling
-- deterministic compatibility scores and ranks
-- audited, recovery-safe interpretation with bounded parallel lanes
-- live token use, estimated cost and historical chart bills
-- canonical `.astral` files with integrity checks and optional Ed25519 authority
-- customer-formatted and raw file views
-- TypeScript API, CLI, JSON API and client-only GitHub Pages frontend
-
-## Build
+## Development
 
 ```sh
-git clone --recurse-submodules https://github.com/kitty-crow/astrology.git
-cd astrology
+git submodule update --init --recursive
 npm run vendor:build
-npm install
-npm run ci
+npm ci
+npm run check
+npm test
+npm run build
 ```
-
-Build only the static browser page with:
-
-```sh
-npm run build:pages
-```
-
-## Use
-
-```sh
-astrology calculate < request.json > calculation.json
-astrology generate --input request.json --output chart.astral
-astrology bills
-astrology validate --input chart.astral
-```
-
-`generate` requires an OpenAI key. The static page asks the visitor for their own key and keeps browser credentials and chart data locally.
-
-## Documentation
-
-[Read the documentation](docs/README.md), including the [client-only browser frontend](docs/browser.md).

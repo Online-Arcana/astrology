@@ -1,12 +1,14 @@
-import { assembleChart, type ChartAssemblyOptions } from "../src/chart/assemble.js";
-import { buildInterpretationPlan } from "../src/calculate/plan.js";
-import { compatibilityDomains } from "../src/compat/catalogue.js";
+import { compatibilityDomains, signs, type JsonRef } from "astral-core";
+import { assembleChart, buildPlan, deterministicInterpretationPlan, type ChartAssemblyOptions, type InterpretationRun, type Section, type UnitResult } from "astral-interpreter/web";
+
+
+
 import { base64url } from "../src/file/codec.js";
 import { assembleAstralFile } from "../src/file/document.js";
 import { decodeAstralFile, encodeAstralFile, isAstralFile, validateAstralFile } from "../src/file/validate.js";
-import { deterministicInterpretationPlan } from "../src/llm/orchestrate/plan.js";
-import type { InterpretationRun, UnitResult } from "../src/llm/orchestrate/types.js";
-import type { JsonRef } from "../src/types/base.js";
+
+
+
 import type {
   CompatibilityDomain,
   CompatibilityMatrix,
@@ -14,10 +16,10 @@ import type {
   Sign,
   SignMap,
   ZodiacCalculation,
-} from "../src/types/astro.js";
-import type { Section } from "../src/types/chart.js";
+} from "astral-core";
+
 import type { AstralCalculation, InterpretationUnit, TrustedAuthority } from "../src/types/file.js";
-import { signs } from "../src/zodiac/position.js";
+
 
 const equal = <T>(actual: T, expected: T, message: string): void => {
   if (!Object.is(actual, expected)) throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);
@@ -94,7 +96,7 @@ const deterministicSystem = (): ZodiacCalculation => {
 const calculationFixture = (): AstralCalculation => {
   const system = deterministicSystem();
   const matrix = compatibilityMatrix();
-  const interpretationPlan = buildInterpretationPlan(system);
+  const interpretationPlan = buildPlan(system);
   return {
     schema: "astral-calculation/1.1.0",
     subject: { providedName: null, language: "en", adult: true },

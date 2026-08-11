@@ -1,18 +1,9 @@
-[submodule "vendor/astronomy"]
-	path = vendor/astronomy
-	url = https://github.com/kitty-crow/astronomia.git
-[submodule "vendor/openai-schema"]
-	path = vendor/openai-schema
-	url = https://github.com/kitty-crow/openai-schema.git
-[submodule "vendor/places"]
-	path = vendor/places
-	url = https://github.com/kitty-crow/countrystatecity.git
-[submodule "vendor/time"]
-	path = vendor/time
-	url = https://github.com/kitty-crow/ts-joda.git
+[submodule "vendor/astral-core"]
+	path = vendor/astral-core
+	url = https://github.com/Online-Arcana/astral-chart-wheel.git
+[submodule "vendor/astral-interpreter"]
+	path = vendor/astral-interpreter
+	url = https://github.com/Online-Arcana/astral-interpreter.git
 [submodule "vendor/astral-packager"]
 	path = vendor/astral-packager
 	url = https://github.com/Online-Arcana/astral-packager.git
-[submodule "vendor/astral-chart-wheel"]
-	path = vendor/astral-chart-wheel
-	url = https://github.com/Online-Arcana/astral-chart-wheel.git

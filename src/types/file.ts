@@ -1,85 +1,5 @@
-import type { BirthData, JsonRef, PlaceData, PreferredGender, TimeData } from "./base.js";
-import type {
-  Ayanamsha,
-  AstronomyData,
-  CompatibilityMatrix,
-  Zodiac,
-  ZodiacCalculation,
-} from "./astro.js";
-import type { AstralChart } from "./chart.js";
-
-export interface CalculationSettings {
-  primaryZodiac: Zodiac;
-  siderealAyanamsha: Ayanamsha | null;
-  interpretationMode: Zodiac;
-  primaryHouseSystem: "placidus";
-  polarFallback: "porphyry";
-  houseSystems: ["placidus", "whole_sign", "equal", "porphyry"];
-}
-
-export interface InterpretationUnit {
-  id: string;
-  zodiac: Zodiac;
-  section: string;
-  domain: string | null;
-  allowedSourceRefs: JsonRef[];
-}
-
-export interface InterpretationPlan {
-  schema: "astral-interpretation-plan/1.1.0";
-  zodiac: Zodiac;
-  units: InterpretationUnit[];
-}
-
-export interface CalculationProvenance {
-  generatedAt: string;
-  astralChartsVersion: string;
-  astronomia: { repository: string; revision: string; version: string };
-  places: { repository: string; revision: string; version: string };
-  time: {
-    repository: string;
-    revision: string;
-    version: string;
-    timeZoneDatabaseVersion: string;
-    calendar: "proleptic_gregorian";
-    supportedRange: string;
-  };
-  astrologyProfile: string;
-  aspectProfile: string;
-  dignityProfile: string;
-  compatibilityProfile: string;
-  calculationFingerprint: string;
-}
-
-export interface CalculationWarning {
-  code: string;
-  message: string;
-  sourceRefs: JsonRef[];
-}
-
-export interface AstralCalculation {
-  schema: "astral-calculation/1.1.0";
-  subject: {
-    providedName: string | null;
-    language: string;
-    adult: true;
-    /** Missing only in files created before preferred-gender metadata existed. */
-    preferredGender?: PreferredGender;
-  };
-  birth: BirthData;
-  place: PlaceData;
-  time: TimeData;
-  settings: CalculationSettings;
-  astronomy: AstronomyData;
-  system: ZodiacCalculation;
-  compatibility: CompatibilityMatrix & {
-    method: "natal_to_sign_archetype";
-    profile: "western_compatibility/1.0.0";
-  };
-  interpretationPlan: InterpretationPlan;
-  provenance: CalculationProvenance;
-  warnings: CalculationWarning[];
-}
+import type { AstralCalculation, AstralChart, InterpretationUnit } from "astral-interpreter/web";
+export type { AstralCalculation, InterpretationUnit } from "astral-interpreter/web";
 
 export interface AstralCrc {
   schema: "astral-crc/1.0.0";
@@ -91,12 +11,10 @@ export interface AstralCrc {
   sha512: string;
   crc32c: string;
 }
-
 export type EncodedPublicKey = `base64url:${string}`;
 export type EncodedSignature = `base64url:${string}`;
 export type KeyId = `sha256:${string}`;
 export type SignedDigest = `sha256:${string}`;
-
 export interface AstralAuthority {
   schema: "astral-authority/1.0.0";
   algorithm: "Ed25519";
@@ -110,7 +28,6 @@ export interface AstralAuthority {
   signedSha256: SignedDigest;
   generatedAt: string;
 }
-
 export interface AstralFile {
   schema: "astral/1.1.0";
   "astral-calculation": AstralCalculation;
@@ -118,14 +35,12 @@ export interface AstralFile {
   crc: AstralCrc;
   authority: AstralAuthority | null;
 }
-
 export interface TrustedAuthority {
   issuer: string;
   keyId: string;
   publicKey: string;
   status: "active" | "retired" | "revoked";
 }
-
 export interface AstralValidation {
   structure: "valid" | "invalid";
   integrity: "valid" | "modified" | "invalid_crc" | "unsupported";
