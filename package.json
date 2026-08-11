@@ -17,7 +17,7 @@
     "vendor:packager": "npm --prefix vendor/astral-packager run build",
     "vendor:build": "npm run vendor:core && npm run vendor:interpreter && npm run vendor:packager",
     "check": "tsc -p tsconfig.json --noEmit",
-    "build": "rm -rf dist data && node scripts/sync-data.mjs && tsc -p tsconfig.build.json",
+    "build": "rm -rf dist data && node scripts/sync-data.mjs && tsc -p tsconfig.build.json && node scripts/sync-packager.mjs",
     "test": "rm -rf .test && tsc -p tsconfig.test.json && node .test/test/publicCompatibility.js && node .test/test/interfaces.js && node .test/test/service.js && node .test/test/chartFile.js && node .test/test/generationSemanticProvider.js && node .test/test/recoveryMigration.js",
     "ci": "npm run check && npm test && npm run build",
     "start": "node dist/cli.js serve"

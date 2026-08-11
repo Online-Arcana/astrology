@@ -1,0 +1,146 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #f4f1fb;
+  background: #100d18;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(126, 87, 194, .22), transparent 34rem),
+    radial-gradient(circle at 85% 90%, rgba(69, 39, 160, .18), transparent 30rem),
+    #100d18;
+}
+
+main {
+  width: min(42rem, calc(100% - 2rem));
+  margin: 2rem auto;
+  padding: clamp(1.4rem, 4vw, 2.4rem);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 1.5rem;
+  background: rgba(22, 18, 33, .9);
+  box-shadow: 0 2rem 6rem rgba(0, 0, 0, .35);
+}
+
+header { margin-bottom: 2rem; }
+h1 { margin: .2rem 0 .75rem; font-size: clamp(2rem, 8vw, 3.5rem); line-height: 1; }
+p { color: #c9c2d8; line-height: 1.6; }
+.eyebrow { margin: 0; color: #ad8df0; font-size: .78rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+
+form, section { display: grid; gap: 1rem; }
+.job[hidden], #result[hidden] { display: none; }
+label { display: grid; gap: .45rem; font-weight: 680; }
+
+input, #make, .download {
+  width: 100%;
+  min-height: 3rem;
+  border-radius: .8rem;
+  font: inherit;
+}
+
+input {
+  border: 1px solid rgba(255, 255, 255, .16);
+  padding: .75rem .9rem;
+  color: inherit;
+  background: rgba(255, 255, 255, .055);
+}
+
+input[aria-invalid="true"] { border-color: #ef8f9d; }
+
+.pwd-field { position: relative; display: block; }
+.pwd-field input { padding-right: 3.25rem; }
+
+.reveal {
+  position: absolute;
+  top: 50%;
+  right: .35rem;
+  width: 2.35rem;
+  height: 2.35rem;
+  min-height: 0;
+  padding: .45rem;
+  border: 0;
+  border-radius: .65rem;
+  color: #c9c2d8;
+  background: transparent;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.reveal:hover { background: rgba(255, 255, 255, .08); }
+.eye { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.eye[hidden], .field-error[hidden] { display: none; }
+.field-error { color: #ffadb8; font-size: .9rem; font-weight: 600; }
+
+input:focus-visible, button:focus-visible, .download:focus-visible {
+  outline: 3px solid rgba(173, 141, 240, .45);
+  outline-offset: 2px;
+}
+
+#make, .download {
+  border: 0;
+  display: grid;
+  place-items: center;
+  padding: .8rem 1rem;
+  color: #130d20;
+  background: #c7abff;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+#make:disabled { cursor: progress; opacity: .65; }
+#status { min-height: 1.6rem; margin: 1rem 0; }
+#result { padding-top: 1rem; border-top: 1px solid rgba(255, 255, 255, .1); }
+code { color: #dccdff; }
+
+.pwd-audit,
+.job {
+  gap: .55rem;
+  padding: .85rem;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: .85rem;
+  background: rgba(255, 255, 255, .035);
+}
+
+.pwd-head,
+.job-head,
+.job-time {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.pwd-head span,
+.job-head span,
+.job-time { color: #c9c2d8; }
+.pwd-audit meter,
+.job progress { width: 100%; height: .8rem; accent-color: #7c6f8f; }
+.job progress { accent-color: #a98ce7; }
+.job-time { font-size: .9rem; }
+.pwd-audit[data-score="1"] meter { accent-color: #d46a6a; }
+.pwd-audit[data-score="2"] meter { accent-color: #d49a57; }
+.pwd-audit[data-score="3"] meter { accent-color: #86b96a; }
+.pwd-audit[data-score="4"] meter { accent-color: #66c7a5; }
+.pwd-audit ul:empty { display: none; }
+.pwd-audit ul { margin: 0; padding-left: 1.25rem; color: #a9a1ba; }
+.pwd-audit li + li { margin-top: .3rem; }
+
+@media (prefers-color-scheme: light) {
+  :root { color: #20172f; background: #f4effb; }
+  body { background: radial-gradient(circle at 20% 10%, #e9dcff, transparent 34rem), #f4effb; }
+  main { background: rgba(255, 255, 255, .9); border-color: rgba(44, 28, 72, .12); }
+  p { color: #5f566b; }
+  input { background: #fff; border-color: rgba(44, 28, 72, .18); }
+  input[aria-invalid="true"] { border-color: #b33e52; }
+  .reveal { color: #5f566b; }
+  .reveal:hover { background: rgba(44, 28, 72, .08); }
+  .field-error { color: #a52f45; }
+  .pwd-audit, .job { background: rgba(44, 28, 72, .035); border-color: rgba(44, 28, 72, .12); }
+  .pwd-head span, .pwd-audit ul, .job-head span, .job-time { color: #5f566b; }
+}

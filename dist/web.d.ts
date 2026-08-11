@@ -26,6 +26,7 @@ export * from "./file/invariants.js";
 export * from "./file/document.js";
 export * from "./file/validate.js";
 export { ChartGenerationService, createChartGenerationService, generationRecoverySchema, type ChartGenerationCheckpoint, type ChartSchemaFactory, type GeneratedChart, type GenerationHooks, type GenerationRuntime, type ResumableChartGenerationCheckpoint, } from "./generate/service.js";
+export declare const astralWheelData: (calculation: import("./types/file.js").AstralFile["astral-calculation"]) => import("astral-core/wheel").WheelData;
 export declare const webPlaceCatalogue: (places: URL) => PlaceCatalogue;
 export declare const loadWebChartGenerationService: (config: Config, places: URL, version?: string, openai?: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">>, semanticProvider?: InterpretationSemanticProvider | null) => Promise<ChartGenerationService>;
 //# sourceMappingURL=web.d.ts.map

@@ -21,6 +21,13 @@ export * from "./file/invariants.js";
 export * from "./file/document.js";
 export * from "./file/validate.js";
 export { ChartGenerationService, createChartGenerationService, generationRecoverySchema, } from "./generate/service.js";
+export const astralWheelData = (calculation) => ({
+    fingerprint: calculation.provenance.calculationFingerprint,
+    primaryHouseSystem: calculation.settings.primaryHouseSystem,
+    points: calculation.system.points,
+    houses: calculation.system.houses,
+    aspects: calculation.system.aspects,
+});
 export const webPlaceCatalogue = (places) => webPlaces(places);
 export const loadWebChartGenerationService = async (config, places, version = "0.20.0", openai = {}, semanticProvider = productionSemanticProvider) => {
     const calculation = new CalculationService(await webPorts(places, version));

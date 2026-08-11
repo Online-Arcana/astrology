@@ -74,6 +74,15 @@ export {
   type ResumableChartGenerationCheckpoint,
 } from "./generate/service.js";
 
+
+export const astralWheelData = (calculation: import("./types/file.js").AstralFile["astral-calculation"]): import("astral-core/wheel").WheelData => ({
+  fingerprint: calculation.provenance.calculationFingerprint,
+  primaryHouseSystem: calculation.settings.primaryHouseSystem,
+  points: calculation.system.points,
+  houses: calculation.system.houses,
+  aspects: calculation.system.aspects,
+});
+
 export const webPlaceCatalogue = (places: URL): PlaceCatalogue => webPlaces(places);
 
 export const loadWebChartGenerationService = async (

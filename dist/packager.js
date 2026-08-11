@@ -1,2 +1,1 @@
-export * from "astral-packager";
-//# sourceMappingURL=packager.js.map
+export * from "./packager-runtime/index.js";
