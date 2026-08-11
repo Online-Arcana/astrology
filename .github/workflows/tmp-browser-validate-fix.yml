@@ -1,0 +1,55 @@
+name: tmp-browser-validate-fix
+
+on:
+  push:
+    branches: [agent/split-modules]
+    paths: [.github/workflows/tmp-browser-validate-fix.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  validate-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/split-modules
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Remove final bare-core browser edge
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/file/validate.ts')
+          s=p.read_text()
+          old='import { compatibilityDomains } from "astral-core";'
+          new='import { compatibilityDomains } from "astral-core/web";'
+          if old not in s:
+              raise SystemExit('bare core validation import not found')
+          p.write_text(s.replace(old,new))
+          PY
+
+          npm --prefix vendor/astral-packager run build
+          npm ci
+          npm run check
+          npm test
+          npm run build
+
+          ! grep -R -F 'from "astral-core"' dist/web.js dist/file dist/calculate/service.js dist/generate/service.js
+          ! grep -R -F 'import("astral-core")' dist/web.js dist/file dist/calculate/service.js dist/generate/service.js
+          ! grep -R -E 'node:(fs|path|url)' dist/web.js dist/file dist/calculate/service.js dist/generate/service.js
+          grep -F 'from "astral-core/web"' dist/file/validate.js
+
+          git restore --source=HEAD --staged --worktree .github/workflows || true
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/file/validate.ts
+          git add -f dist
+          git commit -m "Use browser-safe core catalogue for file validation"
+          git pull --rebase origin agent/split-modules
+          git push origin HEAD:agent/split-modules
