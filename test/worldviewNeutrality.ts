@@ -27,7 +27,9 @@ const test = (name: string, run: () => void): void => {
 
 const rejected = [
   "God is asking you to accept this challenge.",
+  "God has given you this challenge for a reason.",
   "The universe has placed this person in your path to teach you independence.",
+  "The universe is telling you to change direction.",
   "This is a karmic relationship that carries unfinished debt.",
   "You knew this person in a past life.",
   "Your soul chose this challenge before this incarnation.",
@@ -35,6 +37,7 @@ const rejected = [
   "You are spiritually meant to follow this direction.",
   "This placement reflects divine purpose in your life.",
   "Your guardian angel is guiding this relationship.",
+  "Your spirit guides are asking you to wait.",
   "This pattern is part of a larger cosmic plan.",
 ] as const;
 
