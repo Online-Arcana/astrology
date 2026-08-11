@@ -27,6 +27,8 @@ jobs:
           INTERPRETER=a11f585767e04e3e4080b0ce5a9e0962081d3644
           git -C vendor/astral-interpreter fetch origin "$INTERPRETER"
           git -C vendor/astral-interpreter checkout "$INTERPRETER"
+          git -C vendor/astral-interpreter submodule sync --recursive
+          git -C vendor/astral-interpreter submodule update --init --recursive
           git add vendor/astral-interpreter
 
           npm run vendor:build
