@@ -102,6 +102,7 @@ const rules: readonly FindingRule[] = [
     reason: "imposes a spiritual worldview on the subject",
     patterns: [
       /\bspiritual\s+(?:destiny|obligation|mission|purpose|lesson|path|calling|development|evolution)\b/giu,
+      /\bspiritually\s+(?:meant|called|guided|obliged|required)\s+to\b/giu,
       /\bsacred\s+(?:calling|mission|purpose|duty|path)\b/giu,
     ],
   },
