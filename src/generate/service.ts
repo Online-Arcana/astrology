@@ -341,58 +341,58 @@ export class ChartGenerationService {
 
     try {
       let interpreted = await runInterpretationPlan(
-  calculation,
-  this.#runtime.config,
-  this.#runtime.schemaFactory(calculation, report),
-  instrumented,
-  recovery,
-  semanticProvider,
-);
-const generatedAt = this.#runtime.now();
-const assemble = (candidate: typeof interpreted): AstralChart => assembleChart(calculation, candidate.run, {
-  generatedAt,
-  bigModel: this.#runtime.config.openai.bigModel,
-  smallModel: this.#runtime.config.openai.smallModel,
-  structuredOutputSchema: structuredOutputCatalogue,
-  promptCatalogue,
-  astrologyCatalogue: calculation.provenance.astrologyProfile,
-  nlpAuditProfile,
-  ...(candidate.generatedName === null ? {} : { generatedName: candidate.generatedName }),
-});
+        calculation,
+        this.#runtime.config,
+        this.#runtime.schemaFactory(calculation, report),
+        instrumented,
+        recovery,
+        semanticProvider,
+      );
+      const generatedAt = this.#runtime.now();
+      const assemble = (candidate: typeof interpreted): AstralChart => assembleChart(calculation, candidate.run, {
+        generatedAt,
+        bigModel: this.#runtime.config.openai.bigModel,
+        smallModel: this.#runtime.config.openai.smallModel,
+        structuredOutputSchema: structuredOutputCatalogue,
+        promptCatalogue,
+        astrologyCatalogue: calculation.provenance.astrologyProfile,
+        nlpAuditProfile,
+        ...(candidate.generatedName === null ? {} : { generatedName: candidate.generatedName }),
+      });
 
-let chart: AstralChart;
-try {
-  chart = assemble(interpreted);
-} catch (assemblyCause: unknown) {
-  if (this.#runtime.config.chart.throwOnInterpretationFailure) throw assemblyCause;
+      let chart: AstralChart;
+      try {
+        chart = assemble(interpreted);
+      } catch (assemblyCause: unknown) {
+        if (this.#runtime.config.chart.throwOnInterpretationFailure) throw assemblyCause;
 
-  // First preserve as much reviewed chart-specific meaning as possible.
-  interpreted = deterministicInterpretationPlan(
-    calculation,
-    instrumented,
-    assemblyCause,
-    semanticProvider,
-  );
-  try {
-    chart = assemble(interpreted);
-  } catch (semanticFallbackCause: unknown) {
-    // Absolute customer-delivery floor: if even map-backed deterministic
-    // prose cannot pass final assembly, use the schema-complete neutral
-    // generic catalogue with no semantic provider dependency.
-    interpreted = deterministicInterpretationPlan(
-      calculation,
-      instrumented,
-      semanticFallbackCause,
-      null,
-    );
-    chart = assemble(interpreted);
-  }
-}
+        // Preserve reviewed chart-specific meaning first.
+        interpreted = deterministicInterpretationPlan(
+          calculation,
+          instrumented,
+          assemblyCause,
+          semanticProvider,
+        );
+        try {
+          chart = assemble(interpreted);
+        } catch (semanticFallbackCause: unknown) {
+          // Absolute customer-delivery floor: if map-backed deterministic
+          // prose cannot pass final assembly, use the schema-complete neutral
+          // generic catalogue with no semantic-provider dependency.
+          interpreted = deterministicInterpretationPlan(
+            calculation,
+            instrumented,
+            semanticFallbackCause,
+            null,
+          );
+          chart = assemble(interpreted);
+        }
+      }
 
-const file = await assembleAstralFile(calculation, chart, authority(this.#runtime.config, generatedAt));
-const bill = collector.finish("completed", generatedAt);
-hooks.onBill?.(bill);
-return { calculation, interpretation: interpreted.run, chart, file, bill };
+      const file = await assembleAstralFile(calculation, chart, authority(this.#runtime.config, generatedAt));
+      const bill = collector.finish("completed", generatedAt);
+      hooks.onBill?.(bill);
+      return { calculation, interpretation: interpreted.run, chart, file, bill };
     } catch (cause: unknown) {
       hooks.onBill?.(collector.finish("failed", this.#runtime.now()));
       throw cause;
