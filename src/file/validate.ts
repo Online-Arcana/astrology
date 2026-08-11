@@ -1,4 +1,4 @@
-import { compatibilityDomains } from "astral-core";
+import { compatibilityDomains } from "astral-core/web";
 import type {
   AstralAuthority,
   AstralFile,

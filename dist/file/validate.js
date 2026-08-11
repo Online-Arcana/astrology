@@ -1,4 +1,4 @@
-import { compatibilityDomains } from "astral-core";
+import { compatibilityDomains } from "astral-core/web";
 import { signatureValid } from "./authority.js";
 import { canonicalise } from "./canonical.js";
 import { integrityValid } from "./integrity.js";
