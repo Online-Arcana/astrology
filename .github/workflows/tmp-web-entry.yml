@@ -1,0 +1,253 @@
+name: tmp-web-entry
+
+on:
+  push:
+    branches: [agent/split-modules]
+    paths: [.github/workflows/tmp-web-entry.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  web-entry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/split-modules
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Add browser-safe composition entry
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          p = Path('src/calculate/service.ts')
+          s = p.read_text()
+          s = s.replace(
+              'import { CalcError, calc, loadPorts, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core";',
+              'import { CalcError, calc, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core/web";'
+          )
+          s = s.replace(
+              'export const loadCalculationPorts = async (version = "0.20.0"): Promise<CalculationPorts> => loadPorts(version);',
+              'export const loadCalculationPorts = async (version = "0.20.0"): Promise<CalculationPorts> => {\n  const { loadPorts } = await import("astral-core");\n  return loadPorts(version);\n};'
+          )
+          p.write_text(s)
+
+          p = Path('src/generate/service.ts')
+          s = p.read_text()
+          marker = 'export const loadChartGenerationService = async ('
+          if marker not in s:
+              raise SystemExit('loadChartGenerationService marker missing')
+          prefix = s.split(marker, 1)[0]
+          replacement = r'''export const createChartGenerationService = (
+            calculation: Pick<CalculationService, "calculate">,
+            config: Config,
+            version = "0.20.0",
+            openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
+            semanticProvider: InterpretationSemanticProvider | null = null,
+          ): ChartGenerationService => {
+            if (config.openai.apiKey.trim().length === 0) {
+              throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
+            }
+            const schemaFactory: ChartSchemaFactory = (value, onUsage) => createOpenAISchemaClientFactory({
+              apiKey: config.openai.apiKey,
+              instructions: `${baseDeveloperInstruction}\n\n${languageInstruction(value)}`,
+              metadata: {
+                service: "astral-charts",
+                calculation_fingerprint: value.provenance.calculationFingerprint,
+                astral_charts_version: version,
+                zodiac: value.system.zodiac,
+                ayanamsha: value.settings.siderealAyanamsha ?? "none",
+                preferred_gender: preferredGenderOf(value.subject),
+              },
+              ...(config.chart.laneContextTokens === undefined
+                ? {}
+                : { contextTokenBudget: config.chart.laneContextTokens }),
+              onUsage,
+              ...openai,
+            });
+            return new ChartGenerationService({
+              calculation,
+              schemaFactory,
+              config,
+              version,
+              ...(semanticProvider === null ? {} : { semanticProvider }),
+              now: () => new Date().toISOString(),
+            });
+          };
+
+          export const loadChartGenerationService = async (
+            config: Config,
+            version = "0.20.0",
+            openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
+            semanticProvider: InterpretationSemanticProvider | null = null,
+          ): Promise<ChartGenerationService> => {
+            const ports = await loadCalculationPorts(version);
+            return createChartGenerationService(
+              new CalculationService(ports),
+              config,
+              version,
+              openai,
+              semanticProvider,
+            );
+          };
+          '''
+          p.write_text(prefix + replacement)
+
+          p = Path('src/index.ts')
+          s = p.read_text()
+          if 'export * from "./assets.js";' not in s:
+              s = s.replace('export * from "./calculate/service.js";', 'export * from "./assets.js";\nexport * from "./calculate/service.js";')
+          p.write_text(s)
+
+          package = json.loads(Path('package.json').read_text())
+          package['exports'] = {
+              '.': {'types': './dist/index.d.ts', 'default': './dist/index.js'},
+              './web': {'types': './dist/web.d.ts', 'default': './dist/web.js'},
+          }
+          package['scripts']['build'] = 'rm -rf dist data && node scripts/sync-data.mjs && tsc -p tsconfig.build.json'
+          Path('package.json').write_text(json.dumps(package, indent=2) + '\n')
+          PY
+
+          mkdir -p scripts
+          cat > scripts/sync-data.mjs <<'JS'
+          import { cp, mkdir, rm } from "node:fs/promises";
+          import { resolve } from "node:path";
+
+          const source = resolve("vendor/astral-core/data/places");
+          const output = resolve("data/places");
+
+          await rm(output, { recursive: true, force: true });
+          await mkdir(resolve("data"), { recursive: true });
+          await cp(source, output, { recursive: true });
+          JS
+
+          cat > src/assets.ts <<'TS'
+          /** Prepared browser place dataset generated by the pinned astral-core dependency. */
+          export const placesDataUrl = new URL("../data/places/", import.meta.url);
+          TS
+
+          cat > src/web.ts <<'TS'
+          import {
+            webPlaces,
+            webPorts,
+            type PlaceCatalogue,
+          } from "astral-core/web";
+          import {
+            productionSemanticProvider,
+            type InterpretationSemanticProvider,
+            type OpenAISchemaRuntimeOptions,
+          } from "astral-interpreter/web";
+          import { CalculationService } from "./calculate/service.js";
+          import type { Config } from "./config.js";
+          import {
+            createChartGenerationService,
+            type ChartGenerationService,
+          } from "./generate/service.js";
+
+          export { webPlaces, webPorts } from "astral-core/web";
+          export type { PlaceCatalogue } from "astral-core/web";
+          export {
+            productionSemanticProvider,
+            type InterpretationSemanticProvider,
+            type OpenAISchemaRuntimeOptions,
+          } from "astral-interpreter/web";
+          export { readConfig, type Config, type Env } from "./config.js";
+          export { preferredGenderOf, type BirthInput } from "./types/base.js";
+          export type {
+            AstralCrc,
+            AstralAuthority,
+            AstralFile,
+            AstralValidation,
+            TrustedAuthority,
+            EncodedPublicKey,
+            EncodedSignature,
+            KeyId,
+            SignedDigest,
+          } from "./types/file.js";
+          export type {
+            LegacyAstralCalculation,
+            LegacyAstralChart,
+            LegacyAstralFile,
+            ReadableAstralFile,
+          } from "./types/legacy.js";
+          export type { ProgressEvent, ProgressStage } from "./types/progress.js";
+          export {
+            CalculationService,
+            CalculationUnavailableError,
+            type CalculationOptions,
+            type CalculationPorts,
+          } from "./calculate/service.js";
+          export { canonicalise } from "./file/canonical.js";
+          export * from "./file/codec.js";
+          export * from "./file/crc32c.js";
+          export * from "./file/integrity.js";
+          export * from "./file/authority.js";
+          export * from "./file/invariants.js";
+          export * from "./file/document.js";
+          export * from "./file/validate.js";
+          export {
+            ChartGenerationService,
+            createChartGenerationService,
+            generationRecoverySchema,
+            type ChartGenerationCheckpoint,
+            type ChartSchemaFactory,
+            type GeneratedChart,
+            type GenerationHooks,
+            type GenerationRuntime,
+            type ResumableChartGenerationCheckpoint,
+          } from "./generate/service.js";
+
+          export const webPlaceCatalogue = (places: URL): PlaceCatalogue => webPlaces(places);
+
+          export const loadWebChartGenerationService = async (
+            config: Config,
+            places: URL,
+            version = "0.20.0",
+            openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
+            semanticProvider: InterpretationSemanticProvider | null = productionSemanticProvider,
+          ): Promise<ChartGenerationService> => {
+            const calculation = new CalculationService(await webPorts(places, version));
+            return createChartGenerationService(
+              calculation,
+              config,
+              version,
+              openai,
+              semanticProvider,
+            );
+          };
+          TS
+
+          npm run vendor:core
+          npm --prefix vendor/astral-packager run build
+          npm install --package-lock-only --ignore-scripts
+          npm ci
+          npm run check
+          npm test
+          npm run build
+          node --input-type=module - <<'NODE'
+          const web = await import('./dist/web.js');
+          if (typeof web.webPlaces !== 'function') throw new Error('webPlaces export missing');
+          if (typeof web.loadWebChartGenerationService !== 'function') throw new Error('web generation loader missing');
+          if (!(web.placesDataUrl === undefined)) {
+            throw new Error('Node-only place data URL leaked into browser entry');
+          }
+          const root = await import('./dist/index.js');
+          if (!(root.placesDataUrl instanceof URL)) throw new Error('prepared place data URL missing from root');
+          NODE
+
+          git restore --source=HEAD --staged --worktree .github/workflows || true
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git add -f dist data
+          git commit -m "Add browser-safe astrology composition entry"
+          git pull --rebase origin agent/split-modules
+          git push origin HEAD:agent/split-modules
