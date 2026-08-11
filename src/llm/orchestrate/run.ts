@@ -23,7 +23,7 @@ const normaliseResult = (
   call: InterpretationCall,
   result: UnitResult<object>,
 ): UnitResult<object> => {
-  if (result.provenance?.repairedBy !== "deterministic") return result;
+  if (result.provenance?.repairedBy !== "deterministic" || call.semanticMap === undefined) return result;
   const rebuilt = reconstructUnit({ unit: call, candidates: [result.value] });
   return {
     ...result,
@@ -41,6 +41,20 @@ const normaliseResult = (
         ...rebuilt.warnings,
       ],
     },
+  };
+};
+
+const normaliseRun = (
+  calls: readonly InterpretationCall[],
+  run: InterpretationRun,
+): InterpretationRun => {
+  const byId = new Map(calls.map((call) => [call.id, call]));
+  return {
+    ...run,
+    units: Object.fromEntries(Object.entries(run.units).map(([id, result]) => {
+      const call = byId.get(id);
+      return [id, call === undefined ? result : normaliseResult(call, result)];
+    })),
   };
 };
 
@@ -131,7 +145,7 @@ export const runInterpretation = async (
 ): Promise<InterpretationRun> => {
   const normalisedRecovery = normaliseRecovery(calls, recovery);
   try {
-    return await runRoutedInterpretation(
+    const run = await runRoutedInterpretation(
       calculation,
       calls,
       config,
@@ -139,6 +153,7 @@ export const runInterpretation = async (
       hooks,
       normalisedRecovery,
     );
+    return normaliseRun(calls, run);
   } catch (cause: unknown) {
     if (config.chart.throwOnInterpretationFailure) throw cause;
     return finalFallback(calls, hooks, normalisedRecovery, cause);
