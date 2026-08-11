@@ -1,31 +1,25 @@
-name: ci
+name: CI
 
 on:
   push:
-    branches:
-      - main
-      - agent/**
   pull_request:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
-
       - uses: actions/setup-node@v6
         with:
           node-version: 22
-
-      - run: corepack enable
+          cache: npm
       - run: npm run vendor:build
-      - run: npm install --ignore-scripts
-      - run: npm run ci
-      - run: npm run test:vendor
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
