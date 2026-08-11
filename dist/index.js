@@ -3,6 +3,7 @@ export * from "astral-interpreter";
 export { auditPwd, open, pack, pwdOk, readMeta, readPub, readPubRaw, readWheel, pwdMin, Id } from "astral-packager";
 export { readConfig } from "./config.js";
 export { preferredGenderOf } from "./types/base.js";
+export * from "./assets.js";
 export * from "./calculate/service.js";
 export { canonicalise } from "./file/canonical.js";
 export * from "./file/codec.js";

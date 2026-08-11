@@ -1,4 +1,4 @@
-import { CalcError, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core";
+import { CalcError, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core/web";
 import { type AstralCalculation } from "astral-interpreter/web";
 import type { Config } from "../config.js";
 import { type BirthInput } from "../types/base.js";

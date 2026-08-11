@@ -1,4 +1,4 @@
-import { CalcError, calc, loadPorts } from "astral-core";
+import { CalcError, calc } from "astral-core/web";
 import { prepare } from "astral-interpreter/web";
 import { preferredGenderOf } from "../types/base.js";
 export class CalculationUnavailableError extends CalcError {
@@ -36,7 +36,10 @@ export class CalculationService {
         }
     }
 }
-export const loadCalculationPorts = async (version = "0.20.0") => loadPorts(version);
+export const loadCalculationPorts = async (version = "0.20.0") => {
+    const { loadPorts } = await import("astral-core");
+    return loadPorts(version);
+};
 export const loadCalculationService = async (config, version = "0.20.0") => ({
     service: new CalculationService(await loadCalculationPorts(version)),
     options: optionsFromConfig(config),

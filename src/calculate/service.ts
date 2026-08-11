@@ -1,4 +1,4 @@
-import { CalcError, calc, loadPorts, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core";
+import { CalcError, calc, type Ayanamsha, type CalcPorts, type Zodiac } from "astral-core/web";
 import { prepare, type AstralCalculation, type Subject } from "astral-interpreter/web";
 import type { Config } from "../config.js";
 import { preferredGenderOf, type BirthInput } from "../types/base.js";
@@ -41,7 +41,10 @@ export class CalculationService {
     }
   }
 }
-export const loadCalculationPorts = async (version = "0.20.0"): Promise<CalculationPorts> => loadPorts(version);
+export const loadCalculationPorts = async (version = "0.20.0"): Promise<CalculationPorts> => {
+  const { loadPorts } = await import("astral-core");
+  return loadPorts(version);
+};
 export const loadCalculationService = async (config: Config, version = "0.20.0"): Promise<{ service: CalculationService; options: CalculationOptions }> => ({
   service: new CalculationService(await loadCalculationPorts(version)),
   options: optionsFromConfig(config),

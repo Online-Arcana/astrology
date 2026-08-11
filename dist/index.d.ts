@@ -6,6 +6,7 @@ export { preferredGenderOf, type BirthInput } from "./types/base.js";
 export type { AstralCrc, AstralAuthority, AstralFile, AstralValidation, TrustedAuthority, EncodedPublicKey, EncodedSignature, KeyId, SignedDigest } from "./types/file.js";
 export type { LegacyAstralCalculation, LegacyAstralChart, LegacyAstralFile, ReadableAstralFile } from "./types/legacy.js";
 export type { ProgressEvent, ProgressStage } from "./types/progress.js";
+export * from "./assets.js";
 export * from "./calculate/service.js";
 export { canonicalise } from "./file/canonical.js";
 export * from "./file/codec.js";

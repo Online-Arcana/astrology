@@ -400,17 +400,16 @@ export class ChartGenerationService {
   }
 }
 
-export const loadChartGenerationService = async (
+export const createChartGenerationService = (
+  calculation: Pick<CalculationService, "calculate">,
   config: Config,
   version = "0.20.0",
   openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
   semanticProvider: InterpretationSemanticProvider | null = null,
-): Promise<ChartGenerationService> => {
+): ChartGenerationService => {
   if (config.openai.apiKey.trim().length === 0) {
     throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
   }
-  const ports = await loadCalculationPorts(version);
-  const calculation = new CalculationService(ports);
   const schemaFactory: ChartSchemaFactory = (value, onUsage) => createOpenAISchemaClientFactory({
     apiKey: config.openai.apiKey,
     instructions: `${baseDeveloperInstruction}\n\n${languageInstruction(value)}`,
@@ -436,4 +435,20 @@ export const loadChartGenerationService = async (
     ...(semanticProvider === null ? {} : { semanticProvider }),
     now: () => new Date().toISOString(),
   });
+};
+
+export const loadChartGenerationService = async (
+  config: Config,
+  version = "0.20.0",
+  openai: Partial<Omit<OpenAISchemaRuntimeOptions, "apiKey" | "instructions" | "metadata" | "onUsage">> = {},
+  semanticProvider: InterpretationSemanticProvider | null = null,
+): Promise<ChartGenerationService> => {
+  const ports = await loadCalculationPorts(version);
+  return createChartGenerationService(
+    new CalculationService(ports),
+    config,
+    version,
+    openai,
+    semanticProvider,
+  );
 };

@@ -242,12 +242,10 @@ export class ChartGenerationService {
         }
     }
 }
-export const loadChartGenerationService = async (config, version = "0.20.0", openai = {}, semanticProvider = null) => {
+export const createChartGenerationService = (calculation, config, version = "0.20.0", openai = {}, semanticProvider = null) => {
     if (config.openai.apiKey.trim().length === 0) {
         throw new Error("OPENAI_API_KEY is required for interpreted chart generation");
     }
-    const ports = await loadCalculationPorts(version);
-    const calculation = new CalculationService(ports);
     const schemaFactory = (value, onUsage) => createOpenAISchemaClientFactory({
         apiKey: config.openai.apiKey,
         instructions: `${baseDeveloperInstruction}\n\n${languageInstruction(value)}`,
@@ -273,5 +271,9 @@ export const loadChartGenerationService = async (config, version = "0.20.0", ope
         ...(semanticProvider === null ? {} : { semanticProvider }),
         now: () => new Date().toISOString(),
     });
+};
+export const loadChartGenerationService = async (config, version = "0.20.0", openai = {}, semanticProvider = null) => {
+    const ports = await loadCalculationPorts(version);
+    return createChartGenerationService(new CalculationService(ports), config, version, openai, semanticProvider);
 };
 //# sourceMappingURL=service.js.map
