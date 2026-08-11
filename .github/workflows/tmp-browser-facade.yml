@@ -1,0 +1,76 @@
+name: tmp-browser-facade
+
+on:
+  push:
+    branches: [agent/split-modules]
+    paths: [.github/workflows/tmp-browser-facade.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  facade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/split-modules
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Complete browser facade
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          p=Path('src/web.ts')
+          s=p.read_text()
+          anchor='export { webPlaces, webPorts } from "astral-core/web";\n'
+          stars='export * from "astral-core/web";\nexport * from "astral-interpreter/web";\nexport * from "astral-core/wheel";\n'
+          if stars not in s:
+              if anchor not in s: raise SystemExit('web facade anchor missing')
+              s=s.replace(anchor, stars+anchor)
+          p.write_text(s)
+
+          Path('src/packager.ts').write_text('export * from "astral-packager";\n')
+          package=json.loads(Path('package.json').read_text())
+          package.setdefault('exports', {})['./packager']={
+              'types':'./dist/packager.d.ts',
+              'default':'./dist/packager.js',
+          }
+          Path('package.json').write_text(json.dumps(package,indent=2)+'\n')
+          PY
+
+          npm run vendor:core
+          npm --prefix vendor/astral-packager run build
+          npm ci
+          npm run check
+          npm test
+          npm run build
+          node --input-type=module - <<'NODE'
+          const web = await import('./dist/web.js');
+          for (const name of [
+            'billingSummary','assembleChart','shapeForUnit','refsValid','auditStructured',
+            'compatibilityDomains','signs','webPlaces','webPorts','renderWheel','wheelData',
+            'decodeReadableAstralFile','encodeAstralFile','isAstralFile','validateAstralFile'
+          ]) {
+            if (!(name in web)) throw new Error(`${name} missing from astrology/web`);
+          }
+          const packager = await import('./dist/packager.js');
+          for (const name of ['auditPwd','open','pack']) {
+            if (typeof packager[name] !== 'function') throw new Error(`${name} missing from astrology/packager`);
+          }
+          NODE
+
+          git restore --source=HEAD --staged --worktree .github/workflows || true
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/web.ts src/packager.ts package.json package-lock.json
+          git add -f dist/web.* dist/packager.*
+          git commit -m "Complete astrology browser facade"
+          git pull --rebase origin agent/split-modules
+          git push origin HEAD:agent/split-modules
