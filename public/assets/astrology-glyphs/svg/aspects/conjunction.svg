@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Conjunction">
-  <!-- {&quot;category&quot;: &quot;aspects&quot;, &quot;slug&quot;: &quot;conjunction&quot;, &quot;label&quot;: &quot;Conjunction&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;☌&quot;, &quot;code_points&quot;: [&quot;U+260C&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/aspects/conjunction.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(23.288462 257.038462) scale(0.352564 -0.352564)">
-  <path d="M283 54Q220 54 167.0 85.5Q114 117 82.5 170.0Q51 223 51 286Q51 350 82.5 402.5Q114 455 167.0 486.5Q220 518 283 518Q331 518 383 495L487 678L543 647L436 460Q472 428 493.5 383.0Q515 338 515 286Q515 223 483.5 170.0Q452 117 399.5 85.5Q347 54 283 54ZM283 123Q328 123 365.0 145.0Q402 167 424.0 204.0Q446 241 446 286Q446 331 423.5 368.0Q401 405 364.0 427.0Q327 449 283 449Q239 449 201.5 427.0Q164 405 142.0 368.0Q120 331 120 286Q120 241 142.0 204.0Q164 167 201.0 145.0Q238 123 283 123Z"/>
-  </g>
-  </g>
-</svg>

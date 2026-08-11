@@ -1,1 +1,71 @@
-placeholder
+# Interpretation semantics
+
+The interpretation code has two separate jobs: decide what an interpretation is allowed to say, then turn that meaning into readable prose. Keeping those jobs separate makes the output easier to audit and keeps source wording, internal identifiers and model habits out of the final text.
+
+The semantic side is built from a reviewed corpus. The writing side receives a prepared interpretation map and renders it in the application's normal voice. The writer is not expected to supply missing astrology knowledge from its own training.
+
+## Corpus data
+
+Corpus code lives under `src/interpretation/corpus/`. Checked-in semantic data is under `src/interpretation/corpus/data/`.
+
+A corpus contains three main kinds of records:
+
+- sources: documents that were reviewed for a specific use;
+- atoms: reusable concepts such as a planet, sign, house or aspect;
+- claims: small semantic statements attached to an atom and backed by one or more approved source references.
+
+Sources are approved per document and per section, not per website. A technical astronomy document can be approved for calculation work without making interpretation pages from the same publisher valid semantic sources. A claim must name an approved section of an approved semantic source; citing the document alone is not sufficient.
+
+The compiler checks that every production atom is approved, has claims, has source provenance and passes the worldview-neutrality rules. Production compilation uses the complete required atom list in `requirements.ts` and fails if anything is missing.
+
+## Meaning and calculation data
+
+Calculation identifiers are normalised before they reach the corpus. Details that affect how a value was calculated stay as metadata unless they also have an approved semantic meaning.
+
+For example, mean and true lunar nodes resolve to the same semantic node concept while retaining their calculation variant separately. Zodiac system names, calculation variants and JSON paths are not interpretation vocabulary by themselves.
+
+Larger units are composed from reusable atoms. A point placement can contain the point, its sign and its house. An aspect contains its two endpoints and an aspect relation. House units can include the house domain, cusp sign, rulers, occupants and intercepted signs where those calculations are available. Life-domain recipes select relevant chart factors from the same corpus instead of looking up a pre-written essay for every combination.
+
+## Interpretation maps
+
+`InterpretationMap` is the hand-off between semantic compilation and prose generation. It contains the subject of the unit, chart-specific semantic composition, permitted chart evidence, approved propositions, corpus provenance and concepts that must not be inferred.
+
+Both model-written prose and deterministic reconstruction use this map. Losing access to the model must not switch the application to a different interpretation system.
+
+The map is internal data. Proposition wording is not a prose template. The writer is expected to express the supported meaning in fresh language, and the audit checks for near-copying of corpus text and leakage of compiler terminology.
+
+## Writing voice
+
+Astrology has one user-facing interpretive voice and a separate internal semantic register.
+
+The user-facing text is direct, clear and non-theatrical. It normally addresses the chart owner as `you`, describes tendencies rather than certainties, and does not invent a named astrologer or first-person narrator. Internal source names, claim IDs, atom IDs and machine labels stay out of the prose.
+
+The semantic register is only there to constrain meaning. It can be terse and technical because the user never sees it directly.
+
+## Worldview neutrality
+
+Interpretation text must not assume a religious or metaphysical worldview. Claims about divine intention, karma, reincarnation, souls, fate, predestination, supernatural intervention or a purposeful universe are rejected.
+
+Technical names are treated by context. `Part of Spirit`, for example, remains a valid name for that calculated point; the name does not allow the interpretation to make claims about a soul or spiritual destiny.
+
+The same checks apply to source ingestion, corpus claims, generated prose, corrective output, deterministic reconstruction and the completed interpretation. Ambiguous wording is sent to the lightweight worldview classifier. A classifier may accept or reject the wording, but it does not rewrite it.
+
+The application is also neutral about why astrology might be meaningful to a user. Prose describes astrological associations rather than claiming that a chart placement literally causes an event or personality trait.
+
+## Source ingestion
+
+Semantic source material is reviewed before claim extraction. Obvious worldview contamination causes the passage to be rejected. Clean-looking passages still go through the source classifier before they can be distilled into claims.
+
+Contaminated passages are not "cleaned up" and then admitted. Approval can be limited to a small neutral section of a document while the rest of the document remains excluded.
+
+Calculation and architecture references are kept separate from semantic sources. They may support astronomy, geometry or compiler design, but they cannot be used as provenance for interpretation claims unless the specific document and section have also been approved for semantic use.
+
+## Runtime
+
+The checked-in production corpus is compiled once with completeness checking enabled. Browser generation and the API/server runtime use the resulting semantic provider by default. Low-level service construction still accepts an explicit provider so tests and specialised tooling can supply controlled maps.
+
+Before paid generation starts, the service prepares and validates the semantic maps required by the chart's interpretation plan. If a required map cannot be produced, generation fails before opening the model conversation.
+
+Each model call receives semantic input, deterministic chart evidence and writing instructions as separate fields. Raw chart evidence can contain fields that a particular recipe did not select; those fields are not permission to invent additional astrological meaning. Output is checked for schema validity, grounding, field duplication, voice problems and worldview neutrality. Rejected output goes through the normal correction/escalation path.
+
+If generation still fails, deterministic reconstruction uses the same interpretation map and application-owned sentence templates. The old XML catalogue is retained only for explicitly unmapped compatibility paths; it is not the semantic authority for normal browser or API generation.

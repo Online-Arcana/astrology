@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Pluto form three">
-  <!-- {&quot;category&quot;: &quot;planets&quot;, &quot;slug&quot;: &quot;pluto_form_three&quot;, &quot;label&quot;: &quot;Pluto form three&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯔&quot;, &quot;code_points&quot;: [&quot;U+2BD4&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/planets/pluto_form_three.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(4.846424 216.722157) scale(0.257913 -0.257913)">
-  <path d="M478 -65Q414 -65 361.5 -34.0Q309 -3 278.0 50.0Q247 103 247 167Q247 225 272.5 273.5Q298 322 342.0 354.0Q386 386 441 395V442H351V514H441V523Q441 567 420.0 602.5Q399 638 363.0 659.0Q327 680 283 680Q239 680 203.0 659.0Q167 638 145.5 602.5Q124 567 124 523H51Q51 587 82.0 639.0Q113 691 166.0 722.0Q219 753 283 753Q349 753 400.5 722.0Q452 691 477 639Q503 691 554.5 722.0Q606 753 672 753Q737 753 789.5 722.0Q842 691 873.0 639.0Q904 587 904 523H831Q831 567 809.5 602.5Q788 638 752.0 659.0Q716 680 672 680Q628 680 592.0 659.0Q556 638 535.0 602.5Q514 567 514 523V514H604V442H514V395Q570 387 614.5 354.5Q659 322 684.5 273.5Q710 225 710 167Q710 103 679.0 50.0Q648 -3 595.5 -34.0Q543 -65 478 -65ZM478 8Q522 8 558.0 29.5Q594 51 615.5 87.0Q637 123 637 167Q637 211 615.5 247.0Q594 283 558.0 304.0Q522 325 478 325Q434 325 398.0 304.0Q362 283 341.0 247.0Q320 211 320 167Q320 123 341.0 87.0Q362 51 398.0 29.5Q434 8 478 8Z"/>
-  </g>
-  </g>
-</svg>

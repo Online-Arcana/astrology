@@ -1,3 +1,4 @@
+import "./uiVersion.js";
 import "./legacyGuard.js";
 import "./credentialCopy.js";
 import "./credentialSession.js";
@@ -18,6 +19,11 @@ await import("./credentialStatus.js");
 await import("./credentialWording.js");
 initialiseVaultUi();
 
+// Test packages have a deliberately distinct outer magic. Install their narrow
+// transport before biometric/package handling so only a cryptographically
+// verified TEST-ONLY artifact can use the public test password path.
+await import("./testPackageTransport.js");
+
 // Install the optional biometric package gate before the ordinary package
 // password handler. Recognised encrypted file fingerprints can then unlock and
 // decrypt in one passkey action, while every unrecognised or declined file falls
@@ -25,6 +31,10 @@ initialiseVaultUi();
 await import("./packageBiometric.js");
 await import("./packageWording.js");
 await import("./packageFlow.js");
+// Wrap ordinary download packaging only after it is installed. Verified
+// test-key artifacts use the public TEST-ONLY package; every other .astral file
+// delegates back to the ordinary password-protected path unchanged.
+await import("./testPackageDownload.js");
 await import("./authorityUi.js");
 
 // Synthesis correction runs before the hierarchy pass. The hierarchy classifies
@@ -55,3 +65,9 @@ await import("./maintenanceAvailability.js");
 await import("./maintenancePaint.js");
 await import("./maintenanceResume.js");
 await import("./maintenancePolicy.js");
+
+// Test-key policy is applied after maintenance controls exist. The random chart
+// tester is last: it exercises the completed browser viewer without entering the
+// OpenAI generation path.
+await import("./testKeyPolicyUi.js");
+await import("./randomChartTest.js");

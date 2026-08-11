@@ -1,13 +1,24 @@
 import { base64url, ownedBuffer, unbase64url } from "../file/codec.js";
 import { digest } from "../file/hash.js";
+import {
+  TEST_KEY_ISSUER_PREFIX,
+  TEST_SIGNING_KEY_SCHEMA,
+} from "../testing/artifact.js";
 import type { AuthorityKeys } from "../file/authority.js";
 import type { KeyId } from "../types/file.js";
 import { browserVault, type BrowserSecretSnapshot } from "./vault.js";
 
 const defaultIssuer = "astral-browser/local";
 
+export interface TestSigningKeyMarker {
+  schema: typeof TEST_SIGNING_KEY_SCHEMA;
+  purpose: "chart-ui-testing";
+  warning: "TEST_ONLY_NOT_FOR_PRODUCTION";
+}
+
 export interface BrowserSigningKey extends AuthorityKeys {
   issuer: string;
+  testOnly?: TestSigningKeyMarker;
 }
 
 let sessionOpenAiKey = "";
@@ -20,6 +31,21 @@ const record = (value: unknown): value is Record<string, unknown> =>
 const required = (value: unknown, name: string): string => {
   if (typeof value !== "string" || value.trim().length === 0) throw new Error(`${name} is required`);
   return value.trim();
+};
+
+const testMarker = (value: unknown): TestSigningKeyMarker | undefined => {
+  if (value === undefined) return undefined;
+  if (!record(value)
+    || value["schema"] !== TEST_SIGNING_KEY_SCHEMA
+    || value["purpose"] !== "chart-ui-testing"
+    || value["warning"] !== "TEST_ONLY_NOT_FOR_PRODUCTION") {
+    throw new Error("Testing signing-key marker is malformed");
+  }
+  return {
+    schema: TEST_SIGNING_KEY_SCHEMA,
+    purpose: "chart-ui-testing",
+    warning: "TEST_ONLY_NOT_FOR_PRODUCTION",
+  };
 };
 
 const packagePasswords = (value: unknown): Record<string, string> => {
@@ -38,12 +64,28 @@ export const parseSigningKey = (text: string): BrowserSigningKey => {
     throw new Error("Stored signing key is not a JSON key bundle", { cause });
   }
   if (!record(value)) throw new Error("Stored signing key must be a JSON object");
+  const marker = testMarker(value["testOnly"]);
   return {
     issuer: required(value["issuer"], "Signing key issuer"),
     privatePkcs8: required(value["privatePkcs8"], "Signing privatePkcs8"),
     publicRaw: required(value["publicRaw"], "Signing publicRaw"),
+    ...(marker === undefined ? {} : { testOnly: marker }),
   };
 };
+
+const hasTestMarker = (key: Pick<BrowserSigningKey, "testOnly">): boolean =>
+  key.testOnly?.schema === TEST_SIGNING_KEY_SCHEMA
+  && key.testOnly.purpose === "chart-ui-testing"
+  && key.testOnly.warning === "TEST_ONLY_NOT_FOR_PRODUCTION";
+
+const hasTestIssuer = (key: Pick<BrowserSigningKey, "issuer">): boolean =>
+  key.issuer.startsWith(TEST_KEY_ISSUER_PREFIX);
+
+// Either signal is enough to quarantine the bundle from production operations.
+// This prevents simply deleting the marker or changing only the issuer from
+// turning a TEST-ONLY bundle into an accepted production credential.
+export const isTestSigningKey = (key: Pick<BrowserSigningKey, "issuer" | "testOnly">): boolean =>
+  hasTestMarker(key) || hasTestIssuer(key);
 
 const publicRawFromPrivate = async (privatePkcs8: string): Promise<string> => {
   const privateKey = await crypto.subtle.importKey(
@@ -78,7 +120,18 @@ export const signingKeyText = (key: BrowserSigningKey): string => JSON.stringify
 export const signingKeyId = async (key: Pick<BrowserSigningKey, "publicRaw">): Promise<KeyId> =>
   `sha256:${await digest("SHA-256", unbase64url(key.publicRaw))}` as KeyId;
 
-export const validateSigningKey = async (key: BrowserSigningKey): Promise<void> => {
+export const validateSigningKey = async (
+  key: BrowserSigningKey,
+  allowTestOnly = false,
+): Promise<void> => {
+  const marker = hasTestMarker(key);
+  const issuer = hasTestIssuer(key);
+  if (marker !== issuer) {
+    throw new Error("TEST-ONLY signing identity is inconsistent: its reserved issuer and test marker must either both be present or both be absent");
+  }
+  if (isTestSigningKey(key) && !allowTestOnly) {
+    throw new Error("TEST-ONLY signing bundles are not valid production signing bundles and cannot be used for normal generation or re-signing");
+  }
   const privateKey = await crypto.subtle.importKey(
     "pkcs8",
     ownedBuffer(unbase64url(key.privatePkcs8)),
@@ -112,6 +165,15 @@ export const generateSigningKey = async (
   };
 };
 
+export const generateTestSigningKey = async (): Promise<BrowserSigningKey> => ({
+  ...await generateSigningKey(`${TEST_KEY_ISSUER_PREFIX}${crypto.randomUUID()}`),
+  testOnly: {
+    schema: TEST_SIGNING_KEY_SCHEMA,
+    purpose: "chart-ui-testing",
+    warning: "TEST_ONLY_NOT_FOR_PRODUCTION",
+  },
+});
+
 const snapshot = (): BrowserSecretSnapshot => ({
   openAiKey: sessionOpenAiKey,
   signingKeyText: sessionSigningKey === null ? null : signingKeyText(sessionSigningKey),
@@ -135,6 +197,9 @@ export const saveOpenAiKey = (value: string): void => {
 export const loadSigningKey = (): BrowserSigningKey | null => sessionSigningKey;
 
 export const saveSigningKey = (key: BrowserSigningKey | null): void => {
+  if (key !== null && isTestSigningKey(key)) {
+    throw new Error("TEST-ONLY signing bundles are ephemeral and cannot be saved in the production credential vault");
+  }
   sessionSigningKey = key;
   persist();
 };
@@ -170,9 +235,12 @@ export const browserSecretSnapshot = (): BrowserSecretSnapshot => snapshot();
 
 export const applyBrowserSecretSnapshot = (value: BrowserSecretSnapshot): void => {
   sessionOpenAiKey = value.openAiKey.trim();
-  sessionSigningKey = value.signingKeyText === null || value.signingKeyText.trim().length === 0
-    ? null
-    : parseSigningKey(value.signingKeyText);
+  if (value.signingKeyText === null || value.signingKeyText.trim().length === 0) {
+    sessionSigningKey = null;
+  } else {
+    const selected = parseSigningKey(value.signingKeyText);
+    sessionSigningKey = isTestSigningKey(selected) ? null : selected;
+  }
   sessionPackagePasswords = packagePasswords(value.packagePasswords);
 };
 

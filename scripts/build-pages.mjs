@@ -11,6 +11,7 @@ const chartViewStylePath = resolve(publicDir, "chart-view.css");
 const browserToolsPath = resolve(publicDir, "browser-tools.js");
 const browserToolsStylePath = resolve(publicDir, "test-tools.css");
 const viewport = '<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">';
+const uiBuildSha = (process.env.GITHUB_SHA ?? "local").trim();
 
 const finalCode = (name) => name.split("-").at(-1) ?? "";
 
@@ -132,6 +133,7 @@ await build({
   sourcemap: false,
   legalComments: "none",
   define: {
+    "__ASTRAL_UI_BUILD_SHA__": JSON.stringify(uiBuildSha),
     "process.env.NODE_ENV": '"production"',
     global: "globalThis",
   },

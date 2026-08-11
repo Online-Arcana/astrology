@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Imum Coeli / Nadir">
-  <!-- {&quot;label&quot;: &quot;Imum Coeli / Nadir&quot;, &quot;construction&quot;: &quot;deterministic vector composition&quot;, &quot;source_note&quot;: &quot;Conventional IC angle abbreviation, composed as a compact calligraphic glyph.&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g transform="translate(-27.869153 194.533900) scale(0.251365 -0.251365)" fill="#000"> <path d="M81 0C135 1 135 1 162 1C182 1 182 1 276 0H316L352 25L259 32C277 118 341 369 388 542L446 548L481 573H447L328 572C302 572 285 572 251 573L216 548L306 542C287 461 249 309 191 85C189 78 182 55 176 32L117 25Z" transform="translate(95.000000 0.000000) scale(1.080000)"/> <path d="M529 63C437 0 369 -26 299 -26C220 -26 170 34 170 129C170 337 317 544 465 544C525 544 555 507 561 428L635 491C631 523 625 539 613 554C594 577 558 591 518 591C431 591 330 540 242 452C145 355 88 222 88 92C88 -11 145 -73 240 -73C327 -73 435 -33 522 33Z" transform="translate(410.000000 -15.000000) scale(1.020000)"/> </g>
-</svg>

@@ -206,6 +206,16 @@ export interface LlmPhaseProvenance {
   attempts: number;
 }
 
+export interface TestArtifactProvenance {
+  schema: "astral-test-artifact/1.0.0";
+  purpose: "chart-ui-testing";
+  warning: "TEST_ONLY_NOT_FOR_PRODUCTION";
+  interpretation: "lorem_ipsum_no_llm";
+  signingMode: "test_key" | "existing_key";
+  signingKeyId: string;
+  nonce: string;
+}
+
 export interface ChartProvenance {
   generatedAt: string;
   bigModel: string;
@@ -222,6 +232,7 @@ export interface ChartProvenance {
   waves: number;
   snapshotRevision: number;
   phases: LlmPhaseProvenance[];
+  testArtifact?: TestArtifactProvenance;
 }
 
 export interface AstralChart {

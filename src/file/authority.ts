@@ -59,9 +59,12 @@ export const sign = async (file: AstralFile, issuer: string, keys: AuthorityKeys
 export const signatureValid = async (file: AstralFile): Promise<boolean> => {
   if (!file.authority) return false;
   const bytes = canonicalBytes(signable(file));
+  const publicRaw = unbase64url(file.authority.publicKey);
+  const expectedKeyId = `sha256:${await digest("SHA-256", publicRaw)}`;
+  if (file.authority.keyId !== expectedKeyId) return false;
   const publicKey = await crypto.subtle.importKey(
     "raw",
-    ownedBuffer(unbase64url(file.authority.publicKey)),
+    ownedBuffer(publicRaw),
     { name: "Ed25519" },
     false,
     ["verify"],

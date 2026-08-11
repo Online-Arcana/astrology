@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Sedna">
-  <!-- {&quot;category&quot;: &quot;points&quot;, &quot;slug&quot;: &quot;sedna&quot;, &quot;label&quot;: &quot;Sedna&quot;, &quot;type&quot;: &quot;unicode&quot;, &quot;text&quot;: &quot;⯲&quot;, &quot;code_points&quot;: [&quot;U+2BF2&quot;], &quot;note&quot;: &quot;&quot;, &quot;wikimedia_commons&quot;: null, &quot;file&quot;: &quot;svg/points/sedna.svg&quot;} -->
-  <rect width="100%" height="100%" fill="none"/>
-  <g fill="#000000" stroke="none">
-  <g transform="translate(34.551265 232.727031) scale(0.292943 -0.292943)">
-  <path d="M275 400V539H137Q72 539 41.5 565.5Q11 592 11 635Q11 676 39.0 703.0Q67 730 107 730Q148 730 175.0 702.0Q202 674 202 625V583H275V733H347V583H445V539H347V456Q432 445 494.5 392.0Q557 339 592.0 238.5Q627 138 627 -18H555Q555 134 521.5 226.0Q488 318 425.5 359.0Q363 400 275 400ZM137 583H158V625Q158 656 144.0 671.0Q130 686 107 686Q85 686 70.0 672.0Q55 658 55 635Q55 611 73.0 597.0Q91 583 137 583Z"/>
-  </g>
-  </g>
-</svg>

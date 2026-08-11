@@ -3,6 +3,7 @@ import {
   isAstralFile,
   validateAstralFile,
 } from "../file/validate.js";
+import { testArtifactStatus } from "../testing/artifact.js";
 import type { AstralFile } from "../types/file.js";
 import {
   loadSigningKey,
@@ -32,6 +33,30 @@ const authorityCopy = async (file: AstralFile): Promise<{
 }> => {
   const validation = await validateAstralFile(file);
   const validationText = `Structure ${validation.structure}; integrity ${validation.integrity}.`;
+  const testStatus = await testArtifactStatus(file);
+
+  if (testStatus === "verified_test_key") {
+    return {
+      badge: "TEST SIGNATURE — NOT VALID",
+      className: "badge bad",
+      detail: `${validationText} TEST-ONLY artifact. This is not a valid production signature or authenticated user chart. It was created by the development chart tester with synthetic Lorem Ipsum interpretations and may use the public test package password.`,
+    };
+  }
+  if (testStatus === "verified_existing_key") {
+    return {
+      badge: "TEST CHART — SYNTHETIC",
+      className: "badge warn",
+      detail: `${validationText} This is a synthetic chart generated for UI testing with Lorem Ipsum interpretations. Its Ed25519 signature verifies with an ordinary key, but the signed chart itself is explicitly marked TEST-ONLY and must not be treated as a production reading.`,
+    };
+  }
+  if (testStatus === "invalid") {
+    return {
+      badge: "INVALID TEST ARTIFACT",
+      className: "badge bad",
+      detail: `${validationText} Test-only authority or chart markers are present but do not verify together. Password and biometric test bypasses are forbidden for this file.`,
+    };
+  }
+
   if (file.authority === null) {
     return {
       badge: "Unsigned",
