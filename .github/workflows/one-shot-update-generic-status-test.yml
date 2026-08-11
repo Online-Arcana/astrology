@@ -1,0 +1,46 @@
+name: one-shot-update-generic-status-test
+
+on:
+  push:
+    branches:
+      - feature/interpretation-corpus-consolidated
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feature/interpretation-corpus-consolidated
+      - run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('test/openaiRuntime.ts')
+          text = path.read_text()
+          old = '''  equal(
+            (result.run.units["tropical.point.ascendant"]?.value as { status: string }).status,
+            "unavailable",
+            "unavailable unit status",
+          );'''
+          new = '''  equal(
+            (result.run.units["tropical.point.ascendant"]?.value as { status: string }).status,
+            "written",
+            "source-unavailable unit still receives generic written interpretation",
+          );
+          assert(
+            ((result.run.units["tropical.point.ascendant"]?.value as { summary?: string }).summary ?? "").trim().length > 0,
+            "source-unavailable unit must contain generic interpretation prose",
+          );'''
+          if old not in text:
+              raise SystemExit('old unavailable fallback assertion not found')
+          path.write_text(text.replace(old, new))
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add test/openaiRuntime.ts
+          git commit -m "Expect generic prose when interpretation source is unavailable"
+          git push origin HEAD:feature/interpretation-corpus-consolidated
