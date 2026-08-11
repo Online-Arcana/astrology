@@ -1,3 +1,4 @@
+import "./uiVersion.js";
 import "./legacyGuard.js";
 import "./credentialCopy.js";
 import "./credentialSession.js";
