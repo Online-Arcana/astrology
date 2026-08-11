@@ -23,11 +23,16 @@ jobs:
       - name: Complete browser facade
         run: |
           set -euo pipefail
-          INTERPRETER=1a89981b58236d32c97f845d0d445fe0e5d75977
+          CORE=05e74423b62da0ad9dc87582494a4304e33fe725
+          INTERPRETER=f0e2695c37c3b307d8cb9485be4c374219888c39
+
+          git -C vendor/astral-core fetch origin "$CORE"
+          git -C vendor/astral-core checkout "$CORE"
+          git -C vendor/astral-core submodule update --init --recursive
           git -C vendor/astral-interpreter fetch origin "$INTERPRETER"
           git -C vendor/astral-interpreter checkout "$INTERPRETER"
           git -C vendor/astral-interpreter submodule update --init --recursive
-          git add vendor/astral-interpreter
+          git add vendor/astral-core vendor/astral-interpreter
 
           python3 - <<'PY'
           from pathlib import Path
@@ -54,7 +59,6 @@ jobs:
           Path('package.json').write_text(json.dumps(package,indent=2)+'\n')
           PY
 
-          npm run vendor:core
           npm --prefix vendor/astral-packager run build
           npm install --package-lock-only --ignore-scripts
           npm ci
@@ -79,7 +83,7 @@ jobs:
           git restore --source=HEAD --staged --worktree .github/workflows || true
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add vendor/astral-interpreter src/web.ts src/packager.ts package.json package-lock.json
+          git add vendor/astral-core vendor/astral-interpreter src/web.ts src/packager.ts package.json package-lock.json
           git add -f dist/web.* dist/packager.*
           git commit -m "Complete astrology browser facade"
           git pull --rebase origin agent/split-modules
