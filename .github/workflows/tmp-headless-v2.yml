@@ -56,7 +56,18 @@ jobs:
           p.write_text(p.read_text().replace('from \"./billing/types.js\"', 'from \"astral-interpreter\"'))"""
           replacement=needle+"""
           p=Path('src/interface/api.ts')
-          p.write_text(p.read_text().replace('import type { BillStore } from \"astral-interpreter/web\";', 'import type { BillStore } from \"astral-interpreter\";'))"""
+          p.write_text(p.read_text().replace('import type { BillStore } from \"astral-interpreter/web\";', 'import type { BillStore } from \"astral-interpreter\";'))
+          p=Path('test/service.ts')
+          s=p.read_text()
+          for old_import in [
+              'import { compatibilityDomains } from \"../src/compat/catalogue.js\";',
+              'import type { AstronomyPort, BodySample, LunarOrbitPort } from \"../src/astro/port.js\";',
+              'import type { EclipseKind, EclipsePort } from \"../src/eclipse/port.js\";',
+              'import type { TimeResolver } from \"../src/time/model.js\";',
+          ]:
+              s=s.replace(old_import, '')
+          s='import { compatibilityDomains, type AstronomyPort, type BodySample, type LunarOrbitPort, type EclipseKind, type EclipsePort, type TimeResolver } from \"astral-core\";\n'+s
+          p.write_text(s)"""
           if needle not in script:
               raise SystemExit('post-rewrite patch anchor not found')
           script=script.replace(needle,replacement)
