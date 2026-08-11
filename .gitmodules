@@ -13,3 +13,6 @@
 [submodule "vendor/astral-packager"]
 	path = vendor/astral-packager
 	url = https://github.com/kitty-crow/astral-packager.git
+[submodule "vendor/astral-chart-wheel"]
+	path = vendor/astral-chart-wheel
+	url = https://github.com/Online-Arcana/astral-chart-wheel.git
